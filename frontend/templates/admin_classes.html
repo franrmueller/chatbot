@@ -1,0 +1,85 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'classes' list to the template.
+2. Each class (course) object must have:
+   - course.name → name of the course
+   - course.code → unique course ID
+   - course.professor_name → name of the assigned professor (optional)
+   - course.id → course ID for PDF and Chat links, and for deletion
+3. The backend must handle:
+   - POST request to create a new course with name and code
+   - POST request to delete a course via '/admin/classes/delete/{course_id}'
+4. Success and error messages should optionally be passed to the template.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss eine Liste namens 'classes' an das Template übergeben.
+2. Jeder Kurs muss enthalten:
+   - course.name → Name des Kurses
+   - course.code → Eindeutige Kurskennung
+   - course.professor_name → Name des zugewiesenen Professors (optional)
+   - course.id → Kurs-ID für Verlinkungen zu PDF, Chat und zum Löschen
+3. Das Backend muss POST-Anfragen verarbeiten:
+   - zur Erstellung eines neuen Kurses mit Name und Code
+   - zum Löschen eines Kurses über '/admin/classes/delete/{course_id}'
+4. Erfolgs- und Fehlermeldungen sollen optional an das Template übergeben werden.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Kurse verwalten – Admin
+{% endblock %}
+ 
+{% block content %}
+<!-- Main dashboard container for managing courses -->
+<div class="dashboard-container">
+<h1>Kurse verwalten</h1>
+ 
+    <!-- Button to go back to the admin dashboard -->
+<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+ 
+    <!-- Form to add a new course -->
+<form id="add-class-form" class="form-inline" method="POST">
+<h2>Neuen Kurs erstellen</h2>
+<input type="text" name="name" placeholder="Kursname (z. B. Datenbanken)" required>
+<input type="text" name="code" placeholder="Kurs-ID (z. B. WWIBE122)" required>
+<button type="submit" class="btn btn-primary">Kurs hinzufügen</button>
+</form>
+ 
+    <!-- Display success or error messages after form submission -->
+    {% if success %}
+<div class="success-message">{{ success }}</div>
+    {% endif %}
+    {% if error %}
+<div class="error-message">{{ error }}</div>
+    {% endif %}
+ 
+    <!-- List of all courses -->
+<h2>Alle Kurse</h2>
+    {% if classes %}
+<div class="course-list">
+    {% for course in classes %}
+<!-- Display course details in cards -->
+<div class="course-card">
+<h3>{{ course.name }}</h3>
+<p>Kurs-ID: {{ course.code }}</p>
+<p>Dozent: {{ course.professor_name or "Nicht zugewiesen" }}</p>
+ 
+    <!-- Buttons for PDF overview, chat, and delete -->
+<div class="btn-group">
+<a href="/admin/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+<a href="/admin/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+<form method="POST" action="/admin/classes/delete/{{ course.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
+<button type="submit" class="btn btn-danger">Löschen</button>
+</form>
+</div>
+</div>
+    {% endfor %}
+</div>
+    {% else %}
+<!-- Message if no courses are currently available -->
+<p>Es sind derzeit keine Kurse im System.</p>
+    {% endif %}
+</div>
+{% endblock %}

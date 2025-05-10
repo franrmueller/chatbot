@@ -1,0 +1,60 @@
+<!-- 
+# Base Template (Layout for all pages)
+ 
+This template defines the common structure used by all other pages.
+Includes header navigation, main content area, and footer.
+Provides blocks for page-specific content, title, extra CSS, and extra JavaScript.
+-->
+ 
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Set the page title dynamically -->
+<title>{% block title %}Vorlesungschatbot{% endblock %}</title>
+ 
+<!-- Link to main CSS file -->
+<link rel="stylesheet" href="/static/css/main.css">
+ 
+    <!-- Placeholder for extra CSS that individual pages can inject -->
+    {% block extra_css %}{% endblock %}
+</head>
+ 
+<body>
+<header>
+<nav>
+<div class="logo">
+<!-- Logo linking to the home page -->
+<a href="/">Vorlesungschatbot</a>
+</div>
+ 
+            <!-- Navigation links depending on user role -->
+<div class="nav-links">
+                {% if user %}
+                    {% if user.role == 'ADMIN' %}
+<a href="/admin/users">Benutzer verwalten</a>
+<a href="/admin/classes">Kurse verwalten</a>
+                    {% elif user.role == 'PROFESSOR' %}
+<a href="/professor/classes">Meine Kurse</a>
+                    {% elif user.role == 'STUDENT' %}
+<a href="/student/classes">Meine belegten Kurse</a>
+                    {% endif %}
+<a href="/auth/logout">Abmelden</a>
+                {% else %}
+<a href="/login">Anmelden</a>
+<a href="/register">Registrieren</a>
+                {% endif %}
+</div>
+</nav>
+</header>
+<!-- Main page content will be inserted here -->
+<main>
+        {% block content %}{% endblock %}
+</main>
+<footer>
+<!-- Static footer text -->
+<p>&copy; 2025 Vorlesungschatbot</p>
+</footer>
+</body>
+</html>

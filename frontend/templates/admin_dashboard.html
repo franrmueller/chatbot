@@ -1,0 +1,60 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. No dynamic data is required for the basic page to load.
+2. All navigation links must be correctly defined and routed:
+   - /admin/professors → manage professors
+   - /admin/classes → manage courses
+   - /admin/students → manage students
+3. The user must be authenticated as an admin to access this page (handled in backend).
+4. Optional: Additional dynamic counters/statistics could be added later (e.g., number of professors, courses, students).
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Es werden keine dynamischen Daten benötigt, um die Seite zu laden.
+2. Alle Navigationslinks müssen korrekt definiert und geroutet sein:
+   - /admin/professors → Verwaltung der Professor:innen
+   - /admin/classes → Verwaltung der Kurse
+   - /admin/students → Verwaltung der Studierenden
+3. Der Nutzer muss im Backend als Admin authentifiziert sein, um diese Seite aufzurufen.
+4. Optional: Es könnten später dynamische Statistiken ergänzt werden (z. B. Anzahl der Professor:innen, Kurse, Studierenden).
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Admin-Dashboard – Vorlesungschatbot
+{% endblock %}
+ 
+{% block content %}
+<!-- Main container for the admin dashboard -->
+<div class="dashboard-container">
+<h1>Administrator-Dashboard</h1>
+<p>Wählen Sie eine Übersicht, die Sie verwalten möchten:</p>
+ 
+    <!-- Section with navigation cards for each admin area -->
+<div class="admin-options">
+ 
+<!-- Card to manage professors -->
+<div class="admin-card">
+<h2>Professor:innen</h2>
+<p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
+<a href="/admin/professors" class="btn btn-primary">Professor:innen verwalten</a>
+</div>
+ 
+<!-- Card to manage courses -->
+<div class="admin-card">
+<h2>Kurse</h2>
+<p>Alle Kurse im System. Erstellen, zuordnen oder entfernen.</p>
+<a href="/admin/classes" class="btn btn-primary">Kurse verwalten</a>
+</div>
+ 
+<!-- Card to manage students -->
+<div class="admin-card">
+<h2>Studierende</h2>
+<p>Liste aller registrierten Studierenden (anonymisiert). Kurse und Aktivitäten einsehen.</p>
+<a href="/admin/students" class="btn btn-primary">Studierende verwalten</a>
+</div>
+ 
+</div>
+</div>
+{% endblock %}

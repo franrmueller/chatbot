@@ -1,0 +1,92 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'course' object to the template.
+   - course.name → the name of the course
+   - course.id → used for upload/update/delete actions
+2. The backend must pass a 'pdfs' list to the template.
+   - Each pdf must have:
+     - pdf.name → name of the file
+     - pdf.uploaded_at → upload timestamp
+     - pdf.id → unique ID for updating or deleting
+3. The backend must optionally pass 'error' and 'success' messages after file actions.
+4. Uploads and updates must send a POST request and handle file data correctly (multipart/form-data).
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss ein 'course'-Objekt an das Template übergeben.
+   - course.name → Name des Kurses
+   - course.id → für Upload/Update/Delete benötigt
+2. Das Backend muss eine 'pdfs'-Liste an das Template übergeben.
+   - Jede PDF muss enthalten:
+     - pdf.name → Dateiname
+     - pdf.uploaded_at → Zeitpunkt des Uploads
+     - pdf.id → eindeutige ID für Bearbeiten oder Löschen
+3. Das Backend soll optional 'error'- und 'success'-Nachrichten übergeben (nach Dateiaktionen).
+4. Uploads und Updates müssen eine POST-Anfrage mit Dateiinhalt korrekt verarbeiten (multipart/form-data).
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+PDF-Übersicht – Kurs {{ course.name }}
+{% endblock %}
+ 
+{% block content %}
+<!-- Main content for managing PDFs -->
+<div class="pdf-dashboard">
+<h1>PDF-Übersicht für Kurs: {{ course.name }}</h1>
+ 
+    <!-- Back button to the course overview -->
+<a href="/professor/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+ 
+    <!-- Form to upload a new PDF file -->
+<form id="upload-form" class="upload-form" enctype="multipart/form-data" method="POST">
+<label for="pdf-file">Neues PDF hochladen:</label>
+<input type="file" name="pdf" id="pdf-file" accept="application/pdf" required>
+<button type="submit" class="btn btn-primary">Hochladen</button>
+</form>
+ 
+    <!-- Display error or success messages -->
+    {% if error %}
+<div class="error-message">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+<div class="success-message">{{ success }}</div>
+    {% endif %}
+ 
+    <!-- List of uploaded PDFs -->
+    {% if pdfs %}
+<table class="pdf-table">
+<thead>
+<tr>
+<th>Dateiname</th>
+<th>Hochgeladen am</th>
+<th>Aktionen</th>
+</tr>
+</thead>
+<tbody>
+                {% for pdf in pdfs %}
+<tr>
+<td>{{ pdf.name }}</td>
+<td>{{ pdf.uploaded_at }}</td>
+<td>
+<!-- Form to update the existing PDF -->
+<form action="/professor/pdf/{{ course.id }}/update/{{ pdf.id }}" method="POST" enctype="multipart/form-data" style="display:inline-block;">
+<input type="file" name="updated_pdf" accept="application/pdf" required>
+<button type="submit" class="btn btn-warning">Aktualisieren</button>
+</form>
+<!-- Form to delete the existing PDF -->
+<form action="/professor/pdf/{{ course.id }}/delete/{{ pdf.id }}" method="POST" onsubmit="return confirm('Möchten Sie diese Datei wirklich löschen?');" style="display:inline-block;">
+<button type="submit" class="btn btn-danger">Löschen</button>
+</form>
+</td>
+</tr>
+                {% endfor %}
+</tbody>
+</table>
+    {% else %}
+<!-- Message if no PDFs are uploaded yet -->
+<p>Es wurden noch keine PDFs hochgeladen.</p>
+    {% endif %}
+</div>
+{% endblock %}

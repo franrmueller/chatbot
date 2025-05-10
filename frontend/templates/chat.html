@@ -1,0 +1,107 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'course' object to the template.
+   - course.name → name of the course (for display)
+   - course.id → course ID used for sending chat requests
+2. The backend must provide a POST API endpoint at '/api/chat/{course_id}'.
+3. The API must accept:
+   - JSON body with a field 'prompt' (the user's question)
+4. The API must respond with:
+   - 'answer' → the chatbot's answer
+   - 'source' → optional, the source document (e.g., PDF page)
+5. Optional: Reset button could be linked to an endpoint to clear the chat session.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss ein 'course'-Objekt an das Template übergeben.
+   - course.name → Name des Kurses (zur Anzeige)
+   - course.id → Kurs-ID für das Absenden der Chatanfragen
+2. Das Backend muss einen POST-API-Endpunkt unter '/api/chat/{course_id}' bereitstellen.
+3. Die API muss akzeptieren:
+   - JSON-Body mit einem Feld 'prompt' (Frage des Benutzers)
+4. Die API muss antworten mit:
+   - 'answer' → Antwort des Chatbots
+   - 'source' → optional, Quellenangabe zum Dokument (z.B. PDF-Seite)
+5. Optional: Reset-Button könnte mit einem Endpunkt verbunden werden, der den Chat-Verlauf zurücksetzt.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Chat – Vorlesung {{ course.name }}
+{% endblock %}
+ 
+{% block content %}
+<!-- Main chat container -->
+<div class="chat-container">
+ 
+<!-- Sidebar with navigation and control buttons -->
+<aside class="chat-sidebar">
+<a href="/student/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+<button id="reset-chat" class="btn btn-warning">Reset</button>
+<button id="view-history" class="btn btn-light">Historie</button>
+</aside>
+ 
+<!-- Main chat area -->
+<section class="chat-main">
+<h1>Vorlesung: {{ course.name }}</h1>
+ 
+<!-- Chat window where messages will appear -->
+<div id="chat-window" class="chat-window">
+<!-- Messages will be dynamically added here -->
+</div>
+ 
+<!-- Input form for sending questions -->
+<form id="chat-form" class="chat-form">
+<input type="text" id="user-input" placeholder="Frage stellen..." required>
+<button type="submit" class="btn btn-primary">Senden</button>
+</form>
+</section>
+</div>
+{% endblock %}
+ 
+{% block extra_js %}
+<!-- JavaScript to handle chat functionality -->
+<script>
+    const form = document.getElementById('chat-form');
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const resetBtn = document.getElementById('reset-chat');
+ 
+    // Handle message sending
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const question = userInput.value;
+        appendMessage('user', question);
+        userInput.value = '';
+ 
+        try {
+            const response = await fetch('/api/chat/{{ course.id }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: question })
+            });
+            const data = await response.json();
+            appendMessage('bot', data.answer + ' <br><small>Quelle: ' + data.source + '</small>');
+        } catch (error) {
+            appendMessage('bot', 'Fehler beim Abrufen der Antwort.');
+            console.error(error);
+        }
+    });
+ 
+    // Handle chat reset
+    resetBtn.addEventListener('click', () => {
+        chatWindow.innerHTML = '';
+        // Optional: Call a reset API endpoint if implemented
+    });
+ 
+    // Function to add a message to the chat window
+    function appendMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.classList.add('chat-message', sender);
+        msg.innerHTML = text;
+        chatWindow.appendChild(msg);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+</script>
+{% endblock %}

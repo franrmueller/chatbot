@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+ 
+{% block title %}
+Startseite - Vorlesungschatbot
+{% endblock %}
+ 
+{% block content %}
+<!-- Main hero section with welcome message -->
+<div class="hero">
+<h1>Willkommen beim Vorlesungschatbot</h1>
+<p>Lerne, indem du mit deinen Kursdokumenten sprichst. Erreiche deinen persönlichen Dozenten rund um die Uhr :)</p>
+    {% if not user %}
+<!-- If no user is logged in, show register and login buttons -->
+<div class="cta-buttons">
+<a href="/register" class="btn btn-primary">Jetzt starten</a>
+<a href="/login" class="btn btn-secondary">Anmelden</a>
+</div>
+    {% else %}
+<!-- If user is logged in, show role-specific navigation buttons -->
+<div class="cta-buttons">
+        {% if user.role == 'STUDENT' %}
+<a href="/student/classes" class="btn btn-primary">Zu meinen Kursen</a>
+        {% elif user.role == 'PROFESSOR' %}
+<a href="/professor/classes" class="btn btn-primary">Meine Kurse verwalten</a>
+        {% elif user.role == 'ADMIN' %}
+<a href="/admin/dashboard" class="btn btn-primary">Administrator-Dashboard</a>
+        {% endif %}
+</div>
+    {% endif %}
+</div>
+ 
+<!-- Features section describing the chatbot benefits -->
+<div class="features">
+<div class="feature">
+<h2>Stelle Fragen</h2>
+<p>Stelle Fragen zu deinen Kursmaterialien und erhalte sofort präzise Antworten.</p>
+</div>
+<div class="feature">
+<h2>Effizient lernen</h2>
+<p>Spar Zeit bei der Suche nach Informationen in umfangreichen Dokumenten mit KI-Unterstützung.</p>
+</div>
+<div class="feature">
+<h2>Kursverwaltung</h2>
+<p>Einfache Verwaltung der Kurse und Materialien für Dozenten und übersichtliche Kursauswahl für Studierende.</p>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+ 
+1. A list called 'courses' must be passed to the template.
+2. Each course must have:
+   - course.name → the name of the course
+   - course.code → the unique course ID
+   - course.id → the ID used in the URL for the chat link
+3. If 'courses' is empty or missing, a message should be displayed saying no courses are enrolled.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+ 
+1. Eine Liste namens 'courses' muss an das Template übergeben werden.
+2. Jeder Kurs muss enthalten:
+   - course.name → Name des Kurses
+   - course.code → Eindeutige Kurskennung
+   - course.id → ID zur Verlinkung in der Chat-URL
+3. Falls 'courses' leer oder nicht vorhanden ist, soll eine Nachricht angezeigt werden, dass keine Kurse belegt sind.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Meine Kurse – Vorlesungschatbot
+{% endblock %}
+ 
+{% block content %}
+<!-- Main content area -->
+<div class="dashboard-container">
+<h1>Meine Kurse</h1>
+ 
+    {% if courses %}
+<!-- If courses are available, display them -->
+<div class="course-list">
+ 
+            {% for course in courses %}
+<!-- Loop through each course and display its information -->
+<div class="course-card">
+<h2>{{ course.name }}</h2>
+<p>Kurs-ID: {{ course.code }}</p>
+<a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+</div>
+            {% endfor %}
+</div>
+ 
+    {% else %}
+<!-- If no courses are enrolled, show a message -->
+<p>Du bist aktuell in keinen Kurs eingeschrieben.</p>
+<p>Bitte kontaktiere deinen Dozenten oder Administrator, um dich für einen Kurs anzumelden.</p>
+ 
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must provide an endpoint at '/auth/login/token' that accepts a POST request with form data.
+2. The form must send:
+   - username → the user's email or login name
+   - password → the user's password
+3. The endpoint must return:
+   - 200 OK with an access_token if login is successful
+   - 400/401 Error if login fails (e.g., wrong credentials)
+4. The access_token must be saved in the browser's localStorage after successful login.
+5. After login, the user should be redirected to the home page or a role-specific page.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss einen Endpunkt unter '/auth/login/token' bereitstellen, der POST-Anfragen mit Formulardaten akzeptiert.
+2. Das Formular muss senden:
+   - username → E-Mail-Adresse oder Benutzername des Nutzers
+   - password → Passwort des Nutzers
+3. Der Endpunkt muss zurückgeben:
+   - 200 OK mit einem access_token bei erfolgreicher Anmeldung
+   - 400/401 Fehler bei falschen Anmeldedaten
+4. Das access_token muss im lokalen Speicher (localStorage) des Browsers gespeichert werden.
+5. Nach erfolgreicher Anmeldung soll eine Weiterleitung auf die Startseite oder eine rollenspezifische Seite erfolgen.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+Anmelden - Vorlesungschatbot
+{% endblock %}
+ 
+{% block content %}
+<!-- Main content for the login page -->
+<div class="auth-container">
+<h1>Anmelden</h1>
+ 
+    <!-- Area for displaying error or success messages -->
+<div class="error-message" id="error-message" style="display: none;"></div>
+ 
+    {% if request.query_params.get('registered') == 'true' %}
+<!-- Success message after registration -->
+<div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
+    {% endif %}
+ 
+    <!-- Login form -->
+<form id="login-form" class="auth-form">
+<div class="form-group">
+<label for="username">Username:</label>
+<input type="username" id="username" name="username" required>
+</div>
+ 
+        <div class="form-group">
+<label for="password">Passwort:</label>
+<input type="password" id="password" name="password" required>
+</div>
+ 
+        <!-- Submit button -->
+<button type="submit" class="btn btn-primary">Anmelden</button>
+</form>
+ 
+    <!-- Link to registration page -->
+<div class="auth-links">
+<p>Noch kein Konto? <a href="/register">Registrieren</a></p>
+</div>
+</div>
+ 
+{% block extra_js %}
+<!-- JavaScript to handle login form submission -->
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+ 
+        const formData = new FormData();
+        formData.append('username', document.getElementById('username').value);
+        formData.append('password', document.getElementById('password').value);
+ 
+        const errorMessage = document.getElementById('error-message');
+ 
+        try {
+            // Send login request to the backend
+            const response = await fetch('/auth/login/token', {
+                method: 'POST',
+                body: formData
+            });
+ 
+            const data = await response.json();
+ 
+            // Handle login success or failure
+            // if (!response.ok) {
+            //     errorMessage.textContent = 'Ungültige E-Mail oder Passwort.';
+            //     errorMessage.style.display = 'block';
+            //     return;
+            // }
+ 
+            // Save token in localStorage
+            localStorage.setItem('accessToken', data.access_token);
+ 
+            // Redirect to home page (or later: role-specific page)
+            window.location.href = '/';
+ 
+        } catch (error) {
+            // Handle unexpected errors
+            errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
+            errorMessage.style.display = 'block';
+            console.error('Anmeldefehler:', error);
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

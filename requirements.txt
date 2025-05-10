@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+neo4j
+jinja2
+mysql-connector-python
+langchain==0.0.324
+sentence-transformers==2.2.2
+torch==2.0.1
+PyPDF2

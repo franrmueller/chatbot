@@ -1,0 +1,112 @@
+
+{% extends "base.html" %}
+
+{% block title %}
+Registrieren - Vorlesungschatbot
+{% endblock %}
+
+{% block content %}
+<!-- Registration page content -->
+<div class="auth-container">
+<h1>Studierenden-Registrierung</h1>
+ 
+<!-- Area for displaying error messages -->
+<div class="error-message" id="error-message" style="display: none;"></div>
+ 
+<!-- Registration form -->
+<form id="register-form" class="auth-form">
+ 
+<!-- First name input -->
+<div class="form-group">
+<label for="first-name">Vorname:</label>
+<input type="text" id="first-name" name="first-name" required>
+</div>
+ 
+<!-- Last name input -->
+<div class="form-group">
+<label for="last-name">Nachname:</label>
+<input type="text" id="last-name" name="last-name" required>
+</div>
+ 
+<!-- Email input -->
+<div class="form-group">
+<label for="username">Username:</label>
+<input type="username" id="username" name="username" required>
+</div>
+ 
+<!-- Password input -->
+<div class="form-group">
+<label for="password">Passwort:</label>
+<input type="password" id="password" name="password" required minlength="8">
+</div>
+ 
+<!-- Confirm password input -->
+<div class="form-group">
+<label for="confirm-password">Passwort bestätigen:</label>
+<input type="password" id="confirm-password" name="confirm-password" required minlength="8">
+</div>
+ 
+<!-- Submit button -->
+<button type="submit" class="btn btn-primary">Registrieren</button>
+</form>
+ 
+<!-- Link to login page -->
+<div class="auth-links">
+<p>Bereits ein Konto? <a href="/login">Anmelden</a></p>
+</div>
+</div>
+ 
+{% block extra_js %}
+<!-- JavaScript to handle registration form submission -->
+<script>
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+ 
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const errorMessage = document.getElementById('error-message');
+ 
+        // Check if passwords match
+        if (password !== confirmPassword) {
+            errorMessage.textContent = 'Passwörter stimmen nicht überein.';
+            errorMessage.style.display = 'block';
+            return;
+        }
+ 
+        // Collect user input and create JSON object
+        const userData = {
+            first_name: document.getElementById('first-name').value,
+            last_name: document.getElementById('last-name').value,
+            username: document.getElementById('username').value,
+            password: password,
+            role: "STUDENT"
+        };
+ 
+        try {
+            // Send registration request
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+ 
+            const data = await response.json();
+ 
+            // Handle registration success or error
+ 
+            // Redirect to login page after successful registration
+            window.location.href = '/login?registered=true';
+ 
+        } catch (error) {
+            // Handle unexpected errors
+            errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
+            errorMessage.style.display = 'block';
+            console.error('Registrierungsfehler:', error);
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %}
