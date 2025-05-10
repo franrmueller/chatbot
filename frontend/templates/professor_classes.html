@@ -1,0 +1,54 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'courses' list to the template.
+2. Each course object must have:
+   - course.name → the course name
+   - course.code → the course ID
+   - course.id → the course ID used in URLs for linking PDF and Chat pages
+3. If 'courses' is empty or missing, a message should inform the professor that no courses are assigned yet.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss eine Liste namens 'courses' an das Template übergeben.
+2. Jeder Kurs muss folgende Attribute besitzen:
+   - course.name → Name des Kurses
+   - course.code → Kurskennung
+   - course.id → Kurs-ID für Verlinkungen zur PDF-Übersicht und Chatseite
+3. Falls 'courses' leer oder nicht vorhanden ist, soll eine Nachricht angezeigt werden, dass noch keine Kurse zugewiesen wurden.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Meine Kurse – Professor:innenansicht
+{% endblock %}
+ 
+{% block content %}
+<!-- Main content area for professor's courses -->
+<div class="dashboard-container">
+<h1>Meine betreuten Kurse</h1>
+ 
+    {% if courses %}
+<!-- If there are courses, display them -->
+<div class="course-list">
+            {% for course in courses %}
+<!-- Loop through each course and show course details -->
+<div class="course-card">
+<h2>{{ course.name }}</h2>
+<p>Kurs-ID: {{ course.code }}</p>
+<div class="btn-group">
+<!-- Button to access PDF management for the course -->
+<a href="/professor/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+<!-- Button to access chat for the course -->
+<a href="/professor/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+</div>
+</div>
+            {% endfor %}
+</div>
+    {% else %}
+<!-- Message if the professor has no assigned courses -->
+<p>Aktuell betreuen Sie noch keine Kurse.</p>
+<p>Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.</p>
+    {% endif %}
+</div>
+{% endblock %}

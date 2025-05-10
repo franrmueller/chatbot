@@ -1,0 +1,85 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'students' list to the template.
+2. Each student object must have:
+   - student.id → anonymized ID (not real name)
+   - student.courses → list of courses the student is enrolled in (each course has course.code)
+   - student.last_login → timestamp of the last login (optional)
+   - student.prompt_count → number of prompts created by the student
+3. If 'students' is empty or missing, a message should be displayed that no students are registered.
+4. The delete action must send a POST request to '/admin/students/delete/{student_id}'.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss eine Liste namens 'students' an das Template übergeben.
+2. Jeder Student muss enthalten:
+   - student.id → anonymisierte Benutzer-ID (kein echter Name)
+   - student.courses → Liste der belegten Kurse (jeder Kurs hat course.code)
+   - student.last_login → Zeitpunkt des letzten Logins (optional)
+   - student.prompt_count → Anzahl der erstellten Prompts
+3. Falls 'students' leer oder nicht vorhanden ist, soll eine Nachricht angezeigt werden, dass keine Studierenden registriert sind.
+4. Die Löschfunktion muss eine POST-Anfrage an '/admin/students/delete/{student_id}' senden.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Studierende verwalten – Admin
+{% endblock %}
+ 
+{% block content %}
+<!-- Main dashboard container for managing students -->
+<div class="dashboard-container">
+<h1>Studierendenübersicht (anonymisiert)</h1>
+ 
+    <!-- Button to go back to the admin dashboard -->
+<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+ 
+    <!-- If students exist, display the table -->
+    {% if students %}
+<table class="admin-table">
+<thead>
+<tr>
+<th>Benutzer-ID</th>
+<th>Kurse</th>
+<th>Letzter Login</th>
+<th>Erstellte Prompts</th>
+<th>Aktionen</th>
+</tr>
+</thead>
+<tbody>
+    {% for student in students %}
+<tr>
+<!-- Display anonymized student ID -->
+<td>{{ student.id }}</td>
+ 
+<!-- Display list of enrolled courses -->
+<td>
+    {% for course in student.courses %}
+        {{ course.code }}{% if not loop.last %}, {% endif %}
+    {% endfor %}
+</td>
+ 
+<!-- Display last login or fallback text -->
+<td>{{ student.last_login or "Keine Info" }}</td>
+ 
+<!-- Display number of prompts created -->
+<td>{{ student.prompt_count }}</td>
+ 
+<!-- Button to remove the student -->
+<td>
+<form method="POST" action="/admin/students/delete/{{ student.id }}" onsubmit="return confirm('Diesen Studierenden wirklich anonymisiert entfernen?');" style="display:inline-block;">
+<button class="btn btn-danger">Entfernen</button>
+</form>
+</td>
+</tr>
+    {% endfor %}
+</tbody>
+</table>
+ 
+    {% else %}
+<!-- Message if no students are registered -->
+<p>Aktuell sind keine Studierenden registriert.</p>
+    {% endif %}
+</div>
+{% endblock %}

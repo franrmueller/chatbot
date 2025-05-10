@@ -1,0 +1,109 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'pdfs' list to the template.
+2. Each pdf object must have:
+   - pdf.name → the name of the file
+   - pdf.course_name → the course to which the file belongs
+   - pdf.uploader → (optional) the user who uploaded the file
+   - pdf.uploaded_at → upload timestamp
+   - pdf.status → current processing status ('indexing', 'indexed', 'error', or unknown)
+   - pdf.id → unique ID for update/delete actions
+3. The backend must handle:
+   - POST requests to '/admin/pdf/update/{pdf_id}' for updating a PDF
+   - POST requests to '/admin/pdf/delete/{pdf_id}' for deleting a PDF
+4. Success and error messages should optionally be passed to the template.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss eine Liste namens 'pdfs' an das Template übergeben.
+2. Jede PDF muss enthalten:
+   - pdf.name → Dateiname
+   - pdf.course_name → Zugehöriger Kurs
+   - pdf.uploader → (optional) wer die Datei hochgeladen hat
+   - pdf.uploaded_at → Upload-Zeitpunkt
+   - pdf.status → aktueller Verarbeitungsstatus ('indexing', 'indexed', 'error' oder unbekannt)
+   - pdf.id → eindeutige ID für Update-/Löschaktionen
+3. Das Backend muss POST-Anfragen verarbeiten:
+   - an '/admin/pdf/update/{pdf_id}' zum Aktualisieren
+   - an '/admin/pdf/delete/{pdf_id}' zum Löschen
+4. Erfolgs- und Fehlermeldungen sollen optional an das Template übergeben werden.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+PDF-Übersicht mit Metadaten – Admin
+{% endblock %}
+ 
+{% block content %}
+<!-- Main dashboard container for PDF management -->
+<div class="dashboard-container">
+<h1>Zentrale PDF-Übersicht</h1>
+ 
+    <!-- Button to go back to the admin dashboard -->
+<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+ 
+    <!-- Display success or error messages -->
+    {% if success %}
+<div class="success-message">{{ success }}</div>
+    {% endif %}
+    {% if error %}
+<div class="error-message">{{ error }}</div>
+    {% endif %}
+ 
+    <!-- Display list of PDFs if available -->
+    {% if pdfs %}
+<table class="admin-table">
+<thead>
+<tr>
+<th>Dateiname</th>
+<th>Kurs</th>
+<th>Hochgeladen von</th>
+<th>Hochgeladen am</th>
+<th>Status</th>
+<th>Aktionen</th>
+</tr>
+</thead>
+<tbody>
+    {% for pdf in pdfs %}
+<tr>
+<!-- Display PDF file details -->
+<td>{{ pdf.name }}</td>
+<td>{{ pdf.course_name }}</td>
+<td>{{ pdf.uploader or "Unbekannt" }}</td>
+<td>{{ pdf.uploaded_at }}</td>
+ 
+<!-- Display PDF processing status -->
+<td>
+    {% if pdf.status == 'indexing' %}
+<span class="status status-processing">Wird verarbeitet</span>
+    {% elif pdf.status == 'indexed' %}
+<span class="status status-ok">Indexiert</span>
+    {% elif pdf.status == 'error' %}
+<span class="status status-error">Fehlgeschlagen</span>
+    {% else %}
+<span class="status status-unknown">Unbekannt</span>
+    {% endif %}
+</td>
+ 
+<!-- Actions: update or delete the PDF -->
+<td>
+<form action="/admin/pdf/update/{{ pdf.id }}" method="POST" enctype="multipart/form-data" style="display:inline-block;">
+<input type="file" name="updated_pdf" accept="application/pdf" required>
+<button class="btn btn-warning" type="submit">Aktualisieren</button>
+</form>
+<form action="/admin/pdf/delete/{{ pdf.id }}" method="POST" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
+<button class="btn btn-danger" type="submit">Löschen</button>
+</form>
+</td>
+</tr>
+    {% endfor %}
+</tbody>
+</table>
+ 
+    {% else %}
+<!-- Message if no PDFs have been uploaded yet -->
+<p>Es wurden noch keine PDFs hochgeladen.</p>
+    {% endif %}
+</div>
+{% endblock %}

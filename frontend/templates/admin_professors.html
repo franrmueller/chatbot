@@ -1,0 +1,104 @@
+<!-- 
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'professors' list to the template.
+2. Each professor object must have:
+   - professor.name → name of the professor
+   - professor.email → email address
+   - professor.courses → list of courses the professor teaches (each course has course.name)
+   - professor.id → for delete and edit actions
+3. The backend must handle:
+   - POST requests to '/admin/professors/delete/{professor_id}' for deleting professors
+   - (Optional) GET/POST for '/admin/professors/edit/{professor_id}' to edit professors
+4. The backend must handle form submissions to add a new professor (name, email, password).
+5. Success and error messages should optionally be passed to the template.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss eine Liste namens 'professors' an das Template übergeben.
+2. Jeder Professor muss enthalten:
+   - professor.name → Name des Professors
+   - professor.email → E-Mail-Adresse
+   - professor.courses → Liste der unterrichteten Kurse (jeder Kurs hat course.name)
+   - professor.id → für Lösch- und Bearbeitungsaktionen
+3. Das Backend muss folgende Funktionen bereitstellen:
+   - POST-Anfragen an '/admin/professors/delete/{professor_id}' zum Löschen
+   - (Optional) GET/POST für '/admin/professors/edit/{professor_id}' zum Bearbeiten
+4. Formularübermittlung zur Erstellung eines neuen Professors (Name, E-Mail, Passwort) muss verarbeitet werden.
+5. Erfolgs- und Fehlermeldungen sollen optional an das Template übergeben werden.
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+<!-- Set the page title -->
+Professor:innen verwalten – Admin
+{% endblock %}
+ 
+{% block content %}
+<!-- Main dashboard container for managing professors -->
+<div class="dashboard-container">
+<h1>Professor:innen verwalten</h1>
+ 
+    <!-- Button to go back to the admin dashboard -->
+<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+ 
+    <!-- Form to add a new professor -->
+<form id="add-professor-form" class="form-inline" method="POST">
+<h2>Neuen Professor hinzufügen</h2>
+<input type="text" name="name" placeholder="Name" required>
+<input type="email" name="email" placeholder="E-Mail" required>
+<input type="password" name="password" placeholder="Passwort" required>
+<button type="submit" class="btn btn-primary">Hinzufügen</button>
+</form>
+ 
+    <!-- Display success or error messages -->
+    {% if success %}
+<div class="success-message">{{ success }}</div>
+    {% endif %}
+    {% if error %}
+<div class="error-message">{{ error }}</div>
+    {% endif %}
+ 
+    <!-- List of all existing professors -->
+<h2>Bestehende Professor:innen</h2>
+    {% if professors %}
+<table class="admin-table">
+<thead>
+<tr>
+<th>Name</th>
+<th>E-Mail</th>
+<th>Zugewiesene Kurse</th>
+<th>Aktionen</th>
+</tr>
+</thead>
+<tbody>
+    {% for professor in professors %}
+<tr>
+<!-- Display professor details -->
+<td>{{ professor.name }}</td>
+<td>{{ professor.email }}</td>
+ 
+<!-- Display courses assigned to the professor -->
+<td>
+    {% for course in professor.courses %}
+        {{ course.name }}{% if not loop.last %}, {% endif %}
+    {% endfor %}
+</td>
+ 
+<!-- Actions: delete or edit professor -->
+<td>
+<form method="POST" action="/admin/professors/delete/{{ professor.id }}" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
+<button class="btn btn-danger">Löschen</button>
+</form>
+<a href="/admin/professors/edit/{{ professor.id }}" class="btn btn-warning">Bearbeiten</a>
+</td>
+</tr>
+    {% endfor %}
+</tbody>
+</table>
+ 
+    {% else %}
+<!-- Message if no professors are available -->
+<p>Es sind aktuell keine Professor:innen im System.</p>
+    {% endif %}
+</div>
+{% endblock %}
