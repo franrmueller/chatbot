@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from backend.db import sql_operations
 import mysql.connector
 from mysql.connector import Error
+from backend.db.sql_operations import reset_database
 
 app = FastAPI()
 
@@ -21,11 +22,11 @@ def sql_connect():
         if connection.is_connected():
             print("Connected to MySQL database")
             return connection
+        else:
+            raise HTTPException(status_code=500, detail="Failed to connect to the database")
     except mysql.connector.Error as e:
         print(f"{e}")
         return None
-
-sql_operations.reset_database()
 
 # Configure templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
