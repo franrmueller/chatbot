@@ -1,27 +1,6 @@
-<!-- 
-Requirements for Backend to make this page work (EN):
- 
-1. A list called 'courses' must be passed to the template.
-2. Each course must have:
-   - course.name → the name of the course
-   - course.code → the unique course ID
-   - course.id → the ID used in the URL for the chat link
-3. If 'courses' is empty or missing, a message should be displayed saying no courses are enrolled.
- 
-Anforderungen an das Backend, damit diese Seite funktioniert (DE):
- 
-1. Eine Liste namens 'courses' muss an das Template übergeben werden.
-2. Jeder Kurs muss enthalten:
-   - course.name → Name des Kurses
-   - course.code → Eindeutige Kurskennung
-   - course.id → ID zur Verlinkung in der Chat-URL
-3. Falls 'courses' leer oder nicht vorhanden ist, soll eine Nachricht angezeigt werden, dass keine Kurse belegt sind.
--->
- 
 {% extends "base.html" %}
  
 {% block title %}
-<!-- Set the page title -->
 Meine Kurse – Vorlesungschatbot
 {% endblock %}
  
