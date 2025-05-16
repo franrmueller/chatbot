@@ -1,70 +1,105 @@
-<!-- 
+<!--
+
 Requirements for Backend to make this page work (EN):
+
 1. The backend must pass a 'courses' list to the template.
+
 2. Each course object must have:
+
    - course.id → for selection in the dropdown
+
    - course.name → course name for display
+
    - course.code → course code for display
+
 3. If a course is selected (via GET parameter 'course_id'), the backend must also pass:
+
    - selected_course → the course object corresponding to the selection
+
    - history → a list of chat entries for the selected course
+
 4. Each history entry must have:
+
    - entry.question → the asked question
+
    - entry.answer → the chatbot’s answer
+
    - entry.timestamp → date/time of the chat
+
 5. If no history exists for a course, a message should be shown.
  
 Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+
 1. Das Backend muss eine Liste namens 'courses' an das Template übergeben.
+
 2. Jeder Kurs muss enthalten:
+
    - course.id → für die Auswahl im Dropdown
+
    - course.name → Name des Kurses (Anzeige)
+
    - course.code → Kurscode (Anzeige)
+
 3. Wenn ein Kurs ausgewählt ist (über GET-Parameter 'course_id'), muss das Backend zusätzlich übergeben:
+
    - selected_course → das ausgewählte Kurs-Objekt
+
    - history → Liste der Chat-Einträge für den Kurs
+
 4. Jeder Chat-Eintrag muss enthalten:
+
    - entry.question → gestellte Frage
+
    - entry.answer → Antwort des Chatbots
+
    - entry.timestamp → Datum/Zeit der Konversation
+
 5. Falls keine Historie für einen Kurs existiert, soll eine entsprechende Nachricht angezeigt werden.
+
 -->
  
 {% extends "base.html" %}
  
 {% block title %}
-<!-- Set the page title -->
+
 Chathistorien – Admin
+
 {% endblock %}
  
 {% block content %}
-<!-- Main dashboard container for chat histories -->
 <div class="dashboard-container">
 <h1>Chathistorien (anonymisiert)</h1>
  
-    <!-- Button to go back to the admin dashboard -->
+<!-- Navigationsbuttons oben -->
+<div class="btn-group" style="margin-bottom: 1rem;">
 <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+<a href="/admin/classes" class="btn btn-outline-primary">Zur Kursübersicht</a>
+<a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
+<a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
+</div>
  
-    <!-- Course selection form -->
-<form method="GET" action="/admin/chathistory" class="form-inline">
+<!-- Kursauswahl -->
+<form method="GET" action="/admin/chathistory" class="form-inline" style="margin-bottom: 1rem;">
 <label for="course_id">Kurs auswählen:</label>
 <select name="course_id" id="course_id" required>
+
     {% for course in courses %}
-<!-- Option to select a course -->
 <option value="{{ course.id }}" {% if selected_course and course.id == selected_course.id %}selected{% endif %}>
+
     {{ course.name }} ({{ course.code }})
 </option>
+
     {% endfor %}
 </select>
 <button type="submit" class="btn btn-primary">Anzeigen</button>
 </form>
  
-    <!-- Display chat history if a course is selected -->
-    {% if selected_course %}
+<!-- Historie anzeigen -->
+
+{% if selected_course %}
 <h2>Fragen & Antworten für {{ selected_course.name }}</h2>
  
-        {% if history %}
-<!-- Display chat history entries in a table -->
+    {% if history %}
 <table class="admin-table">
 <thead>
 <tr>
@@ -74,19 +109,26 @@ Chathistorien – Admin
 </tr>
 </thead>
 <tbody>
+
     {% for entry in history %}
 <tr>
 <td>{{ entry.question }}</td>
 <td>{{ entry.answer }}</td>
 <td>{{ entry.timestamp }}</td>
 </tr>
+
     {% endfor %}
 </tbody>
 </table>
-        {% else %}
-<!-- Message if no history exists for the selected course -->
+
+    {% else %}
 <p>Für diesen Kurs wurden noch keine Fragen gestellt.</p>
-        {% endif %}
+
     {% endif %}
+
+{% endif %}
 </div>
+
 {% endblock %}
+
+ 

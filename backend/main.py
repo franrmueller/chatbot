@@ -17,59 +17,59 @@ templates = Jinja2Templates(directory="frontend/templates")
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 # HTML pages routing
+
+# Frontend Routes
+ 
+# Startseite (index.html)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    """Render the home page"""
     return templates.TemplateResponse("index.html", {"request": request})
-
+ 
+# Login-Seite (login.html)
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """Render the login page"""
     return templates.TemplateResponse("login.html", {"request": request})
-
+ 
+# Registrierung (register.html)
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    """Render the registration page"""
     return templates.TemplateResponse("register.html", {"request": request})
-
-@app.get("/student/class", response_class=HTMLResponse)
-async def student_class_page(request: Request):
-    """Render the student class overview page"""
-    return templates.TemplateResponse("student_class.html", {"request": request})
-
+ 
+# Gemeinsame Kursübersicht (classes.html – dynamisch je nach Rolle)
+@app.get("/classes", response_class=HTMLResponse)
+async def classes(request: Request):
+    return templates.TemplateResponse("classes.html", {"request": request})
+ 
+# Kursbasierter Chat (chat.html – verwendet course_id)
+@app.get("/chat/{course_id}", response_class=HTMLResponse)
+async def chat_view(request: Request, course_id: str):
+    return templates.TemplateResponse("chat.html", {"request": request, "course_id": course_id})
+ 
+# PDF-Übersicht für Admin oder Professor (pdf.html)
+@app.get("/pdf", response_class=HTMLResponse)
+async def pdf_admin(request: Request):
+    return templates.TemplateResponse("pdf.html", {"request": request})
+ 
+@app.get("/pdf/{course_id}", response_class=HTMLResponse)
+async def pdf_professor(request: Request, course_id: str):
+    return templates.TemplateResponse("pdf.html", {"request": request, "course_id": course_id})
+ 
+# Chathistorie (admin_chathistory.html)
+@app.get("/admin/chathistory", response_class=HTMLResponse)
+async def admin_chathistory(request: Request):
+    return templates.TemplateResponse("admin_chathistory.html", {"request": request})
+ 
+# Admin-Dashboard (admin_dashboard.html)
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
-    """Render the admin dashboard"""
     return templates.TemplateResponse("admin_dashboard.html", {"request": request})
-
-# API Routes
-@app.post("/register")
-async def register_api(request: Request):
-    user_data = await request.json()
-    return await register_student(user_data, db=request.app.state.db)
-
-@app.post("/login")
-async def login_api(request: Request):
-    user_data = await request.json()
-    return await login(user_data, db=request.app.state.db)
-
-# @app.post("/login")
-# async def login_api(request: Request):
-#     # Debug the raw request body
-#     body = await request.json()
-#     print(f"DEBUG: Request body: {body}")
-#     return await login(body, db=request.app.state.db)
-
-# Startup and Shutdown functions
-@app.on_event("startup")
-async def startup_db_client():
-    """Initialize database connection on startup"""
-    app.state.db = sql_connect()
-    # Uncomment to reset database on startup (for development)
-    # reset_database()
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    """Close database connection on shutdown"""
-    if hasattr(app.state, "db") and app.state.db:
-        app.state.db.close()
+ 
+# Professor:innenverwaltung (admin_professors.html)
+@app.get("/admin/professors", response_class=HTMLResponse)
+async def admin_professors(request: Request):
+    return templates.TemplateResponse("admin_professors.html", {"request": request})
+ 
+# Studierendenverwaltung (admin_students.html)
+@app.get("/admin/students", response_class=HTMLResponse)
+async def admin_students(request: Request):
+    return templates.TemplateResponse("admin_students.html", {"request": request})

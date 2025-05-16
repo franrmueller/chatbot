@@ -1,90 +1,117 @@
+<!--
+Requirements for Backend to make this page work (EN):
+1. The backend must provide an endpoint at '/auth/register' that accepts a POST request with JSON data.
+2. The JSON body must include:
+   - first_name → student's first name
+   - last_name → student's last name
+   - email → student's email address
+   - password → student's password
+   - role → role set as "STUDENT"
+   - course_id → ID of the selected course
+3. The endpoint must validate the data and return:
+   - 200 OK with success message if registration is successful
+   - 400/422 Error with a detail message if registration fails
+4. After successful registration, user should be redirected to the login page.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss einen Endpunkt unter '/auth/register' bereitstellen, der POST-Anfragen mit JSON-Daten akzeptiert.
+2. Der JSON-Body muss enthalten:
+   - first_name → Vorname
+   - last_name → Nachname
+   - email → E-Mail
+   - password → Passwort
+   - role → immer "STUDENT"
+   - course_id → Kursauswahl-ID
+3. Bei Erfolg erfolgt ein Redirect zur Login-Seite, bei Fehler eine Rückmeldung.
+-->
+ 
 {% extends "base.html" %}
-
+ 
 {% block title %}
 Registrieren - Vorlesungschatbot
 {% endblock %}
-
+ 
 {% block content %}
-<!-- Registration page content -->
 <div class="auth-container">
 <h1>Studierenden-Registrierung</h1>
  
-<!-- Area for displaying error messages -->
+    <!-- Fehleranzeige -->
 <div class="error-message" id="error-message" style="display: none;"></div>
  
-<!-- Registration form -->
+    <!-- Registrierungsformular -->
 <form id="register-form" class="auth-form">
  
-<!-- First name input -->
-<div class="form-group">
+        <div class="form-group">
 <label for="first-name">Vorname:</label>
 <input type="text" id="first-name" name="first-name" required>
 </div>
  
-<!-- Last name input -->
-<div class="form-group">
+        <div class="form-group">
 <label for="last-name">Nachname:</label>
 <input type="text" id="last-name" name="last-name" required>
 </div>
  
-<!-- Email input -->
-<div class="form-group">
-<label for="username">Username:</label>
-<input type="username" id="username" name="username" required>
+        <div class="form-group">
+<label for="email">E-Mail:</label>
+<input type="email" id="email" name="email" required>
 </div>
  
-<!-- Password input -->
-<div class="form-group">
+        <div class="form-group">
+<label for="course">Kurs auswählen:</label>
+<select id="course" name="course" required>
+<option value="">-- Bitte Kurs wählen --</option>
+<option value="1">Datenbanken (DB101)</option>
+<option value="2">Wirtschaftsinformatik (WI202)</option>
+<option value="3">KI & Ethik (KI303)</option>
+<!-- Optional: dynamisch mit {% for course in courses %} -->
+</select>
+</div>
+ 
+        <div class="form-group">
 <label for="password">Passwort:</label>
 <input type="password" id="password" name="password" required minlength="8">
 </div>
  
-<!-- Confirm password input -->
-<div class="form-group">
+        <div class="form-group">
 <label for="confirm-password">Passwort bestätigen:</label>
 <input type="password" id="confirm-password" name="confirm-password" required minlength="8">
 </div>
  
-<!-- Submit button -->
-<button type="submit" class="btn btn-primary">Registrieren</button>
+        <button type="submit" class="btn btn-primary">Registrieren</button>
 </form>
  
-<!-- Link to login page -->
-<div class="auth-links">
+    <div class="auth-links">
 <p>Bereits ein Konto? <a href="/login">Anmelden</a></p>
 </div>
-<div class="auth-links">
-</p>
 </div>
+{% endblock %}
  
 {% block extra_js %}
-<!-- JavaScript to handle registration form submission -->
 <script>
-    document.getElementById('register-form').addEventListener('submit', async function(e) {
+    document.getElementById('register-form').addEventListener('submit', async function (e) {
         e.preventDefault();
  
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm-password').value;
         const errorMessage = document.getElementById('error-message');
  
-        // Check if passwords match
         if (password !== confirmPassword) {
             errorMessage.textContent = 'Passwörter stimmen nicht überein.';
             errorMessage.style.display = 'block';
             return;
         }
  
-        // Collect user input and create JSON object
         const userData = {
             first_name: document.getElementById('first-name').value,
             last_name: document.getElementById('last-name').value,
-            username: document.getElementById('username').value,
-            password: password
+            email: document.getElementById('email').value,
+            password: password,
+            role: "STUDENT",
+            course_id: document.getElementById('course').value
         };
  
         try {
-            // Send registration request
-            const response = await fetch('/register', {
+            const response = await fetch('/auth/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -94,25 +121,19 @@ Registrieren - Vorlesungschatbot
  
             const data = await response.json();
  
-            // Handle registration success or error
             if (!response.ok) {
-                errorMessage.textContent = data.detail || 'Registrierung fehlgeschlagen.';
+                errorMessage.textContent = data.detail || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.';
                 errorMessage.style.display = 'block';
                 return;
             }
  
-            // Redirect to login page after successful registration
             window.location.href = '/login?registered=true';
  
         } catch (error) {
-            // Handle unexpected errors
             errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
             errorMessage.style.display = 'block';
             console.error('Registrierungsfehler:', error);
-            console.error('Response:', data);
         }
-});
+    });
 </script>
-{% endblock %}
-
 {% endblock %}

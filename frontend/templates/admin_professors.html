@@ -1,4 +1,4 @@
-<!-- 
+<!--
 Requirements for Backend to make this page work (EN):
 1. The backend must pass a 'professors' list to the template.
 2. Each professor object must have:
@@ -29,19 +29,22 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 {% extends "base.html" %}
  
 {% block title %}
-<!-- Set the page title -->
 Professor:innen verwalten – Admin
 {% endblock %}
  
 {% block content %}
-<!-- Main dashboard container for managing professors -->
 <div class="dashboard-container">
 <h1>Professor:innen verwalten</h1>
  
-    <!-- Button to go back to the admin dashboard -->
+<!-- Navigationsleiste -->
+<div class="btn-group" style="margin-bottom: 1rem;">
 <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+<a href="/admin/classes" class="btn btn-outline-primary">Zur Kursübersicht</a>
+<a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
+<a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
+</div>
  
-    <!-- Form to add a new professor -->
+<!-- Neuen Professor hinzufügen -->
 <form id="add-professor-form" class="form-inline" method="POST">
 <h2>Neuen Professor hinzufügen</h2>
 <input type="text" name="name" placeholder="Name" required>
@@ -50,17 +53,16 @@ Professor:innen verwalten – Admin
 <button type="submit" class="btn btn-primary">Hinzufügen</button>
 </form>
  
-    <!-- Display success or error messages -->
-    {% if success %}
+{% if success %}
 <div class="success-message">{{ success }}</div>
-    {% endif %}
-    {% if error %}
+{% endif %}
+{% if error %}
 <div class="error-message">{{ error }}</div>
-    {% endif %}
+{% endif %}
  
-    <!-- List of all existing professors -->
+<!-- Liste der Professor:innen -->
 <h2>Bestehende Professor:innen</h2>
-    {% if professors %}
+{% if professors %}
 <table class="admin-table">
 <thead>
 <tr>
@@ -73,18 +75,13 @@ Professor:innen verwalten – Admin
 <tbody>
     {% for professor in professors %}
 <tr>
-<!-- Display professor details -->
 <td>{{ professor.name }}</td>
 <td>{{ professor.email }}</td>
- 
-<!-- Display courses assigned to the professor -->
 <td>
     {% for course in professor.courses %}
         {{ course.name }}{% if not loop.last %}, {% endif %}
     {% endfor %}
 </td>
- 
-<!-- Actions: delete or edit professor -->
 <td>
 <form method="POST" action="/admin/professors/delete/{{ professor.id }}" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
 <button class="btn btn-danger">Löschen</button>
@@ -95,10 +92,8 @@ Professor:innen verwalten – Admin
     {% endfor %}
 </tbody>
 </table>
- 
-    {% else %}
-<!-- Message if no professors are available -->
+{% else %}
 <p>Es sind aktuell keine Professor:innen im System.</p>
-    {% endif %}
+{% endif %}
 </div>
 {% endblock %}

@@ -1,4 +1,4 @@
-<!-- 
+<!--
 Requirements for Backend to make this page work (EN):
 1. The backend must pass a 'course' object to the template.
    - course.name → name of the course (for display)
@@ -27,51 +27,63 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 {% extends "base.html" %}
  
 {% block title %}
-<!-- Set the page title -->
 Chat – Vorlesung {{ course.name }}
 {% endblock %}
  
 {% block content %}
-<!-- Main chat container -->
-<div class="chat-container">
+<!-- Unified chat layout for all roles -->
+<div class="dashboard-container">
+<h1>Chatbot für Kurs: {{ course.name }}</h1>
  
-<!-- Sidebar with navigation and control buttons -->
-<aside class="chat-sidebar">
+<!-- Navigationsbuttons oben -->
+<div class="btn-group" style="margin-bottom: 20px;">
+    {% if user.role == 'STUDENT' %}
 <a href="/student/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    {% elif user.role == 'PROFESSOR' %}
+<a href="/professor/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    {% elif user.role == 'ADMIN' %}
+<a href="/admin/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    {% endif %}
 <button id="reset-chat" class="btn btn-warning">Reset</button>
 <button id="view-history" class="btn btn-light">Historie</button>
-</aside>
- 
-<!-- Main chat area -->
-<section class="chat-main">
-<h1>Vorlesung: {{ course.name }}</h1>
- 
-<!-- Chat window where messages will appear -->
-<div id="chat-window" class="chat-window">
-<!-- Messages will be dynamically added here -->
 </div>
  
-<!-- Input form for sending questions -->
-<form id="chat-form" class="chat-form">
-<input type="text" id="user-input" placeholder="Frage stellen..." required>
+<!-- Chat-Fenster -->
+<div id="chat-window" class="chat-window" style="border: 1px solid #ccc; padding: 1rem; height: 300px; overflow-y: auto; background-color: #f9f9f9;">
+<!-- Nachrichten erscheinen hier -->
+</div>
+ 
+<!-- Frageformular -->
+<form id="chat-form" class="chat-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+<input type="text" id="user-input" placeholder="Frage stellen..." required class="form-control" style="flex: 1;">
 <button type="submit" class="btn btn-primary">Senden</button>
 </form>
-</section>
 </div>
 {% endblock %}
  
 {% block extra_js %}
-<!-- JavaScript to handle chat functionality -->
 <script>
     const form = document.getElementById('chat-form');
     const chatWindow = document.getElementById('chat-window');
     const userInput = document.getElementById('user-input');
     const resetBtn = document.getElementById('reset-chat');
  
-    // Handle message sending
+    // Funktion zum Hinzufügen von Nachrichten ins Fenster
+    function appendMessage(sender, text) {
+        const msg = document.createElement('div');
+        msg.classList.add('chat-message', sender);
+        msg.style.margin = "0.5rem 0";
+        msg.innerHTML = `<strong>${sender === 'user' ? 'Du' : 'Bot'}:</strong> ${text}`;
+        chatWindow.appendChild(msg);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+ 
+    // Abschicken des Prompts
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
-        const question = userInput.value;
+        const question = userInput.value.trim();
+        if (!question) return;
+ 
         appendMessage('user', question);
         userInput.value = '';
  
@@ -81,27 +93,19 @@ Chat – Vorlesung {{ course.name }}
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: question })
             });
+ 
             const data = await response.json();
-            appendMessage('bot', data.answer + ' <br><small>Quelle: ' + data.source + '</small>');
+            appendMessage('bot', data.answer + '<br><small>Quelle: ' + (data.source || 'Unbekannt') + '</small>');
         } catch (error) {
             appendMessage('bot', 'Fehler beim Abrufen der Antwort.');
             console.error(error);
         }
     });
  
-    // Handle chat reset
+    // Chat zurücksetzen
     resetBtn.addEventListener('click', () => {
         chatWindow.innerHTML = '';
-        // Optional: Call a reset API endpoint if implemented
+        // Optional: Reset-Endpunkt könnte hier aufgerufen werden
     });
- 
-    // Function to add a message to the chat window
-    function appendMessage(sender, text) {
-        const msg = document.createElement('div');
-        msg.classList.add('chat-message', sender);
-        msg.innerHTML = text;
-        chatWindow.appendChild(msg);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
 </script>
 {% endblock %}
