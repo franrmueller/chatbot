@@ -4,6 +4,7 @@ from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+import logging
 
 # internal imports
 from backend.db import sql_connect, reset_database
@@ -16,10 +17,38 @@ app = FastAPI()
 templates = Jinja2Templates(directory="frontend/templates")
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
-# HTML pages routing
+# database initialization
+@app.on_event("startup")
+async def initialize_database():
+    """Check if database is initialized, and set it up if not."""
+    logging.info("Checking database initialization status...")
+    
+    try:
+        connection = sql_connect()
+        if not connection:
+            logging.error("Could not connect to database during startup")
+            return
+            
+        cursor = connection.cursor()
+        
+        # Check if the users table exists - if not, we need to initialize
+        cursor.execute("SHOW TABLES LIKE 'users'")
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            logging.info("First-time startup detected. Setting up database...")
+            reset_database()
+            logging.info("Database initialization complete.")
+        else:
+            logging.info("Database already initialized. Skipping setup.")
+            
+        cursor.close()
+        connection.close()
+    except Exception as e:
+        logging.error(f"Error during database initialization check: {str(e)}")
 
-# Frontend Routes
- 
+# Frontend HTML Routing
+
 # Startseite (index.html)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):

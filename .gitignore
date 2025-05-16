@@ -1,2 +1,7 @@
 __pycache__/
-backend/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+backend/__pycache__/auth.cpython-39.pyc
+backend/__pycache__/db.cpython-39.pyc
+backend/__pycache__/main.cpython-39.pyc

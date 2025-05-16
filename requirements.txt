@@ -9,3 +9,4 @@ torch==2.0.1
 PyPDF2
 passlib
 pydantic
+passlib>=1.7.4
