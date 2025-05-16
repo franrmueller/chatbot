@@ -1,18 +1,19 @@
-from http.client import HTTPException
+from fastapi import HTTPException
 import mysql.connector
 from mysql.connector import Error
-
-# MySQL connection parameters
+import os
+from dotenv import load_dotenv
 
 # Connect to MySQL database
+load_dotenv()
 def sql_connect():
     try:
         connection = mysql.connector.connect(
-            host="mysql",
-            port=3306,
-            user="root",
-            password="root",
-            database="chatbot"
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
         )
         if connection.is_connected():
             print("Connected to MySQL database")
@@ -36,11 +37,23 @@ def reset_database():
         # Drop tables in reverse order of dependencies
         cursor.execute("DROP TABLE IF EXISTS documents")
         cursor.execute("DROP TABLE IF EXISTS classes")
-        cursor.execute("DROP TABLE IF EXISTS students")
+        cursor.execute("DROP TABLE IF EXISTS users")
         cursor.execute("DROP TABLE IF EXISTS courses")
-        cursor.execute("DROP TABLE IF EXISTS teachers")
         
-        # Create tables in order of dependencies
+        # Step 1: Create users table WITHOUT the foreign key to courses
+        cursor.execute("""
+        CREATE TABLE users (
+            username VARCHAR(50) PRIMARY KEY,
+            password VARCHAR(255) NOT NULL,
+            first_name VARCHAR(50),
+            last_name VARCHAR(50),
+            role VARCHAR(7) DEFAULT 'student',
+            course VARCHAR(15),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        
+        # Step 2: Create courses table with its foreign key to users
         cursor.execute("""
         CREATE TABLE courses (
             id VARCHAR(15) PRIMARY KEY,
@@ -51,17 +64,11 @@ def reset_database():
         )
         """)
         
+        # Step 3: Add the foreign key to users table AFTER both tables exist
         cursor.execute("""
-        CREATE TABLE users (
-            username VARCHAR(50) PRIMARY KEY,
-            password VARCHAR(255) NOT NULL,
-            first_name VARCHAR(50),
-            last_name VARCHAR(50),
-            role VARCHAR(7) DEFAULT 'student',
-            course VARCHAR(15),
-            FOREIGN KEY (course) REFERENCES courses(id)
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        ALTER TABLE users 
+        ADD CONSTRAINT fk_user_course
+        FOREIGN KEY (course) REFERENCES courses(id)
         """)
         
         cursor.execute("""
