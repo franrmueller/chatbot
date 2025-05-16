@@ -22,7 +22,6 @@ app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 async def initialize_database():
     """Check if database is initialized, and set it up if not."""
     logging.info("Checking database initialization status...")
-    
     try:
         connection = sql_connect()
         if not connection:

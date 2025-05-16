@@ -10,3 +10,4 @@ PyPDF2
 passlib
 pydantic
 passlib>=1.7.4
+python-dotenv

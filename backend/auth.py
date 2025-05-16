@@ -5,7 +5,7 @@ from backend.db import sql_connect
 from datetime import datetime
 from passlib.context import CryptContext
 
-async def login(user_data: dict, db=None):
+async def login(user_data: dict):
     try:
         # Manual validation of required fields
         required_fields = ["username", "password"]
