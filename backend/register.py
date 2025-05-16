@@ -1,13 +1,12 @@
 from fastapi import FastAPI, HTTPException, Request
 from passlib.context import CryptContext
 import main
+import mysql.connector  # Import missing module
 
 app = FastAPI()
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Database connection function
 
 @app.post("/auth/register")
 async def register_user(request: Request):
@@ -24,41 +23,39 @@ async def register_user(request: Request):
         # Hash the password
         hashed_password = pwd_context.hash(user_data["password"])
         username = user_data["username"]
-        password = hashed_password
         email = user_data.get("email")
         first_name = user_data["first_name"]
         last_name = user_data["last_name"]
+
+        # Database operations
+        connection = main.sql_connect()
+        cursor = connection.cursor()
+
         try:
-            connection = main.sql_connect()
-            cursor = connection.cursor()
-            # Check if student already exists
+            # Check if username already exists
             cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
             if cursor.fetchone():
-                return False, "Username already exists"
-        
+                raise HTTPException(status_code=400, detail="Username already exists")
+
             # Insert new student
-            query = "INSERT INTO students (username, password, email, first_name, last_name) VALUES (%s, %s, %s, %s, %s)"
-            values = (username, password, email, first_name, last_name)
+            query = """
+                INSERT INTO students (username, password, email, first_name, last_name)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            values = (username, hashed_password, email, first_name, last_name)
             cursor.execute(query, values)
             connection.commit()
-            return True, cursor.lastrowid
-    
-        except mysql.connector.Error as e:
-            print(f"{e}")
-            return None
-    
-        finally:
-            cursor.close()
-            connection.close()
 
-    except mysql.connector.Error as err:
-        raise HTTPException(status_code=500, detail=f"Database error: {err}")
+            return {"message": "User registered successfully", "user_id": cursor.lastrowid}
+
+        except mysql.connector.Error as e:
+            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'db' in locals():
-            db.close()
-
-    return {"message": "User registered successfully"}

@@ -1,1 +1,0 @@
-1. frontend register.html needs to add a dropdown menu selecting course.

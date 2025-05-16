@@ -23,25 +23,20 @@ def sql_connect():
 # Database setup function
 def reset_database():
     connection = sql_connect()
+    if not connection:
+        print("Failed to connect to the database.")
+        return False
+
     cursor = connection.cursor()
     try:
+        # Drop tables in reverse dependency order
         cursor.execute("DROP TABLE IF EXISTS student_enrollments")
+        cursor.execute("DROP TABLE IF EXISTS documents")
+        cursor.execute("DROP TABLE IF EXISTS classes")
         cursor.execute("DROP TABLE IF EXISTS courses")
         cursor.execute("DROP TABLE IF EXISTS students")
         cursor.execute("DROP TABLE IF EXISTS teachers")
-        # Create students table
-        cursor.execute("""
-        CREATE TABLE students (
-            username VARCHAR(50) PRIMARY KEY,
-            password VARCHAR(255) NOT NULL,
-            first_name VARCHAR(50),
-            last_name VARCHAR(50),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            course VARCHAR(15) NOT NULL,
-            FOREIGN KEY (course) REFERENCES courses(id)
-        )
-        """)
-        
+
         # Create teachers table
         cursor.execute("""
         CREATE TABLE teachers (
@@ -52,10 +47,7 @@ def reset_database():
             role VARCHAR(7) DEFAULT 'teacher',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """)
         
-        # Create courses table
-        cursor.execute("""
         CREATE TABLE courses (
             id VARCHAR(15) PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
@@ -63,9 +55,17 @@ def reset_database():
             created_by VARCHAR(50) NOT NULL,
             FOREIGN KEY (created_by) REFERENCES teachers(username)
         )
-        """)
         
-        cursor.execute("""
+        CREATE TABLE students (
+            username VARCHAR(50) PRIMARY KEY,
+            password VARCHAR(255) NOT NULL,
+            first_name VARCHAR(50),
+            last_name VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            course VARCHAR(15) NOT NULL,
+            FOREIGN KEY (course) REFERENCES courses(id)
+        )
+    
         CREATE TABLE classes (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
@@ -74,50 +74,26 @@ def reset_database():
             teached_by VARCHAR(50) NOT NULL,
             FOREIGN KEY (course_id) REFERENCES courses(id),
             FOREIGN KEY (teached_by) REFERENCES teachers(username)
-        )""")
-        
-        cursor.execute("""
+        )
+                
         CREATE TABLE documents (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by VARCHAR(50) NOT NULL,
-            course_id VARCHAR(15) NOT NULL,
-            FOREIGN KEY (course_id) REFERENCES courses(id),
+            class_id INT NOT NULL,
+            FOREIGN KEY (class_id) REFERENCES classes(id),
             FOREIGN KEY (created_by) REFERENCES teachers(username)
-        )        
+        )
         """)
+        
         connection.commit()
+        print("Database reset successfully.")
         return True
     
     except mysql.connector.Error as e:
-        print(f"{e}")
-        return None
-    
-    finally:
-        cursor.close()
-        connection.close()
-
-# Student registration function
-def register_student(username, password, email=None, first_name=None, last_name=None):
-    connection = sql_connect()
-    cursor = connection.cursor()
-    try:
-        # Check if student already exists
-        cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-        if cursor.fetchone():
-            return False, "Username already exists"
-        
-        # Insert new student
-        query = "INSERT INTO students (username, password, email, first_name, last_name) VALUES (%s, %s, %s, %s, %s)"
-        values = (username, password, email, first_name, last_name)
-        cursor.execute(query, values)
-        connection.commit()
-        return True, cursor.lastrowid
-    
-    except mysql.connector.Error as e:
-        print(f"{e}")
-        return None
+        print(f"Error: {e}")
+        return False
     
     finally:
         cursor.close()
