@@ -1,4 +1,4 @@
-<!-- 
+<!--
 Requirements for Backend to make this page work (EN):
 1. No dynamic data is required for the basic page to load.
 2. All navigation links must be correctly defined and routed:
@@ -21,38 +21,42 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 {% extends "base.html" %}
  
 {% block title %}
-<!-- Set the page title -->
 Admin-Dashboard – Vorlesungschatbot
 {% endblock %}
  
 {% block content %}
-<!-- Main container for the admin dashboard -->
 <div class="dashboard-container">
 <h1>Administrator-Dashboard</h1>
 <p>Wählen Sie eine Übersicht, die Sie verwalten möchten:</p>
  
-    <!-- Section with navigation cards for each admin area -->
 <div class="admin-options">
  
-<!-- Card to manage professors -->
+    <!-- Professor:innen verwalten -->
 <div class="admin-card">
 <h2>Professor:innen</h2>
 <p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
 <a href="/admin/professors" class="btn btn-primary">Professor:innen verwalten</a>
 </div>
  
-<!-- Card to manage courses -->
+    <!-- Kurse verwalten -->
 <div class="admin-card">
 <h2>Kurse</h2>
 <p>Alle Kurse im System. Erstellen, zuordnen oder entfernen.</p>
 <a href="/admin/classes" class="btn btn-primary">Kurse verwalten</a>
 </div>
  
-<!-- Card to manage students -->
+    <!-- Studierende verwalten -->
 <div class="admin-card">
 <h2>Studierende</h2>
 <p>Liste aller registrierten Studierenden (anonymisiert). Kurse und Aktivitäten einsehen.</p>
 <a href="/admin/students" class="btn btn-primary">Studierende verwalten</a>
+</div>
+ 
+    <!-- Chathistorien ansehen -->
+<div class="admin-card">
+<h2>Chathistorien</h2>
+<p>Alle gestellten Fragen pro Kurs anonymisiert einsehen.</p>
+<a href="/admin/chathistory" class="btn btn-primary">Chathistorie anzeigen</a>
 </div>
  
 </div>

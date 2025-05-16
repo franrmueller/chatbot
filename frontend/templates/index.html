@@ -1,3 +1,21 @@
+<!--
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'user' object to the template if a user is logged in.
+2. The 'user' object must contain a 'role' field.
+   - If user.role == 'STUDENT' → Show button to student courses.
+   - If user.role == 'PROFESSOR' → Show button to professor courses.
+   - If user.role == 'ADMIN' → Show button to admin dashboard.
+3. If no user is logged in, display buttons for registration and login.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss ein 'user'-Objekt an das Template übergeben, wenn ein Nutzer eingeloggt ist.
+2. Das 'user'-Objekt muss ein 'role'-Feld enthalten.
+   - Wenn user.role == 'STUDENT' → Button zu den Kursen des Studierenden anzeigen.
+   - Wenn user.role == 'PROFESSOR' → Button zu den Kursen des Professors anzeigen.
+   - Wenn user.role == 'ADMIN' → Button zum Admin-Dashboard anzeigen.
+3. Wenn kein Benutzer eingeloggt ist, sollen die Buttons für Registrierung und Anmeldung angezeigt werden.
+-->
+ 
 {% extends "base.html" %}
  
 {% block title %}
@@ -5,31 +23,25 @@ Startseite - Vorlesungschatbot
 {% endblock %}
  
 {% block content %}
-<!-- Main hero section with welcome message -->
 <div class="hero">
 <h1>Willkommen beim Vorlesungschatbot</h1>
 <p>Lerne, indem du mit deinen Kursdokumenten sprichst. Erreiche deinen persönlichen Dozenten rund um die Uhr :)</p>
+ 
     {% if not user %}
-<!-- If no user is logged in, show register and login buttons -->
+<!-- Wenn kein User eingeloggt ist -->
 <div class="cta-buttons">
 <a href="/register" class="btn btn-primary">Jetzt starten</a>
 <a href="/login" class="btn btn-secondary">Anmelden</a>
 </div>
     {% else %}
-<!-- If user is logged in, show role-specific navigation buttons -->
+<!-- Wenn User eingeloggt ist, zur gemeinsamen Kursübersicht -->
 <div class="cta-buttons">
-        {% if user.role == 'STUDENT' %}
-<a href="/student/classes" class="btn btn-primary">Zu meinen Kursen</a>
-        {% elif user.role == 'PROFESSOR' %}
-<a href="/professor/classes" class="btn btn-primary">Meine Kurse verwalten</a>
-        {% elif user.role == 'ADMIN' %}
-<a href="/admin/dashboard" class="btn btn-primary">Administrator-Dashboard</a>
-        {% endif %}
+<a href="/classes" class="btn btn-primary">Zur Kursübersicht</a>
 </div>
     {% endif %}
 </div>
  
-<!-- Features section describing the chatbot benefits -->
+<!-- Vorteile der Anwendung -->
 <div class="features">
 <div class="feature">
 <h2>Stelle Fragen</h2>

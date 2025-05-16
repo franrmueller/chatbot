@@ -1,0 +1,131 @@
+<!--
+Requirements for Backend to make this page work (EN):
+1. The backend must pass a 'pdfs' list to the template.
+2. If the user is a PROFESSOR, the backend must pass:
+   - 'course' object with course.name and course.id
+3. Each pdf object must have:
+   - pdf.name → name of the file
+   - pdf.uploaded_at → upload timestamp
+   - pdf.id → unique ID for update/delete
+   - pdf.course_name → (only for ADMIN) name of related course
+   - pdf.uploader → (only for ADMIN, optional) uploader’s name
+   - pdf.status → (only for ADMIN) indexing status: indexing, indexed, error, or unknown
+4. The backend must handle:
+   - POST for uploads, updates and deletes (multipart/form-data)
+   - Optional success/error messages as 'success' and 'error'
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss eine Liste namens 'pdfs' an das Template übergeben.
+2. Wenn die Rolle PROFESSOR ist, muss zusätzlich übergeben werden:
+   - 'course'-Objekt mit course.name und course.id
+3. Jedes PDF-Objekt muss enthalten:
+   - pdf.name → Dateiname
+   - pdf.uploaded_at → Upload-Zeitpunkt
+   - pdf.id → ID für Update/Löschung
+   - pdf.course_name → (nur für ADMIN) Kurszuordnung
+   - pdf.uploader → (optional, nur für ADMIN) Uploader
+   - pdf.status → (nur für ADMIN) Status der Verarbeitung
+4. Das Backend muss POST-Anfragen verarbeiten für Upload, Aktualisierung und Löschung (multipart/form-data)
+5. Optional: Erfolgs-/Fehlermeldungen als 'success' und 'error' anzeigen
+-->
+ 
+{% extends "base.html" %}
+ 
+{% block title %}
+{% if user.role == 'ADMIN' %}
+PDF-Übersicht mit Metadaten – Admin
+{% else %}
+PDF-Übersicht – Kurs {{ course.name }}
+{% endif %}
+{% endblock %}
+ 
+{% block content %}
+<div class="dashboard-container">
+ 
+    {% if user.role == 'ADMIN' %}
+<h1>Zentrale PDF-Übersicht</h1>
+<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+    {% else %}
+<h1>PDF-Übersicht für Kurs: {{ course.name }}</h1>
+<a href="/professor/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    {% endif %}
+ 
+    <!-- Nur Professor:innen dürfen neue PDFs hochladen -->
+    {% if user.role == 'PROFESSOR' %}
+<form id="upload-form" class="upload-form" enctype="multipart/form-data" method="POST">
+<label for="pdf-file">Neues PDF hochladen:</label>
+<input type="file" name="pdf" id="pdf-file" accept="application/pdf" required>
+<button type="submit" class="btn btn-primary">Hochladen</button>
+</form>
+    {% endif %}
+ 
+    <!-- Statusnachrichten -->
+    {% if error %}
+<div class="error-message">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+<div class="success-message">{{ success }}</div>
+    {% endif %}
+ 
+    <!-- Tabelle mit PDFs -->
+    {% if pdfs %}
+<table class="admin-table">
+<thead>
+<tr>
+<th>Dateiname</th>
+                {% if user.role == 'ADMIN' %}<th>Kurs</th>{% endif %}
+                {% if user.role == 'ADMIN' %}<th>Hochgeladen von</th>{% endif %}
+<th>Hochgeladen am</th>
+                {% if user.role == 'ADMIN' %}<th>Status</th>{% endif %}
+<th>Aktionen</th>
+</tr>
+</thead>
+<tbody>
+            {% for pdf in pdfs %}
+<tr>
+<td>{{ pdf.name }}</td>
+                {% if user.role == 'ADMIN' %}
+<td>{{ pdf.course_name }}</td>
+<td>{{ pdf.uploader or "Unbekannt" }}</td>
+                {% endif %}
+<td>{{ pdf.uploaded_at }}</td>
+                {% if user.role == 'ADMIN' %}
+<td>
+                    {% if pdf.status == 'indexing' %}
+<span class="status status-processing">Wird verarbeitet</span>
+                    {% elif pdf.status == 'indexed' %}
+<span class="status status-ok">Indexiert</span>
+                    {% elif pdf.status == 'error' %}
+<span class="status status-error">Fehlgeschlagen</span>
+                    {% else %}
+<span class="status status-unknown">Unbekannt</span>
+                    {% endif %}
+</td>
+                {% endif %}
+ 
+                <!-- Aktionen -->
+<td>
+<!-- Aktualisieren -->
+<form
+                        action="{% if user.role == 'ADMIN' %}/admin/pdf/update/{{ pdf.id }}{% else %}/professor/pdf/{{ course.id }}/update/{{ pdf.id }}{% endif %}"
+                        method="POST" enctype="multipart/form-data" style="display:inline-block;">
+<input type="file" name="updated_pdf" accept="application/pdf" required>
+<button class="btn btn-warning" type="submit">Aktualisieren</button>
+</form>
+ 
+                    <!-- Löschen -->
+<form
+                        action="{% if user.role == 'ADMIN' %}/admin/pdf/delete/{{ pdf.id }}{% else %}/professor/pdf/{{ course.id }}/delete/{{ pdf.id }}{% endif %}"
+                        method="POST" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
+<button class="btn btn-danger" type="submit">Löschen</button>
+</form>
+</td>
+</tr>
+            {% endfor %}
+</tbody>
+</table>
+    {% else %}
+<p>Es wurden noch keine PDFs hochgeladen.</p>
+    {% endif %}
+</div>
+{% endblock %}

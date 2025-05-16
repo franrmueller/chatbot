@@ -1,4 +1,4 @@
-<!-- 
+<!--
 Requirements for Backend to make this page work (EN):
 1. The backend must pass a 'students' list to the template.
 2. Each student object must have:
@@ -23,20 +23,22 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 {% extends "base.html" %}
  
 {% block title %}
-<!-- Set the page title -->
 Studierende verwalten – Admin
 {% endblock %}
  
 {% block content %}
-<!-- Main dashboard container for managing students -->
 <div class="dashboard-container">
 <h1>Studierendenübersicht (anonymisiert)</h1>
  
-    <!-- Button to go back to the admin dashboard -->
+<!-- Navigationsleiste -->
+<div class="btn-group" style="margin-bottom: 1rem;">
 <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+<a href="/admin/classes" class="btn btn-outline-primary">Zur Kursübersicht</a>
+<a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
+<a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
+</div>
  
-    <!-- If students exist, display the table -->
-    {% if students %}
+{% if students %}
 <table class="admin-table">
 <thead>
 <tr>
@@ -50,23 +52,14 @@ Studierende verwalten – Admin
 <tbody>
     {% for student in students %}
 <tr>
-<!-- Display anonymized student ID -->
 <td>{{ student.id }}</td>
- 
-<!-- Display list of enrolled courses -->
 <td>
     {% for course in student.courses %}
         {{ course.code }}{% if not loop.last %}, {% endif %}
     {% endfor %}
 </td>
- 
-<!-- Display last login or fallback text -->
 <td>{{ student.last_login or "Keine Info" }}</td>
- 
-<!-- Display number of prompts created -->
 <td>{{ student.prompt_count }}</td>
- 
-<!-- Button to remove the student -->
 <td>
 <form method="POST" action="/admin/students/delete/{{ student.id }}" onsubmit="return confirm('Diesen Studierenden wirklich anonymisiert entfernen?');" style="display:inline-block;">
 <button class="btn btn-danger">Entfernen</button>
@@ -76,10 +69,8 @@ Studierende verwalten – Admin
     {% endfor %}
 </tbody>
 </table>
- 
-    {% else %}
-<!-- Message if no students are registered -->
+{% else %}
 <p>Aktuell sind keine Studierenden registriert.</p>
-    {% endif %}
+{% endif %}
 </div>
 {% endblock %}

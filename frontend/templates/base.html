@@ -1,4 +1,4 @@
-<!-- 
+<!--
 # Base Template (Layout for all pages)
  
 This template defines the common structure used by all other pages.
@@ -14,8 +14,8 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
 <!-- Set the page title dynamically -->
 <title>{% block title %}Vorlesungschatbot{% endblock %}</title>
  
-<!-- Link to main CSS file -->
-<link rel="stylesheet" href="/static/css/main.css">
+    <!-- Link to main CSS file -->
+<link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
  
     <!-- Placeholder for extra CSS that individual pages can inject -->
     {% block extra_css %}{% endblock %}
@@ -29,32 +29,43 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
 <a href="/">Vorlesungschatbot</a>
 </div>
  
-            <!-- Navigation links depending on user role -->
+        <!-- Navigation links depending on user role -->
 <div class="nav-links">
-                {% if user %}
-                    {% if user.role == 'ADMIN' %}
-<a href="/admin/users">Benutzer verwalten</a>
-<a href="/admin/classes">Kurse verwalten</a>
-                    {% elif user.role == 'PROFESSOR' %}
+            {% if user %}
+                {% if user.role == 'ADMIN' %}
+<a href="/admin/dashboard">Dashboard</a>
+<a href="/admin/classes">Kurse</a>
+<a href="/admin/professors">Professor:innen</a>
+<a href="/admin/students">Studierende</a>
+<a href="/admin/chathistory">Chathistorie</a>
+                {% elif user.role == 'PROFESSOR' %}
 <a href="/professor/classes">Meine Kurse</a>
-                    {% elif user.role == 'STUDENT' %}
+                {% elif user.role == 'STUDENT' %}
 <a href="/student/classes">Meine belegten Kurse</a>
-                    {% endif %}
+                {% endif %}
 <a href="/auth/logout">Abmelden</a>
-                {% else %}
+            {% else %}
 <a href="/login">Anmelden</a>
 <a href="/register">Registrieren</a>
-                {% endif %}
+            {% endif %}
 </div>
 </nav>
 </header>
+ 
 <!-- Main page content will be inserted here -->
 <main>
-        {% block content %}{% endblock %}
+    {% block content %}{% endblock %}
 </main>
+ 
 <footer>
 <!-- Static footer text -->
 <p>&copy; 2025 Vorlesungschatbot</p>
 </footer>
+ 
+<!-- Link to main JavaScript file -->
+<script src="{{ url_for('static', path='js/main.js') }}"></script>
+ 
+<!-- Placeholder for extra JavaScript that individual pages can inject -->
+{% block extra_js %}{% endblock %}
 </body>
 </html>
