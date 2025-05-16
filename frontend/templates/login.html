@@ -2,7 +2,7 @@
 Requirements for Backend to make this page work (EN):
 1. The backend must provide an endpoint at '/auth/login/token' that accepts a POST request with form data.
 2. The form must send:
-   - email → the user's email or login name
+   - username → the user's username or login name
    - password → the user's password
 3. The endpoint must return:
    - 200 OK with an access_token if login is successful
@@ -13,7 +13,7 @@ Requirements for Backend to make this page work (EN):
 Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 1. Das Backend muss einen Endpunkt unter '/auth/login/token' bereitstellen, der POST-Anfragen mit Formulardaten akzeptiert.
 2. Das Formular muss senden:
-   - email → E-Mail-Adresse oder Benutzername des Nutzers
+   - username → E-Mail-Adresse oder Benutzername des Nutzers
    - password → Passwort des Nutzers
 3. Der Endpunkt muss zurückgeben:
    - 200 OK mit einem access_token bei erfolgreicher Anmeldung
@@ -42,8 +42,8 @@ Anmelden - Vorlesungschatbot
     <!-- Login-Formular -->
 <form id="login-form" class="auth-form">
 <div class="form-group">
-<label for="email">E-Mail:</label>
-<input type="email" id="email" name="email" required>
+<label for="username">E-Mail:</label>
+<input type="username" id="username" name="username" required>
 </div>
  
         <div class="form-group">
@@ -67,7 +67,7 @@ Anmelden - Vorlesungschatbot
         e.preventDefault();
  
         const formData = new FormData();
-        formData.append('email', document.getElementById('email').value);
+        formData.append('username', document.getElementById('username').value);
         formData.append('password', document.getElementById('password').value);
  
         const errorMessage = document.getElementById('error-message');
