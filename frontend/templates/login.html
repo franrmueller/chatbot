@@ -13,7 +13,7 @@ Requirements for Backend to make this page work (EN):
 Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 1. Das Backend muss einen Endpunkt unter '/auth/login/token' bereitstellen, der POST-Anfragen mit Formulardaten akzeptiert.
 2. Das Formular muss senden:
-   - username → E-Mail-Adresse oder Benutzername des Nutzers
+   - username → Benutzername-Adresse oder Benutzername des Nutzers
    - password → Passwort des Nutzers
 3. Der Endpunkt muss zurückgeben:
    - 200 OK mit einem access_token bei erfolgreicher Anmeldung
@@ -42,7 +42,7 @@ Anmelden - Vorlesungschatbot
     <!-- Login-Formular -->
 <form id="login-form" class="auth-form">
 <div class="form-group">
-<label for="username">E-Mail:</label>
+<label for="username">Benutzername:</label>
 <input type="username" id="username" name="username" required>
 </div>
  
@@ -81,7 +81,7 @@ Anmelden - Vorlesungschatbot
             const data = await response.json();
  
             if (!response.ok) {
-                errorMessage.textContent = 'Ungültige E-Mail oder Passwort.';
+                errorMessage.textContent = 'Ungültige Benutzername oder Passwort.';
                 errorMessage.style.display = 'block';
                 return;
             }
