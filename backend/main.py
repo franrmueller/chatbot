@@ -19,6 +19,7 @@ def sql_connect():
             database="chatbot"
         )
         if connection.is_connected():
+            sql_operations.reset_database()
             print("Connected to MySQL database")
             return connection
     except mysql.connector.Error as e:
