@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}
@@ -80,13 +79,12 @@ Registrieren - Vorlesungschatbot
             first_name: document.getElementById('first-name').value,
             last_name: document.getElementById('last-name').value,
             username: document.getElementById('username').value,
-            password: password,
-            role: "STUDENT"
+            password: password
         };
  
         try {
             // Send registration request
-            const response = await fetch('/auth/register', {
+            const response = await fetch('/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -97,6 +95,11 @@ Registrieren - Vorlesungschatbot
             const data = await response.json();
  
             // Handle registration success or error
+            if (!response.ok) {
+                errorMessage.textContent = data.detail || 'Registrierung fehlgeschlagen.';
+                errorMessage.style.display = 'block';
+                return;
+            }
  
             // Redirect to login page after successful registration
             window.location.href = '/login?registered=true';
@@ -106,8 +109,9 @@ Registrieren - Vorlesungschatbot
             errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
             errorMessage.style.display = 'block';
             console.error('Registrierungsfehler:', error);
+            console.error('Response:', data);
         }
-    });
+});
 </script>
 {% endblock %}
 

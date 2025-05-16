@@ -16,10 +16,13 @@ def sql_connect():
         if connection.is_connected():
             print("Connected to MySQL database")
             return connection
+        else:
+            raise HTTPException(status_code=500, detail="Failed to connect to the database")
     except mysql.connector.Error as e:
         print(f"{e}")
         return None
         
+
 # Database setup function
 def reset_database():
     connection = sql_connect()
