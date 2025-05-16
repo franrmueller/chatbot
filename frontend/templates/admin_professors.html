@@ -16,13 +16,13 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 1. Das Backend muss eine Liste namens 'professors' an das Template übergeben.
 2. Jeder Professor muss enthalten:
    - professor.name → Name des Professors
-   - professor.username → E-Mail-Adresse
+   - professor.username → Benutzername-Adresse
    - professor.courses → Liste der unterrichteten Kurse (jeder Kurs hat course.name)
    - professor.id → für Lösch- und Bearbeitungsaktionen
 3. Das Backend muss folgende Funktionen bereitstellen:
    - POST-Anfragen an '/admin/professors/delete/{professor_id}' zum Löschen
    - (Optional) GET/POST für '/admin/professors/edit/{professor_id}' zum Bearbeiten
-4. Formularübermittlung zur Erstellung eines neuen Professors (Name, E-Mail, Passwort) muss verarbeitet werden.
+4. Formularübermittlung zur Erstellung eines neuen Professors (Name, Benutzername, Passwort) muss verarbeitet werden.
 5. Erfolgs- und Fehlermeldungen sollen optional an das Template übergeben werden.
 -->
  
@@ -48,7 +48,7 @@ Professor:innen verwalten – Admin
 <form id="add-professor-form" class="form-inline" method="POST">
 <h2>Neuen Professor hinzufügen</h2>
 <input type="text" name="name" placeholder="Name" required>
-<input type="username" name="username" placeholder="E-Mail" required>
+<input type="username" name="username" placeholder="Benutzername" required>
 <input type="password" name="password" placeholder="Passwort" required>
 <button type="submit" class="btn btn-primary">Hinzufügen</button>
 </form>
@@ -67,7 +67,7 @@ Professor:innen verwalten – Admin
 <thead>
 <tr>
 <th>Name</th>
-<th>E-Mail</th>
+<th>Benutzername</th>
 <th>Zugewiesene Kurse</th>
 <th>Aktionen</th>
 </tr>

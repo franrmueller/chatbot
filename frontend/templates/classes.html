@@ -1,31 +1,17 @@
 <!--
 Requirements for Backend to make this page work (EN):
-1. The backend must pass either a 'courses' or 'classes' list to the template.
-2. Each course/class object must include:
-   - course.id → the course ID used for links and deletion
-   - course.name → the course name
-   - course.code → the course code
-   - course.professor_name → (optional) name of the assigned professor (for admin only)
-3. The backend must also pass a 'user' object including:
-   - user.role → defines which view and buttons are shown (STUDENT, PROFESSOR, ADMIN)
-4. If the user is ADMIN:
-   - POST request to '/admin/classes/delete/{course_id}' must be available for course deletion
-   - POST request to create a new course from the form
-   - 'success' and 'error' messages should be passed optionally
+1. The backend must pass a 'user' object to the template (with user.role).
+2. A GET endpoint at /api/classes must return a list of courses relevant to the user.
+   - Each course must include: id, name, code, (optional) professor_name
+3. The template dynamically fetches courses and renders them based on user.role.
+4. Admin must be able to create and delete courses via form/POST to server.
  
 Anforderungen an das Backend, damit diese Seite funktioniert (DE):
-1. Das Backend muss eine Liste namens 'courses' oder 'classes' an das Template übergeben.
-2. Jeder Kurs muss enthalten:
-   - course.id → Kurs-ID für Verlinkungen und Löschaktion
-   - course.name → Name des Kurses
-   - course.code → Kurskennung
-   - course.professor_name → (optional) Name des Dozenten (nur bei Admin relevant)
-3. Das Backend muss zusätzlich ein 'user'-Objekt bereitstellen mit:
-   - user.role → bestimmt, welche Ansicht und Buttons angezeigt werden (STUDENT, PROFESSOR, ADMIN)
-4. Wenn der Benutzer ADMIN ist:
-   - POST-Endpunkt '/admin/classes/delete/{course_id}' zum Löschen eines Kurses muss vorhanden sein
-   - POST-Endpunkt zur Kurserstellung über das Formular
-   - Optional: 'success' und 'error' Nachrichten zur Anzeige nach Formularaktionen
+1. Das Backend muss ein 'user'-Objekt mit user.role übergeben.
+2. Ein GET-Endpunkt /api/classes muss die Kurse für den Benutzer zurückgeben:
+   - id, name, code, (optional) professor_name
+3. Das Template lädt die Kurse per JavaScript und zeigt sie rollenabhängig an.
+4. Admin darf Kurse hinzufügen (Formular) und löschen (POST).
 -->
  
 {% extends "base.html" %}
@@ -43,11 +29,9 @@ Meine Kurse – Vorlesungschatbot
 {% block content %}
 <div class="dashboard-container">
  
-<!-- Titel je nach Rolle -->
+<!-- Überschrift und Admin-Navigation -->
 {% if user.role == 'ADMIN' %}
 <h1>Kurse verwalten</h1>
- 
-<!-- Admin: Navigation -->
 <div class="btn-group" style="margin-bottom: 1rem;">
 <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
 <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
@@ -55,7 +39,7 @@ Meine Kurse – Vorlesungschatbot
 <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
 </div>
  
-<!-- Admin: Formular für neuen Kurs -->
+<!-- Formular zum Hinzufügen eines neuen Kurses -->
 <form id="add-class-form" class="form-inline" method="POST">
 <h2>Neuen Kurs erstellen</h2>
 <input type="text" name="name" placeholder="Kursname (z. B. Datenbanken)" required>
@@ -76,47 +60,120 @@ Meine Kurse – Vorlesungschatbot
 <h1>Meine Kurse</h1>
 {% endif %}
  
-<!-- Kursliste -->
-{% if courses or classes %}
-<div class="course-list">
-    {% for course in courses or classes %}
-<div class="course-card">
-<h3>{{ course.name }}</h3>
-<p>Kurs-ID: {{ course.code }}</p>
- 
-    {% if user.role == 'ADMIN' %}
-<p>Dozent: {{ course.professor_name or "Nicht zugewiesen" }}</p>
-    {% endif %}
- 
-    <div class="btn-group">
-        {% if user.role == 'STUDENT' %}
-<a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'PROFESSOR' %}
-<a href="/professor/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-<a href="/professor/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'ADMIN' %}
-<a href="/admin/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-<a href="/admin/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-<form method="POST" action="/admin/classes/delete/{{ course.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
-<button type="submit" class="btn btn-danger">Löschen</button>
-</form>
-        {% endif %}
-</div>
-</div>
-    {% endfor %}
+<!-- Kursliste dynamisch -->
+<div id="course-list" class="course-list">
+<!-- Wird durch JavaScript befüllt -->
 </div>
  
-{% else %}
-<!-- Fallback -->
+<!-- Fallback-Text, wenn keine Kurse -->
+<p id="no-courses-message" style="display: none;">
     {% if user.role == 'STUDENT' %}
-<p>Du bist aktuell in keinen Kurs eingeschrieben.</p>
-<p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
+    Du bist aktuell in keinen Kurs eingeschrieben.<br>
+    Bitte kontaktiere deinen Dozenten oder Administrator.
     {% elif user.role == 'PROFESSOR' %}
-<p>Aktuell betreuen Sie noch keine Kurse.</p>
-<p>Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.</p>
+    Aktuell betreuen Sie noch keine Kurse.<br>
+    Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.
     {% else %}
-<p>Es sind derzeit keine Kurse im System.</p>
+    Es sind derzeit keine Kurse im System.
     {% endif %}
-{% endif %}
+</p>
+ 
 </div>
+{% endblock %}
+ 
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const courseList = document.getElementById('course-list');
+        const noCoursesMessage = document.getElementById('no-courses-message');
+ 
+        try {
+            const response = await fetch('/api/classes');
+            const data = await response.json();
+ 
+            if (!data.classes || data.classes.length === 0) {
+                noCoursesMessage.style.display = 'block';
+                return;
+            }
+ 
+            data.classes.forEach(course => {
+                const card = document.createElement('div');
+                card.classList.add('course-card');
+ 
+                const title = document.createElement('h3');
+                title.textContent = course.name;
+ 
+                const code = document.createElement('p');
+                code.textContent = 'Kurs-ID: ' + course.code;
+ 
+                card.appendChild(title);
+                card.appendChild(code);
+ 
+                {% if user.role == 'ADMIN' %}
+                const professor = document.createElement('p');
+                professor.textContent = 'Dozent: ' + (course.professor_name || 'Nicht zugewiesen');
+                card.appendChild(professor);
+                {% endif %}
+ 
+                const btnGroup = document.createElement('div');
+                btnGroup.classList.add('btn-group');
+ 
+                {% if user.role == 'STUDENT' %}
+                const chatBtn = document.createElement('a');
+                chatBtn.href = `/student/chat/${course.id}`;
+                chatBtn.className = 'btn btn-primary';
+                chatBtn.textContent = 'Zum Chat';
+                btnGroup.appendChild(chatBtn);
+                {% elif user.role == 'PROFESSOR' %}
+                const pdfBtn = document.createElement('a');
+                pdfBtn.href = `/professor/pdf/${course.id}`;
+                pdfBtn.className = 'btn btn-secondary';
+                pdfBtn.textContent = 'PDF-Übersicht';
+ 
+                const chatBtn = document.createElement('a');
+                chatBtn.href = `/professor/chat/${course.id}`;
+                chatBtn.className = 'btn btn-primary';
+                chatBtn.textContent = 'Zum Chat';
+ 
+                btnGroup.appendChild(pdfBtn);
+                btnGroup.appendChild(chatBtn);
+                {% elif user.role == 'ADMIN' %}
+                const pdfBtn = document.createElement('a');
+                pdfBtn.href = `/admin/pdf/${course.id}`;
+                pdfBtn.className = 'btn btn-secondary';
+                pdfBtn.textContent = 'PDF-Übersicht';
+ 
+                const chatBtn = document.createElement('a');
+                chatBtn.href = `/admin/chat/${course.id}`;
+                chatBtn.className = 'btn btn-primary';
+                chatBtn.textContent = 'Zum Chat';
+ 
+                const deleteForm = document.createElement('form');
+                deleteForm.method = 'POST';
+                deleteForm.action = `/admin/classes/delete/${course.id}`;
+                deleteForm.style.display = 'inline-block';
+                deleteForm.onsubmit = () => confirm('Diesen Kurs wirklich löschen?');
+ 
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'submit';
+                deleteBtn.className = 'btn btn-danger';
+                deleteBtn.textContent = 'Löschen';
+ 
+                deleteForm.appendChild(deleteBtn);
+ 
+                btnGroup.appendChild(pdfBtn);
+                btnGroup.appendChild(chatBtn);
+                btnGroup.appendChild(deleteForm);
+                {% endif %}
+ 
+                card.appendChild(btnGroup);
+                courseList.appendChild(card);
+            });
+ 
+        } catch (error) {
+            console.error('Fehler beim Laden der Kurse:', error);
+            noCoursesMessage.style.display = 'block';
+        }
+    });
+</script>
 {% endblock %}
