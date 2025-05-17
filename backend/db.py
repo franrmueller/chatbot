@@ -8,12 +8,19 @@ from dotenv import load_dotenv
 load_dotenv()
 def sql_connect():
     try:
+        host=os.getenv("DB_HOST")
+        user=os.getenv("DB_USER")
+        password=os.getenv("DB_PASSWORD")
+        database=os.getenv("DB_NAME")
+
+        print(f"Attempting to connect to database: {database} at {host}:3306 as {user}")
+
         connection = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            port=int(os.getenv("DB_PORT")),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME"),
+            host=host,
+            port=3306,
+            user=user,
+            password=password,
+            database=database,
         )
         if connection.is_connected():
             print("Connected to MySQL database")
