@@ -5,6 +5,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import logging
+# Add this with the other imports at the top
+from fastapi.responses import JSONResponse
 
 # internal imports
 from backend.db import sql_connect, reset_database
@@ -101,3 +103,28 @@ async def admin_professors(request: Request):
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students(request: Request):
     return templates.TemplateResponse("admin_students.html", {"request": request})
+
+@app.get("/api/courses")
+async def get_courses():
+    try:
+        connection = sql_connect()
+        if not connection:
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Database connection failed"}
+            )
+        
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id, name FROM courses")
+        courses = cursor.fetchall()
+        
+        cursor.close()
+        connection.close()
+        
+        return {"courses": courses}
+    
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Error fetching courses: {str(e)}"}
+        )
