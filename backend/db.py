@@ -74,7 +74,8 @@ def reset_database():
             password VARCHAR(255) NOT NULL,
             first_name VARCHAR(50),
             last_name VARCHAR(50),
-            session_token VARCHAR(64),
+            role VARCHAR(7) DEFAULT 'teacher',
+            session_token VARCHAR(64) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
@@ -85,9 +86,9 @@ def reset_database():
         hashed_password = pwd_context.hash("admin")
         
         cursor.execute("""
-        INSERT INTO teachers (username, password, first_name, last_name)
-        VALUES (%s, %s, %s, %s)
-        """, ('admin', hashed_password, 'System', 'Administrator'))
+        INSERT INTO teachers (username, password, first_name, last_name, role)
+        VALUES (%s, %s, %s, %s, %s)
+        """, ('admin', hashed_password, 'System', 'Administrator', 'admin'))
 
         # Now create courses table
         cursor.execute("""
@@ -204,7 +205,7 @@ def is_professor_for_course(professor_id, course_id):
         cursor = connection.cursor(dictionary=True)
         cursor.execute("""
             SELECT 1 FROM classes 
-            WHERE course_id = %s AND teached_by = %s
+            WHERE course_id = %s AND taught_by = %s
         """, (course_id, professor_id))
         
         result = cursor.fetchone() is not None
