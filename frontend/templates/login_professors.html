@@ -1,0 +1,97 @@
+<!--
+Requirements for Backend to make this page work (EN):
+1. The backend must provide an endpoint at '/auth/login/token' that accepts a POST request with form data.
+2. The form must send:
+   - username → the user's username or login name
+   - password → the user's password
+3. The endpoint must return:
+   - 200 OK with an access_token if login is successful
+   - 400/401 Error if login fails (e.g., wrong credentials)
+4. The access_token must be saved in the browser's localStorage after successful login.
+5. After login, the user should be redirected to the home page or a role-specific page.
+ 
+Anforderungen an das Backend, damit diese Seite funktioniert (DE):
+1. Das Backend muss einen Endpunkt unter '/auth/login/token' bereitstellen, der POST-Anfragen mit Formulardaten akzeptiert.
+2. Das Formular muss senden:
+   - username → Benutzername-Adresse oder Benutzername des Nutzers
+   - password → Passwort des Nutzers
+3. Der Endpunkt muss zurückgeben:
+   - 200 OK mit einem access_token bei erfolgreicher Anmeldung
+   - 400/401 Fehler bei falschen Anmeldedaten
+4. Das access_token muss im lokalen Speicher (localStorage) des Browsers gespeichert werden.
+5. Nach erfolgreicher Anmeldung soll eine Weiterleitung auf die Startseite oder eine rollenspezifische Seite erfolgen.
+-->
+ 
+{% extends "base.html" %}
+{% block title %}Dozenten-Login – Vorlesungschatbot{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <h1>Dozenten-Login</h1>
+
+  <div class="error-message" id="error-message" style="display: none;"></div>
+
+  <form id="login-form" class="auth-form">
+    <div class="form-group">
+      <label for="username">E-Mail-Adresse:</label>
+      <input type="text" id="username" name="username" required>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Passwort:</label>
+      <input type="password" id="password" name="password" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Anmelden</button>
+  </form>
+
+  <div class="auth-links">
+    <p>Zurück zur <a href="/">Startseite</a></p>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.getElementById('login-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('username', document.getElementById('username').value);
+    formData.append('password', document.getElementById('password').value);
+
+    const errorMessage = document.getElementById('error-message');
+
+    try {
+      const response = await fetch('/auth/login/token', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        errorMessage.textContent = 'Falsche E-Mail oder Passwort.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      localStorage.setItem('accessToken', data.access_token);
+
+      // Token auslesen und Rolle prüfen
+      const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+      if (payload.role === 'PROFESSOR') {
+        window.location.href = '/professor/classes';
+      } else {
+        errorMessage.textContent = 'Zugriff verweigert: Kein Dozent.';
+        errorMessage.style.display = 'block';
+        localStorage.removeItem('accessToken');
+      }
+
+    } catch (error) {
+      errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
+      errorMessage.style.display = 'block';
+    }
+  });
+</script>
+{% endblock %}
+{% endblock %}
