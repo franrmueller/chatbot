@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie
+from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -6,12 +6,12 @@ from typing import Optional
 import uvicorn
 from backend.auth import login, register_student
 import backend.db as db
-from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
 
 # API instantiation
 app = FastAPI()
-async def reset_mysql():
-    return await db.()
+
+# Initialize database on first startup
+db.initialize_database()
 
 # Configure templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
@@ -114,7 +114,6 @@ async def get_courses():
 
 @app.post("/api/admin/reset-database")
 async def reset_db_endpoint(request: Request):
-    # For added security, only allow in development mode
-    # and require admin authentication in production
     admin = await verify_admin(request)
     success = db.reset_database()
+    return JSONResponse({"success": success})
