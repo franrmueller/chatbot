@@ -1,33 +1,3 @@
-<!--
-Requirements for Backend to make this page work (EN):
-1. The backend must pass either a 'courses' or 'classes' list to the template.
-2. Each course/class object must include:
-   - course.id → the course ID used for links and deletion
-   - course.name → the course name
-   - course.code → the course code
-   - course.professor_name → (optional) name of the assigned professor (for admin only)
-3. The backend must also pass a 'user' object including:
-   - user.role → defines which view and buttons are shown (STUDENT, PROFESSOR, ADMIN)
-4. If the user is ADMIN:
-   - POST request to '/admin/classes/delete/{course_id}' must be available for course deletion
-   - POST request to create a new course from the form
-   - 'success' and 'error' messages should be passed optionally
- 
-Anforderungen an das Backend, damit diese Seite funktioniert (DE):
-1. Das Backend muss eine Liste namens 'courses' oder 'classes' an das Template übergeben.
-2. Jeder Kurs muss enthalten:
-   - course.id → Kurs-ID für Verlinkungen und Löschaktion
-   - course.name → Name des Kurses
-   - course.code → Kurskennung
-   - course.professor_name → (optional) Name des Dozenten (nur bei Admin relevant)
-3. Das Backend muss zusätzlich ein 'user'-Objekt bereitstellen mit:
-   - user.role → bestimmt, welche Ansicht und Buttons angezeigt werden (STUDENT, PROFESSOR, ADMIN)
-4. Wenn der Benutzer ADMIN ist:
-   - POST-Endpunkt '/admin/classes/delete/{course_id}' zum Löschen eines Kurses muss vorhanden sein
-   - POST-Endpunkt zur Kurserstellung über das Formular
-   - Optional: 'success' und 'error' Nachrichten zur Anzeige nach Formularaktionen
--->
- 
 {% extends "base.html" %}
  
 {% block title %}
