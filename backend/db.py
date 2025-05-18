@@ -1,6 +1,7 @@
 import logging
 import mysql.connector
 from fastapi.responses import JSONResponse
+import random, string 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -303,3 +304,87 @@ def get_courses():
     except Exception as e:
         logging.error(f"Error fetching courses: {str(e)}")
         return {"courses": []}
+    
+    import random, string
+
+# Get courses for a specific professor
+def get_courses_for_professor(username):
+    try:
+        connection = sql_connect()
+        if not connection:
+            return []
+
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT c.id, c.name, c.id AS code, c.created_at
+            FROM courses c
+            WHERE c.created_by = %s
+        """, (username,))
+        courses = cursor.fetchall()
+
+        cursor.close()
+        connection.close()
+        return courses
+
+    except Exception as e:
+        logging.error(f"Fehler beim Abrufen von Professor-Kursen: {e}")
+        return []
+        
+
+# Create a new class
+def create_class(name, course_id, professor_username):
+    try:
+        connection = sql_connect()
+        if not connection:
+            return False
+
+        cursor = connection.cursor()
+
+        class_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+        cursor.execute("""
+            INSERT INTO classes (id, name, created_by, course_id)
+            VALUES (%s, %s, %s, %s)
+        """, (class_id, name, professor_username, course_id))
+
+        connection.commit()
+        return True
+
+    except Exception as e:
+        logging.error(f"Fehler beim Erstellen der Klasse: {e}")
+        return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+# Create a new class 
+def create_class(name, professor_username):
+    try:
+        connection = sql_connect()
+        if not connection:
+            return False
+
+        cursor = connection.cursor()
+
+        class_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+        cursor.execute("""
+            INSERT INTO courses (id, name, created_by)
+            VALUES (%s, %s, %s)
+        """, (class_id, name, professor_username))
+
+        connection.commit()
+        return True
+
+    except Exception as e:
+        logging.error(f"Fehler beim Erstellen des Kurses: {e}")
+        return False
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
