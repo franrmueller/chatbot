@@ -32,8 +32,8 @@ def initialize_database():
         connection = sql_connect()
         cursor = connection.cursor()
 
-        # Check if the teachers table exists - if not, we need to initialize
-        cursor.execute("SHOW TABLES LIKE 'teachers'")
+        # Check if the professors table exists - if not, we need to initialize
+        cursor.execute("SHOW TABLES LIKE 'professors'")
         table_exists = cursor.fetchone()
         
         if not table_exists:
@@ -65,11 +65,11 @@ def reset_database():
         cursor.execute("DROP TABLE IF EXISTS classes")
         cursor.execute("DROP TABLE IF EXISTS students")
         cursor.execute("DROP TABLE IF EXISTS courses")
-        cursor.execute("DROP TABLE IF EXISTS teachers")
+        cursor.execute("DROP TABLE IF EXISTS professors")
         
-        # Create teachers table first
+        # Create proffessors table
         cursor.execute("""
-        CREATE TABLE teachers (
+        CREATE TABLE professors (
             username VARCHAR(50) PRIMARY KEY,
             password VARCHAR(255) NOT NULL,
             first_name VARCHAR(50),
@@ -86,7 +86,7 @@ def reset_database():
         hashed_password = pwd_context.hash("admin")
         
         cursor.execute("""
-        INSERT INTO teachers (username, password, first_name, last_name, role)
+        INSERT INTO professors (username, password, first_name, last_name, role)
         VALUES (%s, %s, %s, %s, %s)
         """, ('admin', hashed_password, 'System', 'Administrator', 'admin'))
 
@@ -97,7 +97,7 @@ def reset_database():
             name VARCHAR(100) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by VARCHAR(50) NOT NULL,
-            FOREIGN KEY (created_by) REFERENCES teachers(username)
+            FOREIGN KEY (created_by) REFERENCES professors(username)
         )
         """)
         
@@ -129,7 +129,7 @@ def reset_database():
             course_id VARCHAR(15) NOT NULL,
             taught_by VARCHAR(50) NOT NULL,
             FOREIGN KEY (course_id) REFERENCES courses(id),
-            FOREIGN KEY (taught_by) REFERENCES teachers(username)
+            FOREIGN KEY (taught_by) REFERENCES professors(username)
         )
         """)
         
@@ -141,7 +141,7 @@ def reset_database():
             created_by VARCHAR(50) NOT NULL,
             class_id INT NOT NULL,
             FOREIGN KEY (class_id) REFERENCES classes(id),
-            FOREIGN KEY (created_by) REFERENCES teachers(username)
+            FOREIGN KEY (created_by) REFERENCES professors(username)
         )
         """)
 
@@ -175,7 +175,7 @@ def get_user_by_session(session_token):
         cursor = connection.cursor(dictionary=True)
         
         # Check for teacher first
-        cursor.execute("SELECT *, 'teacher' as role FROM teachers WHERE session_token = %s", (session_token,))
+        cursor.execute("SELECT *, 'teacher' as role FROM professors WHERE session_token = %s", (session_token,))
         user = cursor.fetchone()
         
         # If not found, check students
