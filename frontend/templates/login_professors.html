@@ -77,14 +77,16 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 
       localStorage.setItem('accessToken', data.access_token);
 
+      window.location.href = '/';
+
       // Direkt über die Rolle weiterleiten – kein JWT-Parsing
-      if (data.role === 'professor') {
-        window.location.href = '/professor/classes';
-      } else {
-        errorMessage.textContent = 'Zugriff verweigert: Kein Dozent.';
-        errorMessage.style.display = 'block';
-        localStorage.removeItem('accessToken');
-      }
+      // if (data.role === 'professor') {
+      //   window.location.href = '/index';
+      // } else {
+      //   errorMessage.textContent = 'Zugriff verweigert: Kein Dozent.';
+      //   errorMessage.style.display = 'block';
+      //   localStorage.removeItem('accessToken');
+      // }
 
     } catch (error) {
       errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
