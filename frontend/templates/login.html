@@ -73,7 +73,7 @@ Anmelden - Vorlesungschatbot
         const errorMessage = document.getElementById('error-message');
  
         try {
-            const response = await fetch('/auth/login/token', {
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 body: formData
             });

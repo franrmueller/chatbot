@@ -1,52 +1,39 @@
-from datetime import datetime
-import uvicorn
-from fastapi import Body, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-import logging
-# Add this with the other imports at the top
-from fastapi.responses import JSONResponse
+from typing import Optional
+import uvicorn
+from backend.auth import login, register_student
+import backend.db as db
+from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
 
-# internal imports
-from backend.db import sql_connect, reset_database
-from backend.auth import login, register_student  # Import the function, not decorated with @app.post
-
-# API instanciation
+# API instantiation
 app = FastAPI()
+async def reset_mysql():
+    return await db.admin_user()
 
 # Configure templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
-# database initialization
-@app.on_event("startup")
-async def initialize_database():
-    """Check if database is initialized, and set it up if not."""
-    logging.info("Checking database initialization status...")
-    try:
-        connection = sql_connect()
-        if not connection:
-            logging.error("Could not connect to database during startup")
-            return
-            
-        cursor = connection.cursor()
-        
-        # Check if the users table exists - if not, we need to initialize
-        cursor.execute("SHOW TABLES LIKE 'users'")
-        table_exists = cursor.fetchone()
-        
-        if not table_exists:
-            logging.info("First-time startup detected. Setting up database...")
-            reset_database()
-            logging.info("Database initialization complete.")
-        else:
-            logging.info("Database already initialized. Skipping setup.")
-            
-        cursor.close()
-        connection.close()
-    except Exception as e:
-        logging.error(f"Error during database initialization check: {str(e)}")
+# Simple authentication middleware
+async def get_current_user(session_token: Optional[str] = Cookie(None)):
+    if not session_token:
+        return None
+    user = db.get_user_by_session(session_token)
+    return user
+
+# Admin check
+async def verify_admin(request: Request):
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        return RedirectResponse(url="/login?next=" + request.url.path)
+    
+    user = db.get_user_by_session(session_token)
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return user
 
 # Frontend HTML Routing
 
@@ -64,67 +51,64 @@ async def login_page(request: Request):
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
- 
-# Gemeinsame Kursübersicht (classes.html – dynamisch je nach Rolle)
-@app.get("/classes", response_class=HTMLResponse)
-async def classes(request: Request):
-    return templates.TemplateResponse("classes.html", {"request": request})
- 
-# Kursbasierter Chat (chat.html – verwendet course_id)
-@app.get("/chat/{course_id}", response_class=HTMLResponse)
-async def chat_view(request: Request, course_id: str):
-    return templates.TemplateResponse("chat.html", {"request": request, "course_id": course_id})
- 
-# PDF-Übersicht für Admin oder Professor (pdf.html)
-@app.get("/pdf", response_class=HTMLResponse)
-async def pdf_admin(request: Request):
-    return templates.TemplateResponse("pdf.html", {"request": request})
- 
-@app.get("/pdf/{course_id}", response_class=HTMLResponse)
-async def pdf_professor(request: Request, course_id: str):
-    return templates.TemplateResponse("pdf.html", {"request": request, "course_id": course_id})
- 
-# Chathistorie (admin_chathistory.html)
-@app.get("/admin/chathistory", response_class=HTMLResponse)
-async def admin_chathistory(request: Request):
-    return templates.TemplateResponse("admin_chathistory.html", {"request": request})
- 
-# Admin-Dashboard (admin_dashboard.html)
+
+# Add API endpoints for login/logout
+@app.post("/api/login")
+async def login_endpoint(username: str = Form(...), password: str = Form(...)):
+    user = login(username, password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    response = JSONResponse({
+        "success": True,
+        "role": user.get("role"),
+        "access_token": user.get("session_token")  # Return as access_token for frontend
+    })
+    response.set_cookie(key="session_token", value=user.get("session_token"))
+    return response
+
+@app.post("/api/logout")
+async def logout_endpoint():
+    response = JSONResponse({"success": True})
+    response.delete_cookie(key="session_token")
+    return response
+
+@app.post("/api/register")
+async def register_endpoint(student_data: dict = Body(...)):
+    try:
+        new_student = register_student(student_data)
+        return {"success": True, "student_id": new_student.get("id")}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Protected admin routes
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
-    return templates.TemplateResponse("admin_dashboard.html", {"request": request})
- 
-# Professor:innenverwaltung (admin_professors.html)
+    admin = await verify_admin(request)
+    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": admin})
+
 @app.get("/admin/professors", response_class=HTMLResponse)
 async def admin_professors(request: Request):
-    return templates.TemplateResponse("admin_professors.html", {"request": request})
- 
-# Studierendenverwaltung (admin_students.html)
+    admin = await verify_admin(request)
+    return templates.TemplateResponse("admin_professors.html", {"request": request, "user": admin})
+
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students(request: Request):
-    return templates.TemplateResponse("admin_students.html", {"request": request})
+    admin = await verify_admin(request)
+    return templates.TemplateResponse("admin_students.html", {"request": request, "user": admin})
+
+@app.get("/admin/chathistory", response_class=HTMLResponse)
+async def admin_chathistory(request: Request):
+    admin = await verify_admin(request)
+    return templates.TemplateResponse("admin_chathistory.html", {"request": request, "user": admin})
 
 @app.get("/api/courses")
 async def get_courses():
-    try:
-        connection = sql_connect()
-        if not connection:
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Database connection failed"}
-            )
-        
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT id, name FROM courses")
-        courses = cursor.fetchall()
-        
-        cursor.close()
-        connection.close()
-        
-        return {"courses": courses}
-    
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"detail": f"Error fetching courses: {str(e)}"}
-        )
+    return db.get_courses()
+
+@app.post("/api/admin/reset-database")
+async def reset_db_endpoint(request: Request):
+    # For added security, only allow in development mode
+    # and require admin authentication in production
+    admin = await verify_admin(request)
+    success = db.reset_database()
