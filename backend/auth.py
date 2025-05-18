@@ -33,12 +33,12 @@ def login_professor(username, password):
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
 
-    cursor.execute("SELECT * FROM teachers WHERE username = %s", (username,))
+    cursor.execute("SELECT * FROM professors WHERE username = %s", (username,))
     teacher = cursor.fetchone()
 
     if teacher and pwd_context.verify(password, teacher["password"]):
         session_token = secrets.token_hex(32)
-        cursor.execute("UPDATE teachers SET session_token = %s WHERE username = %s", (session_token, username))
+        cursor.execute("UPDATE professors SET session_token = %s WHERE username = %s", (session_token, username))
         connection.commit()
         teacher["session_token"] = session_token
         teacher["role"] = "professor"
