@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie
+from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -6,12 +6,12 @@ from typing import Optional
 import uvicorn
 from backend.auth import login, register_student
 import backend.db as db
-from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
 
 # API instantiation
 app = FastAPI()
-async def reset_mysql():
-    return await db.admin_user()
+
+# Initialize database on first startup
+db.initialize_database()
 
 # Configure templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
@@ -114,33 +114,6 @@ async def get_courses():
 
 @app.post("/api/admin/reset-database")
 async def reset_db_endpoint(request: Request):
-    # For added security, only allow in development mode
-    # and require admin authentication in production
     admin = await verify_admin(request)
     success = db.reset_database()
-
-#Professor routes
-@app.get("/professor/classes", response_class=HTMLResponse)
-async def professor_classes(request: Request):
-    user = await get_current_user(request.cookies.get("session_token"))
-    if not user or user.get("role") != "professor":
-        return RedirectResponse(url="/login_professors")
-
-    classes = db.get_courses_for_professor(user["username"])
-    return templates.TemplateResponse("classes.html", {
-        "request": request,
-        "user": user,
-        "courses": classes
-    })
-
-@app.post("/professor/classes")
-async def create_class(request: Request, name: str = Form(...)):
-    user = await get_current_user(request.cookies.get("session_token"))
-    if not user or user.get("role") != "professor":
-        raise HTTPException(status_code=403, detail="Nicht erlaubt")
-
-    created = db.create_course(name=name, professor_username=user["username"])
-    if not created:
-        raise HTTPException(status_code=500, detail="Kurs konnte nicht erstellt werden.")
-
-    return RedirectResponse(url="/professor/classes", status_code=303)
+    return JSONResponse({"success": success})
