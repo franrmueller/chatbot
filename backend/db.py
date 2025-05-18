@@ -74,7 +74,7 @@ def reset_database():
             password VARCHAR(255) NOT NULL,
             first_name VARCHAR(50),
             last_name VARCHAR(50),
-            role VARCHAR(7) DEFAULT 'teacher',
+            role VARCHAR(9) DEFAULT 'professor',
             session_token VARCHAR(64) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
