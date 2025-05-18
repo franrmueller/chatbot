@@ -46,6 +46,12 @@ async def index(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+# Dozenten-Login-Seite (login_professors.html)
+@app.get("/login_professors", response_class=HTMLResponse)
+async def login_professors_page(request: Request):
+    return templates.TemplateResponse("login_professors.html", {"request": request})
+
  
 # Registrierung (register.html)
 @app.get("/register", response_class=HTMLResponse)
