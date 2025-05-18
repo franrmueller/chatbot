@@ -42,7 +42,7 @@ async def verify_admin(request: Request):
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
  
-# Studenten-Login-Seite (login.html)
+# Login-Seite (login.html)
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
