@@ -99,7 +99,32 @@ async def admin_chathistory(request: Request):
 
 @app.get("/classes", response_class=HTMLResponse)
 async def classes(request: Request):
-    return templates.TemplateResponse("classes.html", {"request": request})
+    try:
+        # Get token from cookie
+        session_token = request.cookies.get("session_token")
+        
+        # If no session token in cookie, check for Authorization header
+        if not session_token:
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                session_token = auth_header.replace("Bearer ", "")
+        
+        # If still no token, redirect to login
+        if not session_token:
+            return RedirectResponse(url="/login?next=/classes", status_code=302)
+        
+        # Get user from token
+        user = db.get_user_by_session(session_token)
+        if not user:
+            return RedirectResponse(url="/login?next=/classes", status_code=302)
+        
+        # Render template with user data
+        return templates.TemplateResponse("classes.html", {"request": request, "user": user})
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return HTMLResponse(f"<h1>Server Error</h1><p>Details: {str(e)}</p>", status_code=500)
 
 @app.get("/api/courses")
 async def get_courses():
