@@ -97,6 +97,10 @@ async def admin_chathistory(request: Request):
     admin = await verify_admin(request)
     return templates.TemplateResponse("admin_chathistory.html", {"request": request, "user": admin})
 
+@app.get("/classes", response_class=HTMLResponse)
+async def classes(request: Request):
+    return templates.TemplateResponse("classes.html", {"request": request})
+
 @app.get("/api/courses")
 async def get_courses():
     return db.get_courses()
