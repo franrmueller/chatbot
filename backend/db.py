@@ -24,156 +24,72 @@ def sql_connect():
         logging.error(f"Database connection error: {e}")
         return None
 
+
 # Initialize database on first startup
 def initialize_database():
     logging.info("Checking database initialization status...")
     try:
         connection = sql_connect()
-        if not connection:
-            logging.error("Failed to connect to database for initialization check")
-            return False
-            
         cursor = connection.cursor()
-        
-        # Check if the users table exists - if not, we need to initialize
-        cursor.execute("SHOW TABLES LIKE 'users'")
+
+        # Check if the teachers table exists - if not, we need to initialize
+        cursor.execute("SHOW TABLES LIKE 'teachers'")
         table_exists = cursor.fetchone()
         
         if not table_exists:
             logging.info("First-time startup detected. Setting up database...")
-            cursor.close()
-            connection.close()
             reset_database()
             logging.info("Database initialization complete.")
         else:
             logging.info("Database already initialized. Skipping setup.")
-            cursor.close()
-            connection.close()
             
         return True
     except Exception as e:
         logging.error(f"Error during database initialization check: {str(e)}")
-        return False
-
-# Database setup function
-def admin_user():
-    try:
-        connection = sql_connect()
-        if not connection:
-            logging.error("Failed to connect to database for reset")
-            return False
-            
-        cursor = connection.cursor()
-        
-        # Create admin with hashed password
-        from passlib.context import CryptContext
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        hashed_password = pwd_context.hash("admin")
-        
-        cursor.execute("""
-        INSERT INTO teachers (username, password, first_name, last_name, role)
-        VALUES (%s, %s, %s, %s, %s)
-        """, ('admin', hashed_password, 'System', 'Administrator', 'admin'))
-        
-        cursor.execute("""
-        INSERT INTO courses (id, name, created_by)
-        VALUES (%s, %s, %s)
-        """, ('DEFAULT', 'Default Course', 'admin'))
-        
-        connection.commit()
-        logging.info("Database reset successfully.")
-        return True
-    
-    except mysql.connector.Error as e:
-        logging.error(f"Database reset error: {e}")
         return False
     
     finally:
-        if 'cursor' in locals() and cursor:
+        if cursor:
             cursor.close()
-        if 'connection' in locals() and connection:
+        if connection:
             connection.close()
-
-# Connect to MySQL database
-def sql_connect():
-    try:
-        connection = mysql.connector.connect(
-            host="mysql",
-            port=3306,
-            user="root",
-            password="root",
-            database="chatbot",
-        )
-        if connection.is_connected():
-            logging.info("Connected to MySQL database")
-            return connection
-        else:
-            logging.error("Failed to connect to the database")
-            return None
-    except mysql.connector.Error as e:
-        logging.error(f"Database connection error: {e}")
-        return None
-
-# Initialize database on first startup
-def initialize_database():
-    logging.info("Checking database initialization status...")
-    try:
-        connection = sql_connect()
-        if not connection:
-            logging.error("Failed to connect to database for initialization check")
-            return False
-            
-        cursor = connection.cursor()
-        
-        # Check if the users table exists - if not, we need to initialize
-        cursor.execute("SHOW TABLES LIKE 'users'")
-        table_exists = cursor.fetchone()
-        
-        if not table_exists:
-            logging.info("First-time startup detected. Setting up database...")
-            cursor.close()
-            connection.close()
-            reset_database()
-            logging.info("Database initialization complete.")
-        else:
-            logging.info("Database already initialized. Skipping setup.")
-            cursor.close()
-            connection.close()
-            
-        return True
-    except Exception as e:
-        logging.error(f"Error during database initialization check: {str(e)}")
-        return False
 
 # Database setup function
 def reset_database():
     try:
         connection = sql_connect()
-        if not connection:
-            logging.error("Failed to connect to database for reset")
-            return False
-            
         cursor = connection.cursor()
         
         # Drop tables in reverse order of dependencies
         cursor.execute("DROP TABLE IF EXISTS documents")
         cursor.execute("DROP TABLE IF EXISTS classes")
-        cursor.execute("DROP TABLE IF EXISTS users")
+        cursor.execute("DROP TABLE IF EXISTS students")
         cursor.execute("DROP TABLE IF EXISTS courses")
+        cursor.execute("DROP TABLE IF EXISTS teachers")
         
-        # Step 1: Create users table with USERNAME as primary key
+        # Create teachers table first
         cursor.execute("""
         CREATE TABLE teachers (
             username VARCHAR(50) PRIMARY KEY,
             password VARCHAR(255) NOT NULL,
             first_name VARCHAR(50),
             last_name VARCHAR(50),
-            role VARCHAR(7) DEFAULT 'student',
             session_token VARCHAR(64),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        
+        # Create admin user
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        hashed_password = pwd_context.hash("admin")
+        
+        cursor.execute("""
+        INSERT INTO teachers (username, password, first_name, last_name)
+        VALUES (%s, %s, %s, %s)
+        """, ('admin', hashed_password, 'System', 'Administrator'))
 
+        # Now create courses table
         cursor.execute("""
         CREATE TABLE courses (
             id VARCHAR(15) PRIMARY KEY,
@@ -183,7 +99,14 @@ def reset_database():
             FOREIGN KEY (created_by) REFERENCES teachers(username)
         )
         """)
-
+        
+        # Create default course
+        cursor.execute("""
+        INSERT INTO courses (id, name, created_by)
+        VALUES (%s, %s, %s)
+        """, ('DEFAULT', 'Default Course', 'admin'))
+        
+        # Create remaining tables
         cursor.execute("""
         CREATE TABLE students (
             username VARCHAR(50) PRIMARY KEY,
@@ -203,9 +126,9 @@ def reset_database():
             name VARCHAR(100) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             course_id VARCHAR(15) NOT NULL,
-            teached_by VARCHAR(50) NOT NULL,
+            taught_by VARCHAR(50) NOT NULL,
             FOREIGN KEY (course_id) REFERENCES courses(id),
-            FOREIGN KEY (teached_by) REFERENCES teachers(username)
+            FOREIGN KEY (taught_by) REFERENCES teachers(username)
         )
         """)
         
@@ -230,9 +153,9 @@ def reset_database():
         return False
     
     finally:
-        if 'cursor' in locals() and cursor:
+        if cursor:
             cursor.close()
-        if 'connection' in locals() and connection:
+        if connection:
             connection.close()
 
 # Authentication function to get user by session token
@@ -241,23 +164,34 @@ def get_user_by_session(session_token):
     if not session_token:
         return None
     
+    connection = None
+    cursor = None
     try:
         connection = sql_connect()
         if not connection:
             return None
         
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM users WHERE session_token = %s", (session_token,))
+        
+        # Check for teacher first
+        cursor.execute("SELECT *, 'teacher' as role FROM teachers WHERE session_token = %s", (session_token,))
         user = cursor.fetchone()
         
-        cursor.close()
-        connection.close()
+        # If not found, check students
+        if not user:
+            cursor.execute("SELECT *, 'student' as role FROM students WHERE session_token = %s", (session_token,))
+            user = cursor.fetchone()
         
         return user
     
     except Exception as e:
         logging.error(f"Error retrieving user by session: {str(e)}")
         return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 # Function to check if a professor is assigned to a course
 def is_professor_for_course(professor_id, course_id):

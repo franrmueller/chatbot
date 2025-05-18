@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
 # API instantiation
 app = FastAPI()
 async def reset_mysql():
-    return await db.admin_user()
+    return await db.()
 
 # Configure templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
