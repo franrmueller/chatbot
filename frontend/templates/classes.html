@@ -1,9 +1,9 @@
 {% extends "base.html" %}
  
 {% block title %}
-{% if user.role == 'ADMIN' %}
+{% if user.role == 'admin' %}
 Kurse verwalten – Admin
-{% elif user.role == 'PROFESSOR' %}
+{% elif user.role == 'professor' %}
 Meine Kurse – Professor:innenansicht
 {% else %}
 Meine Kurse – Vorlesungschatbot
@@ -14,7 +14,7 @@ Meine Kurse – Vorlesungschatbot
 <div class="dashboard-container">
  
 <!-- Titel je nach Rolle -->
-{% if user.role == 'ADMIN' %}
+{% if user.role == 'admin' %}
 <h1>Kurse verwalten</h1>
  
 <!-- Admin: Navigation -->
@@ -54,7 +54,7 @@ Meine Kurse – Vorlesungschatbot
 <h3>{{ course.name }}</h3>
 <p>Kurs-ID: {{ course.code }}</p>
  
-    {% if user.role == 'ADMIN' %}
+    {% if user.role == 'admin' %}
 <p>Dozent: {{ course.professor_name or "Nicht zugewiesen" }}</p>
     {% endif %}
  
