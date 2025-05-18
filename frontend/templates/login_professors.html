@@ -62,7 +62,7 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
     const errorMessage = document.getElementById('error-message');
 
     try {
-      const response = await fetch('/auth/login/token', {
+      const response = await fetch('/api/login_professors', {
         method: 'POST',
         body: formData
       });
@@ -77,15 +77,16 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 
       localStorage.setItem('accessToken', data.access_token);
 
-      // Token auslesen und Rolle prüfen
-      const payload = JSON.parse(atob(data.access_token.split('.')[1]));
-      if (payload.role === 'PROFESSOR') {
-        window.location.href = '/professor/classes';
-      } else {
-        errorMessage.textContent = 'Zugriff verweigert: Kein Dozent.';
-        errorMessage.style.display = 'block';
-        localStorage.removeItem('accessToken');
-      }
+      window.location.href = '/';
+
+      // Direkt über die Rolle weiterleiten – kein JWT-Parsing
+      // if (data.role === 'professor') {
+      //   window.location.href = '/index';
+      // } else {
+      //   errorMessage.textContent = 'Zugriff verweigert: Kein Dozent.';
+      //   errorMessage.style.display = 'block';
+      //   localStorage.removeItem('accessToken');
+      // }
 
     } catch (error) {
       errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
@@ -94,4 +95,5 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
   });
 </script>
 {% endblock %}
+
 {% endblock %}

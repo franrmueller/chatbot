@@ -8,105 +8,89 @@ import secrets
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def login(username, password):
-    """Authenticate student and return its data with session token"""
-    try:
-        # Validate inputs
-        if not username or not password:
-            return None
+# Function to login a student
+def login_student(username, password):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
 
-        # Database operations
-        connection = sql_connect()
-        cursor = connection.cursor()
-        try:
-            # Check if username exists
-            cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-            user = cursor.fetchone()
-            if not user:
-                return None
-            
-            # Verify password
-            if not pwd_context.verify(password, user["password"]):
-                return None
+    cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
+    student = cursor.fetchone()
 
-            # Generate session token
-            session_token = secrets.token_hex(32)
-            
-            # Store session token in database
-            cursor.execute(
-                "UPDATE students SET session_token = %s WHERE username = %s", 
-                (session_token, user["username"])
-            )
-            connection.commit()
-            
-            # Return user with session token
-            return {
-                "username": user["username"],
-                "role": user["role"],
-                "session_token": session_token
-            }
+    if student and pwd_context.verify(password, student["password"]):
+        session_token = secrets.token_hex(32)
+        cursor.execute("UPDATE students SET session_token = %s WHERE username = %s", (session_token, username))
+        connection.commit()
+        student["session_token"] = session_token
+        student["role"] = "student"
+        return student
 
-        except mysql.connector.Error as e:
-            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    cursor.close()
+    connection.close()
+    return None
 
-        finally:
-            cursor.close()
-            connection.close()
+# Function to login a professor
+def login_professor(username, password):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    cursor.execute("SELECT * FROM teachers WHERE username = %s", (username,))
+    teacher = cursor.fetchone()
 
+    if teacher and pwd_context.verify(password, teacher["password"]):
+        session_token = secrets.token_hex(32)
+        cursor.execute("UPDATE teachers SET session_token = %s WHERE username = %s", (session_token, username))
+        connection.commit()
+        teacher["session_token"] = session_token
+        teacher["role"] = "professor"
+        return teacher
+
+    cursor.close()
+    connection.close()
+    return None
+
+# Register a new student
 def register_student(student_data):
-    """Register a new student and return the created user"""
     try:
-        # Manual validation of required fields
-        required_fields = ["username", "password", "first_name", "last_name", "course_id"]
+        required_fields = ["username", "password", "first_name", "last_name"]
         for field in required_fields:
             if field not in student_data or not student_data[field]:
-                raise HTTPException(status_code=400, detail=f"Pflichtenfeld fehlt: {field}")
+                raise HTTPException(status_code=400, detail=f"Pflichtfeld fehlt: {field}")
         
-        # Extract user data
         username = student_data["username"]
         password = pwd_context.hash(student_data["password"])
         first_name = student_data["first_name"]
         last_name = student_data["last_name"]
         course_id = student_data["course_id"]
         created_at = datetime.now()
-        
-        # Database operations
+
         connection = sql_connect()
         cursor = connection.cursor(dictionary=True)
-        try:
-            # Check if username already exists
-            cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-            if cursor.fetchone():
-                raise HTTPException(status_code=400, detail="Benutzername bereits vergeben.")
 
-            # Insert new student
-            query = """
-                INSERT INTO students (username, password, first_name, last_name, course, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            values = (username, password, first_name, last_name, course_id, created_at)
-            cursor.execute(query, values)
-            connection.commit()
-            
-            new_id = cursor.lastrowid
-            
-            return {
-                "id": new_id,
-                "username": username,
-                "first_name": first_name,
-                "last_name": last_name,
-                "course_id": course_id
-            }
+        # Check for duplicate username
+        cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Benutzername bereits vergeben.")
 
-        except mysql.connector.Error as e:
-            raise HTTPException(status_code=500, detail=f"Database error: {e}")
+        # Insert new student
+        query = """
+            INSERT INTO students (username, password, first_name, last_name, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (username, password, first_name, last_name, created_at))
+        connection.commit()
 
-        finally:
+        return {
+            "id": cursor.lastrowid,
+            "username": username,
+            "first_name": first_name,
+            "last_name": last_name,
+            "role": "student"
+        }
+
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        if cursor:
             cursor.close()
+        if connection:
             connection.close()
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))

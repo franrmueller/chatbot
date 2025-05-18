@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from typing import Optional
 import uvicorn
-from backend.auth import login, register_student
+from backend.auth import register_student, login_student, login_professor
 import backend.db as db
 
 # API instantiation
@@ -58,26 +58,15 @@ async def login_professors_page(request: Request):
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
-# Add API endpoints for login/logout
-@app.post("/api/login")
-async def login_endpoint(username: str = Form(...), password: str = Form(...)):
-    user = login(username, password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    response = JSONResponse({
-        "success": True,
-        "role": user.get("role"),
-        "access_token": user.get("session_token")  # Return as access_token for frontend
-    })
-    response.set_cookie(key="session_token", value=user.get("session_token"))
-    return response
 
+
+# Logout
 @app.post("/api/logout")
 async def logout_endpoint():
     response = JSONResponse({"success": True})
     response.delete_cookie(key="session_token")
     return response
+
 
 @app.post("/api/register")
 async def register_endpoint(student_data: dict = Body(...)):
@@ -108,6 +97,10 @@ async def admin_chathistory(request: Request):
     admin = await verify_admin(request)
     return templates.TemplateResponse("admin_chathistory.html", {"request": request, "user": admin})
 
+@app.get("/classes", response_class=HTMLResponse)
+async def classes(request: Request):
+    return templates.TemplateResponse("classes.html", {"request": request})
+
 @app.get("/api/courses")
 async def get_courses():
     return db.get_courses()
@@ -117,3 +110,34 @@ async def reset_db_endpoint(request: Request):
     admin = await verify_admin(request)
     success = db.reset_database()
     return JSONResponse({"success": success})
+
+
+@app.post("/api/login")
+async def student_login_endpoint(username: str = Form(...), password: str = Form(...)):
+    user = login_student(username, password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    response = JSONResponse({
+        "success": True,
+        "role": user.get("role"),
+        "access_token": user.get("session_token")
+    })
+    response.set_cookie(key="session_token", value=user.get("session_token"))
+    return response
+
+
+@app.post("/api/login_professors")
+async def professor_login_endpoint(username: str = Form(...), password: str = Form(...)):
+    user = login_professor(username, password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    response = JSONResponse({
+        "success": True,
+        "role": user.get("role"),
+        "access_token": user.get("session_token")
+    })
+    response.set_cookie(key="session_token", value=user.get("session_token"))
+    return response
+
