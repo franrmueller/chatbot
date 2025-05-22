@@ -4,12 +4,15 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from typing import Optional, Dict, Any, Union
 import uvicorn
+from backend import auth
 from backend.auth import register_student, login_student, login_professor
 import backend.db as db
 import logging
 
 # API instantiation
 app = FastAPI()
+
+pwd_context = auth.pwd_context
 
 # Initialize database on first startup
 db.initialize_database()
@@ -37,6 +40,18 @@ async def get_current_user(request: Request):
     
     return user
 
+# async def verify_role(request: Request, allowed_roles: list):
+#     """Verify that the user has one of the allowed roles"""
+#     user = await get_current_user(request)
+    
+#     if isinstance(user, RedirectResponse):
+#         return user
+    
+#     if user.get("role") not in allowed_roles:
+#         raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+#     return user
+
 async def verify_role(request: Request, allowed_roles: list):
     """Verify that the user has one of the allowed roles"""
     user = await get_current_user(request)
@@ -45,6 +60,7 @@ async def verify_role(request: Request, allowed_roles: list):
         return user
     
     if user.get("role") not in allowed_roles:
+        print(f"DEBUG - Access denied for {user.get('role')}, required: {allowed_roles}")
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     return user
@@ -84,6 +100,13 @@ async def legacy_professor_login_redirect(request: Request):
 @app.get("/register", response_class=HTMLResponse)
 async def legacy_register_redirect(request: Request):
     return RedirectResponse(url="/register/student", status_code=302)
+
+@app.get("/auth/logout")
+async def logout():
+    """Log out the current user by clearing their session token"""
+    response = RedirectResponse(url="/", status_code=302)
+    response.delete_cookie(key="session_token")
+    return response
 
 # =========================================
 # Student Routes
@@ -166,6 +189,120 @@ async def legacy_classes_redirect(request: Request):
         return RedirectResponse(url="/professor/classes", status_code=302)
     else:  # admin
         return RedirectResponse(url="/admin/dashboard", status_code=302)
+    
+@app.get("/admin/professors", response_class=HTMLResponse)
+async def admin_professors_page(request: Request):
+    """Render the professor management page"""
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Get all professors with their courses
+    professors = db.get_all_professors_with_courses()
+    
+    return templates.TemplateResponse("admin_professors.html", {
+        "request": request, 
+        "user": user,
+        "professors": professors
+    })
+
+@app.post("/admin/professors", response_class=HTMLResponse)
+async def admin_add_professor(
+    request: Request,
+    name: str = Form(...),
+    username: str = Form(...),
+    password: str = Form(...)
+):
+    """Add a new professor"""
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Create professor data
+    professor_data = {
+        "name": name,
+        "username": username,
+        "password": password
+    }
+    
+    # Add professor
+    success, message = db.add_professor(professor_data)
+    
+    # Get all professors for display
+    professors = db.get_all_professors_with_courses()
+    
+    # Return template with appropriate message
+    if success:
+        return templates.TemplateResponse("admin_professors.html", {
+            "request": request, 
+            "user": user,
+            "professors": professors,
+            "success": message
+        })
+    else:
+        return templates.TemplateResponse("admin_professors.html", {
+            "request": request, 
+            "user": user,
+            "professors": professors,
+            "error": message
+        })
+
+@app.post("/admin/professors/delete/{professor_id}")
+async def admin_delete_professor(request: Request, professor_id: int):
+    """Delete a professor"""
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Delete professor
+    success, message = db.delete_professor(professor_id)
+    
+    # Redirect back to professors page
+    if success:
+        return RedirectResponse(
+            url=f"/admin/professors?success={message}",
+            status_code=303
+        )
+    else:
+        return RedirectResponse(
+            url=f"/admin/professors?error={message}",
+            status_code=303
+        )
+
+# Add edit professor functionality
+@app.get("/admin/professors/edit/{professor_id}", response_class=HTMLResponse)
+async def admin_edit_professor_page(request: Request, professor_id: int):
+    """Render the professor edit page"""
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    # Get professor details
+    connection = db.sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM professors WHERE id = %s", (professor_id,))
+    professor = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    
+    if not professor:
+        return RedirectResponse(
+            url="/admin/professors?error=Professor nicht gefunden",
+            status_code=303
+        )
+    
+    # Format professor data for template
+    professor_data = {
+        "id": professor["id"],
+        "username": professor["username"],
+        "name": f"{professor['first_name']} {professor['last_name']}"
+    }
+    
+    return templates.TemplateResponse("admin_edit_professor.html", {
+        "request": request, 
+        "user": user,
+        "professor": professor_data
+    })
 
 # =========================================
 # API Routes
@@ -192,11 +329,16 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Return JSON response with redirect information
+    redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/professor/dashboard"
+    
     response = JSONResponse({
         "success": True,
         "role": user.get("role"),
-        "access_token": user.get("session_token")
+        "redirect_url": redirect_url
     })
+    
+    # Set authentication cookie
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
 

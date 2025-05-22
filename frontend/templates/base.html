@@ -25,8 +25,19 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
 <header>
 <nav>
 <div class="logo">
-<!-- Logo linking to the home page -->
-<a href="/">Vorlesungschatbot</a>
+{% if user %}
+    {% if user.role == 'admin' %}
+        <a href="/admin/dashboard">Vorlesungschatbot</a>
+    {% elif user.role == 'professor' %}
+        <a href="/professor/dashboard">Vorlesungschatbot</a>
+    {% elif user.role == 'student' %}
+        <a href="/student/classes">Vorlesungschatbot</a>
+    {% else %}
+        <a href="/">Vorlesungschatbot</a>
+    {% endif %}
+{% else %}
+    <a href="/">Vorlesungschatbot</a>
+{% endif %}
 </div>
  
         <!-- Navigation links depending on user role -->
