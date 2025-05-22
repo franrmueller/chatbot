@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 
                 try {
-                    await fetch('/api/logout', {
+                    await fetch('/api/auth/logout', {
                         method: 'POST',
                     });
                     
