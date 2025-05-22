@@ -174,8 +174,8 @@ def get_user_by_session(session_token):
         
         cursor = connection.cursor(dictionary=True)
         
-        # Check for teacher first
-        cursor.execute("SELECT *, 'teacher' as role FROM professors WHERE session_token = %s", (session_token,))
+        # Check for professor first - KEEP THE ORIGINAL ROLE FROM DATABASE
+        cursor.execute("SELECT * FROM professors WHERE session_token = %s", (session_token,))
         user = cursor.fetchone()
         
         # If not found, check students
@@ -238,3 +238,132 @@ def get_courses():
     except Exception as e:
         logging.error(f"Error fetching courses: {str(e)}")
         return {"courses": []}
+    
+
+def get_all_professors_with_courses():
+    """Get all professors with their assigned courses"""
+    connection = None
+    cursor = None
+    professors_list = []
+    
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get all professors
+        cursor.execute("""
+            SELECT id, username, first_name, last_name, role 
+            FROM professors
+            ORDER BY last_name, first_name
+        """)
+        professors = cursor.fetchall()
+        
+        # For each professor, get their courses
+        for professor in professors:
+            professor_id = professor['id']
+            
+            # Get courses for this professor
+            cursor.execute("""
+                SELECT c.id, c.name 
+                FROM courses c
+                JOIN professor_courses pc ON c.id = pc.course_id
+                WHERE pc.professor_id = %s
+                ORDER BY c.name
+            """, (professor_id,))
+            courses = cursor.fetchall()
+            
+            # Add professor with their courses to the list
+            professors_list.append({
+                'id': professor['id'],
+                'username': professor['username'],
+                'name': f"{professor['first_name']} {professor['last_name']}",
+                'role': professor['role'],
+                'courses': courses
+            })
+        
+        return professors_list
+    
+    except Exception as e:
+        logging.error(f"Error getting professors with courses: {str(e)}")
+        return []
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def add_professor(professor_data):
+    """Add a new professor"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Check if username already exists
+        cursor.execute("SELECT * FROM professors WHERE username = %s", (professor_data['username'],))
+        if cursor.fetchone():
+            return False, "Benutzername existiert bereits"
+        
+        # Hash password
+        password_hash = pwd_context.hash(professor_data['password'])
+        
+        # Parse name into first_name and last_name
+        name_parts = professor_data['name'].split(' ', 1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+        
+        # Insert professor
+        cursor.execute("""
+            INSERT INTO professors (username, password, first_name, last_name, role)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            professor_data['username'],
+            password_hash,
+            first_name,
+            last_name,
+            'professor'  # Default role
+        ))
+        
+        connection.commit()
+        return True, "Professor erfolgreich hinzugefügt"
+    
+    except Exception as e:
+        logging.error(f"Error adding professor: {str(e)}")
+        return False, f"Fehler beim Hinzufügen: {str(e)}"
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def delete_professor(professor_id):
+    """Delete a professor"""
+    connection = None
+    cursor = None
+    
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
+        
+        # First remove professor-course relationships
+        cursor.execute("DELETE FROM professor_courses WHERE professor_id = %s", (professor_id,))
+        
+        # Then delete the professor
+        cursor.execute("DELETE FROM professors WHERE id = %s", (professor_id,))
+        
+        connection.commit()
+        return True, "Professor erfolgreich gelöscht"
+    
+    except Exception as e:
+        logging.error(f"Error deleting professor: {str(e)}")
+        return False, f"Fehler beim Löschen: {str(e)}"
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()

@@ -14,15 +14,15 @@ def login_student(username, password):
     cursor = connection.cursor(dictionary=True)
 
     cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-    student = cursor.fetchone()
+    user = cursor.fetchone()
 
-    if student and pwd_context.verify(password, student["password"]):
+    if user and pwd_context.verify(password, user["password"]):
         session_token = secrets.token_hex(32)
         cursor.execute("UPDATE students SET session_token = %s WHERE username = %s", (session_token, username))
         connection.commit()
-        student["session_token"] = session_token
-        student["role"] = "student"
-        return student
+        user["session_token"] = session_token
+        user["role"] = "student"
+        return user
 
     cursor.close()
     connection.close()
@@ -34,15 +34,15 @@ def login_professor(username, password):
     cursor = connection.cursor(dictionary=True)
 
     cursor.execute("SELECT * FROM professors WHERE username = %s", (username,))
-    teacher = cursor.fetchone()
+    user = cursor.fetchone()
 
-    if teacher and pwd_context.verify(password, teacher["password"]):
+    if user and pwd_context.verify(password, user["password"]):
         session_token = secrets.token_hex(32)
         cursor.execute("UPDATE professors SET session_token = %s WHERE username = %s", (session_token, username))
         connection.commit()
-        teacher["session_token"] = session_token
-        teacher["role"] = "professor"
-        return teacher
+        user["session_token"] = session_token
+        # No need to add a default role - use database role as is
+        return user
 
     cursor.close()
     connection.close()

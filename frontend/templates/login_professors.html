@@ -38,36 +38,26 @@
     const errorMessage = document.getElementById('error-message');
 
     try {
-      const response = await fetch('/api/auth/login/professor', {
-        method: 'POST',
-        body: formData
-      });
+  const response = await fetch('/api/auth/login/professor', {
+    method: 'POST',
+    body: formData
+  });
 
-      const data = await response.json();
+  if (!response.ok) {
+    errorMessage.textContent = 'Falsche E-Mail oder Passwort.';
+    errorMessage.style.display = 'block';
+    return;
+  }
 
-      if (!response.ok) {
-        errorMessage.textContent = 'Falsche E-Mail oder Passwort.';
-        errorMessage.style.display = 'block';
-        return;
-      }
-
-      localStorage.setItem('accessToken', data.access_token);
-
-      window.location.href = '/admin/dashboard';s
-
-      // Direkt über die Rolle weiterleiten – kein JWT-Parsing
-      // if (data.role === 'professor') {
-      //   window.location.href = '/index';
-      // } else {
-      //   errorMessage.textContent = 'Zugriff verweigert: Kein Dozent.';
-      //   errorMessage.style.display = 'block';
-      //   localStorage.removeItem('accessToken');
-      // }
-
-    } catch (error) {
-      errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
-      errorMessage.style.display = 'block';
-    }
+  const data = await response.json();
+  
+  if (data.success) {
+    window.location.href = data.redirect_url;
+  }
+} catch (error) {
+  errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
+  errorMessage.style.display = 'block';
+}
   });
 </script>
 {% endblock %}
