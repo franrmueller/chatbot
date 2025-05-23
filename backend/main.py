@@ -89,9 +89,8 @@ async def legacy_register_redirect(request: Request):
 
 @app.get("/auth/logout")
 async def logout():
-    """Log out the current user by clearing their session token"""
     response = RedirectResponse(url="/", status_code=302)
-    response.delete_cookie(key="session_token")
+    response.delete_cookie(key="session_token", path="/", domain=None, secure=False, httponly=True)
     return response
 
 # =========================================
@@ -140,13 +139,6 @@ async def admin_dashboard(request: Request):
     if isinstance(user, RedirectResponse):
         return user
     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
-
-@app.get("/admin/professors", response_class=HTMLResponse)
-async def admin_professors(request: Request):
-    user = await verify_role(request, ["admin"])
-    if isinstance(user, RedirectResponse):
-        return user
-    return templates.TemplateResponse("admin_professors.html", {"request": request, "user": user})
 
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students(request: Request):
@@ -233,15 +225,15 @@ async def admin_add_professor(
             "error": message
         })
 
-@app.post("/admin/professors/delete/{professor_id}")
-async def admin_delete_professor(request: Request, professor_id: int):
+@app.post("/admin/professors/delete/{professor_username}")
+async def admin_delete_professor(request: Request, professor_username: int):
     """Delete a professor"""
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
     
     # Delete professor
-    success, message = db.delete_professor(professor_id)
+    success, message = db.delete_professor(professor_username)
     
     # Redirect back to professors page
     if success:
@@ -256,8 +248,8 @@ async def admin_delete_professor(request: Request, professor_id: int):
         )
 
 # Add edit professor functionality
-@app.get("/admin/professors/edit/{professor_id}", response_class=HTMLResponse)
-async def admin_edit_professor_page(request: Request, professor_id: int):
+@app.get("/admin/professors/edit/{professor_username}", response_class=HTMLResponse)
+async def admin_edit_professor_page(request: Request, professor_username: int):
     """Render the professor edit page"""
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
@@ -266,7 +258,7 @@ async def admin_edit_professor_page(request: Request, professor_id: int):
     # Get professor details
     connection = db.sql_connect()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM professors WHERE id = %s", (professor_id,))
+    cursor.execute("SELECT * FROM professors WHERE id = %s", (professor_username,))
     professor = cursor.fetchone()
     cursor.close()
     connection.close()
@@ -328,10 +320,29 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
 
+@app.get("/api/auth/check")
+async def check_auth(request: Request):
+    """Check if the user is authenticated and return their role"""
+    try:
+        user = await get_current_user(request)
+        if isinstance(user, RedirectResponse):
+            return JSONResponse({
+                "authenticated": False
+            })
+        
+        return JSONResponse({
+            "authenticated": True,
+            "role": user.get("role", "unknown")
+        })
+    except:
+        return JSONResponse({
+            "authenticated": False
+        })
+
 @app.post("/api/auth/logout")
 async def api_logout():
     response = JSONResponse({"success": True})
-    response.delete_cookie(key="session_token")
+    response.delete_cookie(key="session_token", path="/", domain=None, secure=False, httponly=True)
     return response
 
 @app.post("/api/auth/register")

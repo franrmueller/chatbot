@@ -9,7 +9,7 @@
 
   <form id="login-form" class="auth-form">
     <div class="form-group">
-      <label for="username">E-Mail-Adresse:</label>
+      <label for="username">Benutzername:</label>
       <input type="text" id="username" name="username" required>
     </div>
 
@@ -25,9 +25,40 @@
     <p>Zurück zur <a href="/">Startseite</a></p>
   </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
+document.addEventListener('DOMContentLoaded', async function() {
+  // Check if already logged in
+  try {
+    const response = await fetch('/api/auth/check', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    // If logged in, redirect immediately to appropriate dashboard
+    if (data.authenticated) {
+      console.log("User already authenticated, redirecting...");
+      
+      if (data.role === 'admin') {
+        window.location.replace('/admin/dashboard');
+      } else if (data.role === 'professor') {
+        window.location.replace('/professor/dashboard');
+      } else if (data.role === 'student') {
+        window.location.replace('/student/dashboard');
+      } else {
+        window.location.replace('/');
+      }
+      return; // Stop executing if redirected
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+  }
+
+  // Form submission handler - only runs if not already authenticated
   document.getElementById('login-form').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -38,28 +69,47 @@
     const errorMessage = document.getElementById('error-message');
 
     try {
-  const response = await fetch('/api/auth/login/professor', {
-    method: 'POST',
-    body: formData
+      const response = await fetch('/api/auth/login/professor', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        errorMessage.textContent = 'Falsche Anmeldedaten. Bitte versuchen Sie es erneut.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Use replace to prevent back button issues
+        window.location.replace(data.redirect_url);
+      }
+    } catch (error) {
+      errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
+      errorMessage.style.display = 'block';
+      console.error('Login error:', error);
+    }
   });
+});
 
-  if (!response.ok) {
-    errorMessage.textContent = 'Falsche E-Mail oder Passwort.';
-    errorMessage.style.display = 'block';
-    return;
-  }
-
-  const data = await response.json();
+// Simple back button handler
+(function() {
+  // Create a history entry when page loads
+  history.pushState(null, null, window.location.href);
   
-  if (data.success) {
-    window.location.href = data.redirect_url;
-  }
-} catch (error) {
-  errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
-  errorMessage.style.display = 'block';
-}
+  // Listen for back button
+  window.addEventListener('popstate', function(event) {
+    // Show confirmation dialog
+    if (confirm('Möchten Sie sich abmelden? Wenn Sie auf "Abbrechen" klicken, bleiben Sie angemeldet.')) {
+      // If confirmed, redirect to logout
+      window.location.href = '/auth/logout';
+    } else {
+      // If canceled, stay on page by adding a new history entry
+      history.pushState(null, null, window.location.href);
+    }
   });
+})();
 </script>
-{% endblock %}
-
 {% endblock %}

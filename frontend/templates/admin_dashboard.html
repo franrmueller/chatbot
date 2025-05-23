@@ -61,4 +61,30 @@ Admin-Dashboard – Vorlesungschatbot
  
 </div>
 </div>
+<script>
+// Back button handling with login page detection
+(function() {
+  const referrer = document.referrer;
+  const isFromLogin = referrer.includes('/login/');
+  
+  if (isFromLogin) {
+    // Replace the current history entry instead of adding a new one
+    window.history.replaceState({ page: 'dashboard' }, '', window.location.href);
+  }
+  
+  setTimeout(function() {
+    window.history.pushState({ page: 'dashboard' }, '', window.location.href);
+  }, 100);
+  
+  window.addEventListener('popstate', function(e) {
+    const wantsToLeave = confirm('Möchten Sie sich abmelden? Wenn Sie auf "Abbrechen" klicken, bleiben Sie angemeldet.');
+    
+    if (wantsToLeave) {
+      window.location.href = '/auth/logout';
+    } else {
+      window.history.pushState({ page: 'dashboard' }, '', window.location.href);
+    }
+  });
+})();
+</script>
 {% endblock %}
