@@ -1,9 +1,12 @@
 import logging
 import mysql.connector
 from fastapi.responses import JSONResponse
+from passlib.context import CryptContext
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def sql_connect():
     try:
@@ -81,8 +84,6 @@ def reset_database():
         """)
         
         # Create admin user
-        from passlib.context import CryptContext
-        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         hashed_password = pwd_context.hash("admin")
         
         cursor.execute("""
@@ -195,7 +196,7 @@ def get_user_by_session(session_token):
             connection.close()
 
 # Function to check if a professor is assigned to a course
-def is_professor_for_course(professor_id, course_id):
+def is_professor_for_course(professor_username, course_id):
     """Check if a user is a professor for a specific course"""
     try:
         connection = sql_connect()
@@ -206,7 +207,7 @@ def is_professor_for_course(professor_id, course_id):
         cursor.execute("""
             SELECT 1 FROM classes 
             WHERE course_id = %s AND taught_by = %s
-        """, (course_id, professor_id))
+        """, (course_id, professor_username))
         
         result = cursor.fetchone() is not None
         
@@ -252,29 +253,29 @@ def get_all_professors_with_courses():
         
         # Get all professors
         cursor.execute("""
-            SELECT id, username, first_name, last_name, role 
+            SELECT username, first_name, last_name, role 
             FROM professors
             ORDER BY last_name, first_name
         """)
         professors = cursor.fetchall()
         
-        # For each professor, get their courses
+        # For each professor, get their courses through the classes table
         for professor in professors:
-            professor_id = professor['id']
+            professor_username = professor['username']
             
-            # Get courses for this professor
+            # Get courses for this professor using the classes table
             cursor.execute("""
                 SELECT c.id, c.name 
                 FROM courses c
-                JOIN professor_courses pc ON c.id = pc.course_id
-                WHERE pc.professor_id = %s
+                JOIN classes cls ON c.id = cls.course_id
+                WHERE cls.taught_by = %s
+                GROUP BY c.id, c.name
                 ORDER BY c.name
-            """, (professor_id,))
+            """, (professor_username,))
             courses = cursor.fetchall()
             
             # Add professor with their courses to the list
             professors_list.append({
-                'id': professor['id'],
                 'username': professor['username'],
                 'name': f"{professor['first_name']} {professor['last_name']}",
                 'role': professor['role'],
@@ -340,7 +341,7 @@ def add_professor(professor_data):
         if connection:
             connection.close()
 
-def delete_professor(professor_id):
+def delete_professor(professor_username):
     """Delete a professor"""
     connection = None
     cursor = None
@@ -349,11 +350,17 @@ def delete_professor(professor_id):
         connection = sql_connect()
         cursor = connection.cursor()
         
-        # First remove professor-course relationships
-        cursor.execute("DELETE FROM professor_courses WHERE professor_id = %s", (professor_id,))
+        # First check if the professor teaches any classes
+        cursor.execute("SELECT COUNT(*) FROM classes WHERE taught_by = %s", (professor_username,))
+        class_count = cursor.fetchone()[0]
+        if class_count > 0:
+            return False, "Professor kann nicht gelöscht werden, da noch Kurse zugeordnet sind"
         
-        # Then delete the professor
-        cursor.execute("DELETE FROM professors WHERE id = %s", (professor_id,))
+        # Delete the professor (no professor_courses table in schema)
+        cursor.execute("DELETE FROM professors WHERE username = %s", (professor_username,))
+        
+        if cursor.rowcount == 0:
+            return False, "Professor nicht gefunden"
         
         connection.commit()
         return True, "Professor erfolgreich gelöscht"

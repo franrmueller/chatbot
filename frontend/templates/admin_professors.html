@@ -83,10 +83,10 @@ Professor:innen verwalten – Admin
     {% endfor %}
 </td>
 <td>
-<form method="POST" action="/admin/professors/delete/{{ professor.id }}" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
+<form method="POST" action="/admin/professors/delete/{{ professor.username }}" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
 <button class="btn btn-danger">Löschen</button>
 </form>
-<a href="/admin/professors/edit/{{ professor.id }}" class="btn btn-warning">Bearbeiten</a>
+<a href="/admin/professors/edit/{{ professor.username }}" class="btn btn-warning">Bearbeiten</a>
 </td>
 </tr>
     {% endfor %}
