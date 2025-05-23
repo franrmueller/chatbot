@@ -84,12 +84,11 @@ def reset_database():
         """)
         
         # Create admin user
-        hashed_password = pwd_context.hash("admin")
-        
+        hashed_password = pwd_context.hash("aperol77")
         cursor.execute("""
         INSERT INTO professors (username, password, first_name, last_name, role)
         VALUES (%s, %s, %s, %s, %s)
-        """, ('admin', hashed_password, 'System', 'Administrator', 'admin'))
+        """, ('kirchberg', hashed_password, 'Paul', 'Kirchgberg', 'admin'))
 
         # Now create courses table
         cursor.execute("""
@@ -106,7 +105,7 @@ def reset_database():
         cursor.execute("""
         INSERT INTO courses (id, name, created_by)
         VALUES (%s, %s, %s)
-        """, ('DEFAULT', 'Default Course', 'admin'))
+        """, ('WWI-BE122', 'Wirtschaftsinformatik - Business Engineering', 'kirchberg'))
         
         # Create remaining tables
         cursor.execute("""
@@ -141,10 +140,25 @@ def reset_database():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by VARCHAR(50) NOT NULL,
             class_id INT NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            file_type VARCHAR(50) NOT NULL,
+            content_extracted BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (class_id) REFERENCES classes(id),
             FOREIGN KEY (created_by) REFERENCES professors(username)
         )
         """)
+
+        cursor.execute("""
+        INSERT INTO classes (name, course_id, taught_by)
+            VALUES (%s, %s, %s)
+            """, ('Datenbanken', 'WWI-BE122', 'kirchberg'))
+        
+        class_id = cursor.lastrowid
+
+        cursor.execute("""
+        INSERT INTO documents (name, created_by, class_id, file_path, file_type, content_extracted)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """, ('Datenbanksysteme', 'kirchberg', class_id, '/uploads/dbs.pdf', 'application/pdf', False))
 
         connection.commit()
         logging.info("Database reset successfully.")
@@ -369,6 +383,60 @@ def delete_professor(professor_username):
         logging.error(f"Error deleting professor: {str(e)}")
         return False, f"Fehler beim Löschen: {str(e)}"
     
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def add_document(document_data, file_content):
+    """
+    Add a new document to the database and file system
+    Args:
+        document_data: dict with keys 'name', 'created_by', 'class_id', 'file_type'
+        file_content: binary content of the file
+    Returns:
+        (success: bool, message_or_id: str|int)
+    """
+    import os
+    import uuid
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
+
+        # Ensure upload directory exists
+        upload_dir = os.path.join(os.getcwd(), 'uploads')
+        if not os.path.exists(upload_dir):
+            os.makedirs(upload_dir)
+
+        # Generate a unique filename
+        file_extension = document_data['file_type'].split('/')[-1]
+        filename = f"{uuid.uuid4().hex}.{file_extension}"
+        file_path = os.path.join(upload_dir, filename)
+
+        # Save file to disk
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
+
+        # Insert document record into database
+        cursor.execute("""
+            INSERT INTO documents (name, created_by, class_id, file_path, file_type, content_extracted)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            document_data['name'],
+            document_data['created_by'],
+            document_data['class_id'],
+            file_path,
+            document_data['file_type'],
+            False
+        ))
+        connection.commit()
+        return True, cursor.lastrowid
+    except Exception as e:
+        logging.error(f"Error adding document: {str(e)}")
+        return False, f"Fehler beim Hinzufügen des Dokuments: {str(e)}"
     finally:
         if cursor:
             cursor.close()
