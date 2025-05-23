@@ -104,12 +104,12 @@ async def student_dashboard(request: Request):
         return user
     return templates.TemplateResponse("student_dashboard.html", {"request": request, "user": user})
 
-@app.get("/student/classes", response_class=HTMLResponse)
-async def student_classes(request: Request):
-    user = await verify_role(request, ["student"])
-    if isinstance(user, RedirectResponse):
-        return user
-    return templates.TemplateResponse("classes.html", {"request": request, "user": user})
+# @app.get("/student/classes", response_class=HTMLResponse)
+# async def student_classes(request: Request):
+#     user = await verify_role(request, ["student"])
+#     if isinstance(user, RedirectResponse):
+#         return user
+#     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
 
 # =========================================
 # Professor Routes
@@ -122,12 +122,12 @@ async def professor_dashboard(request: Request):
         return user
     return templates.TemplateResponse("professor_dashboard.html", {"request": request, "user": user})
 
-@app.get("/professor/classes", response_class=HTMLResponse)
-async def professor_classes(request: Request):
-    user = await verify_role(request, ["admin", "professor"])
-    if isinstance(user, RedirectResponse):
-        return user
-    return templates.TemplateResponse("classes.html", {"request": request, "user": user})
+# @app.get("/professor/classes", response_class=HTMLResponse)
+# async def professor_classes(request: Request):
+#     user = await verify_role(request, ["admin", "professor"])
+#     if isinstance(user, RedirectResponse):
+#         return user
+#     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
 
 # =========================================
 # Admin Routes
@@ -160,13 +160,21 @@ async def legacy_classes_redirect(request: Request):
     user = await get_current_user(request)
     if isinstance(user, RedirectResponse):
         return user
-        
-    if user.get("role") == "student":
-        return RedirectResponse(url="/student/classes", status_code=302)
-    elif user.get("role") == "professor":
-        return RedirectResponse(url="/professor/classes", status_code=302)
-    else:  # admin
-        return RedirectResponse(url="/admin/dashboard", status_code=302)
+
+    courses = db.get_courses_for_user(user)
+    return templates.TemplateResponse("classes.html", {
+        "request": request,
+        "user": user,
+        "courses": courses
+    })
+
+    return templates.TemplateResponse("classes.html", {"request": request, "user": user})
+    # if user.get("role") == "student":
+    #     return RedirectResponse(url="/student/classes", status_code=302)
+    # elif user.get("role") == "professor":
+    #     return RedirectResponse(url="/professor/classes", status_code=302)
+    # else:  # admin
+    #     return RedirectResponse(url="/admin/dashboard", status_code=302)
     
 @app.get("/admin/professors", response_class=HTMLResponse)
 async def admin_professors_page(request: Request):

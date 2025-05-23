@@ -40,7 +40,7 @@ Meine Kurse – Vorlesungschatbot
 <div class="error-message">{{ error }}</div>
 {% endif %}
  
-{% elif user.role == 'PROFESSOR' %}
+{% elif user.role == 'professor' %}
 <h1>Meine betreuten Kurse</h1>
 {% else %}
 <h1>Meine Kurse</h1>
@@ -59,12 +59,12 @@ Meine Kurse – Vorlesungschatbot
     {% endif %}
  
     <div class="btn-group">
-        {% if user.role == 'STUDENT' %}
+        {% if user.role == 'student' %}
 <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'PROFESSOR' %}
+        {% elif user.role == 'professor' %}
 <a href="/professor/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
 <a href="/professor/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'ADMIN' %}
+        {% elif user.role == 'admin' %}
 <a href="/admin/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
 <a href="/admin/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
 <form method="POST" action="/admin/classes/delete/{{ course.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
@@ -78,10 +78,10 @@ Meine Kurse – Vorlesungschatbot
  
 {% else %}
 <!-- Fallback -->
-    {% if user.role == 'STUDENT' %}
+    {% if user.role == 'student' %}
 <p>Du bist aktuell in keinen Kurs eingeschrieben.</p>
 <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
-    {% elif user.role == 'PROFESSOR' %}
+    {% elif user.role == 'professor' %}
 <p>Aktuell betreuen Sie noch keine Kurse.</p>
 <p>Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.</p>
     {% else %}
