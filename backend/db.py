@@ -442,3 +442,43 @@ def add_document(document_data, file_content):
             cursor.close()
         if connection:
             connection.close()
+
+# Course retrieval function
+def get_courses_for_user(user):
+    """Return a list of courses/classes for the given user based on their role."""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    courses = []
+
+    try:
+        if user.get("role") == "admin":
+            cursor.execute("""
+                SELECT c.id, c.name, c.id as code,
+                    CONCAT(p.first_name, ' ', p.last_name) as professor_name
+                FROM courses c
+                LEFT JOIN classes cls ON c.id = cls.course_id
+                LEFT JOIN professors p ON cls.taught_by = p.username
+                GROUP BY c.id, c.name, p.first_name, p.last_name
+            """)
+            courses = cursor.fetchall()
+        elif user.get("role") == "professor":
+            cursor.execute("""
+                SELECT c.id, c.name, c.id as code
+                FROM courses c
+                JOIN classes cls ON c.id = cls.course_id
+                WHERE cls.taught_by = %s
+                GROUP BY c.id, c.name
+            """, (user["username"],))
+            courses = cursor.fetchall()
+        elif user.get("role") == "student":
+            cursor.execute("""
+                SELECT c.id, c.name, c.id as code
+                FROM courses c
+                JOIN students s ON s.course = c.id
+                WHERE s.username = %s
+            """, (user["username"],))
+            courses = cursor.fetchall()
+    finally:
+        cursor.close()
+        connection.close()
+    return courses
