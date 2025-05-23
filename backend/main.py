@@ -40,18 +40,6 @@ async def get_current_user(request: Request):
     
     return user
 
-# async def verify_role(request: Request, allowed_roles: list):
-#     """Verify that the user has one of the allowed roles"""
-#     user = await get_current_user(request)
-    
-#     if isinstance(user, RedirectResponse):
-#         return user
-    
-#     if user.get("role") not in allowed_roles:
-#         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    
-#     return user
-
 async def verify_role(request: Request, allowed_roles: list):
     """Verify that the user has one of the allowed roles"""
     user = await get_current_user(request)
@@ -60,9 +48,7 @@ async def verify_role(request: Request, allowed_roles: list):
         return user
     
     if user.get("role") not in allowed_roles:
-        print(f"DEBUG - Access denied for {user.get('role')}, required: {allowed_roles}")
         raise HTTPException(status_code=403, detail="Insufficient permissions")
-    
     return user
 
 # =========================================
