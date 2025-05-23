@@ -345,9 +345,6 @@ async def api_register(student_data: dict = Body(...)):
 # Data API endpoints
 @app.get("/api/courses")
 async def api_courses(request: Request):
-    user = await verify_role(request, ["admin", "professor", "student"])
-    if isinstance(user, RedirectResponse):
-        raise HTTPException(status_code=401, detail="Authentication required")
     return db.get_courses()
 
 # Admin API endpoints
