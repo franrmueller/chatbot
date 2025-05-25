@@ -16,6 +16,7 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
  
     <!-- Link to main CSS file -->
 <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
+ <link rel="stylesheet" href="/static/style.css">
  
     <!-- Placeholder for extra CSS that individual pages can inject -->
     {% block extra_css %}{% endblock %}
