@@ -94,23 +94,3 @@ Meine Vorlesungen – Vorlesungschatbot
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-    // Load courses (Studiengänge) for the select dropdown via /api/courses
-    document.addEventListener('DOMContentLoaded', async function () {
-        try {
-            const response = await fetch('/api/courses');
-            const data = await response.json();
-            const courseSelect = document.getElementById('course');
-            data.courses.forEach(course => {
-                const option = document.createElement('option');
-                option.value = course.id;
-                option.textContent = course.name;
-                courseSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error('Fehler beim Laden der Kurse:', error);
-        }
-    });
-</script>
-{% endblock %}
