@@ -16,7 +16,7 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if user.role == 'admin' %}
 <h1>Vorlesungen verwalten</h1>
 
-<div class="btn-group" style="margin-bottom: 1rem;">
+<div class="btn-group-nav">
     <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
     <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
     <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
@@ -51,14 +51,12 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if classes %}
 <div class="class-list">
     {% for class in classes %}
-    <div class="class-card" style="padding: 1rem; border: 1px solid #ccc; margin-bottom: 1.5rem; border-radius: 0.5rem;">
+    <div class="class-card">
+        <p class="class-meta"><strong>Kurs:</strong> {{ class.code }} – {{ class.course_name }}</p>
+        <p class="class-submeta"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
 
-        <!-- NEUES LAYOUT BEGINN -->
-        <p style="margin: 0 0 0.25rem;"><strong>Kurs:</strong> {{ class.code }} – {{ class.course_name }}</p>
-        <p style="margin: 0 0 0.75rem;"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
-
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">{{ class.name }}</h3>
+        <div class="class-header">
+            <h3>{{ class.name }}</h3>
 
             <div class="btn-group">
                 {% if user.role == 'student' %}
@@ -74,13 +72,12 @@ Meine Vorlesungen – Vorlesungschatbot
         </div>
 
         {% if user.role == 'admin' %}
-        <p style="margin-top: 0.75rem;"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
-        <form method="POST" action="/admin/classes/delete/{{ class.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="margin-top: 0.5rem;">
+        <p class="class-teacher"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
+        <form method="POST" action="/admin/classes/delete/{{ class.id }}" class="class-delete-form"
+              onsubmit="return confirm('Diesen Kurs wirklich löschen?');">
             <button type="submit" class="btn btn-danger">Löschen</button>
         </form>
         {% endif %}
-        <!-- NEUES LAYOUT ENDE -->
-
     </div>
     {% endfor %}
 </div>
