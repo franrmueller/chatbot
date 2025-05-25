@@ -17,13 +17,15 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 3. Der Nutzer muss im Backend als Admin authentifiziert sein, um diese Seite aufzurufen.
 4. Optional: Es könnten später dynamische Statistiken ergänzt werden (z. B. Anzahl der Professor:innen, Kurse, Studierenden).
 -->
- 
+
+
+
 {% extends "base.html" %}
 
 {% block title %}
 Admin-Dashboard – Vorlesungschatbot
 {% endblock %}
-
+ <link rel="stylesheet" href="/static/style.css">
 {% block content %}
 <!-- Container für das gesamte Dashboard -->
 <div class="dashboard-container">
