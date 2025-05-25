@@ -36,7 +36,7 @@ Admin-Dashboard – Vorlesungschatbot
 
     <!-- Grid-Layout für die Verwaltungskarten -->
     <div class="admin-grid">
-
+        
         <!-- Karte: Professor:innen -->
         <div class="admin-card">
             <h2>Professor:innen</h2>
@@ -68,23 +68,20 @@ Admin-Dashboard – Vorlesungschatbot
     </div>
 </div>
 
-<!-- Optionales Skript zur Absicherung des Zurück-Buttons: fragt beim Zurückgehen, ob man sich abmelden möchte -->
+<!-- Optionales Skript zur Absicherung des Zurück-Buttons -->
 <script>
 (function() {
     const referrer = document.referrer;
     const isFromLogin = referrer.includes('/login/');
 
-    // Wenn von Login-Seite gekommen, ersetze den Verlaufseintrag
     if (isFromLogin) {
         window.history.replaceState({ page: 'dashboard' }, '', window.location.href);
     }
 
-    // Neuer Verlaufseintrag hinzufügen
     setTimeout(function() {
         window.history.pushState({ page: 'dashboard' }, '', window.location.href);
     }, 100);
 
-    // Wenn der Benutzer zurück geht, Bestätigung anzeigen
     window.addEventListener('popstate', function(e) {
         const wantsToLeave = confirm('Möchten Sie sich abmelden? Wenn Sie auf "Abbrechen" klicken, bleiben Sie angemeldet.');
         if (wantsToLeave) {
