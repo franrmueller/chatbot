@@ -1,120 +1,122 @@
 {% extends "base.html" %}
- 
+
 {% block title %}
-{% if user.role == 'admin' %}
-Kurse verwalten – Admin
-{% elif user.role == 'professor' %}
-Meine Kurse – Professor:innenansicht
-{% else %}
-Meine Kurse – Vorlesungschatbot
-{% endif %}
+  {% if user.role == 'admin' %}
+    Kurse verwalten – Admin
+  {% elif user.role == 'professor' %}
+    Meine Kurse – Professor:innenansicht
+  {% else %}
+    Meine Kurse – Vorlesungschatbot
+  {% endif %}
 {% endblock %}
- 
+
 {% block content %}
 <div class="dashboard-container">
- 
-<!-- Titel je nach Rolle -->
-{% if user.role == 'admin' %}
-<h1>Kurse verwalten</h1>
- 
-<!-- Admin: Navigation -->
-<div class="btn-group" style="margin-bottom: 1rem;">
-<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-<a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
-<a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
-<a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
-</div>
- 
-<!-- Admin: Formular für neuen Kurs -->
-<form id="add-class-form" class="form-inline" method="POST">
-<h2>Neuen Kurs erstellen</h2>
-<input type="text" name="name" placeholder="Kursname (z. B. Datenbanken)" required>
-<input type="text" name="code" placeholder="Kurs-ID (z. B. WI123)" required>
-<button type="submit" class="btn btn-primary">Kurs hinzufügen</button>
-</form>
- 
-{% if success %}
-<div class="success-message">{{ success }}</div>
-{% endif %}
-{% if error %}
-<div class="error-message">{{ error }}</div>
-{% endif %}
- 
-{% elif user.role == 'professor' %}
-<h1>Meine betreuten Kurse</h1>
-{% else %}
-<h1>Meine Kurse</h1>
-{% endif %}
- 
-<!-- Kursliste -->
-{% if courses or classes %}
-<div class="course-list">
-    {% for course in courses or classes %}
-<div class="course-card">
-<h3>{{ course.name }}</h3>
-<p>Kurs-ID: {{ course.code }}</p>
- 
-    {% if user.role == 'admin' %}
-<p>Dozent: {{ course.professor_name or "Nicht zugewiesen" }}</p>
+
+  <!-- Inhalt für Admin -->
+  {% if user.role == 'admin' %}
+    <h1>Kurse verwalten</h1>
+
+    <!-- Admin: Navigation -->
+    <div class="btn-group" style="margin-bottom: 1rem;">
+      <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+      <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
+      <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
+      <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
+    </div>
+
+    <!-- Admin: Formular für neuen Kurs -->
+    <form id="add-class-form" class="form-inline" method="POST">
+      <h2>Neuen Kurs erstellen</h2>
+      <input type="text" name="name" placeholder="Kursname (z. B. Datenbanken)" required>
+      <input type="text" name="code" placeholder="Kurs-ID (z. B. WI123)" required>
+      <button type="submit" class="btn btn-primary">Kurs hinzufügen</button>
+    </form>
+
+    <!-- Erfolgs-/Fehlermeldung -->
+    {% if success %}
+      <div class="success-message">{{ success }}</div>
     {% endif %}
- 
-    <div class="btn-group">
-        {% if user.role == 'student' %}
-<a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'professor' %}
-<a href="/professor/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-<a href="/professor/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'admin' %}
-<a href="/admin/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-<a href="/admin/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-<form method="POST" action="/admin/classes/delete/{{ course.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
-<button type="submit" class="btn btn-danger">Löschen</button>
-</form>
-        {% endif %}
-</div>
-</div>
-    {% endfor %}
-</div>
+    {% if error %}
+      <div class="error-message">{{ error }}</div>
+    {% endif %}
 
-<!-- Student -->
- {% elif user.role == 'student' %}
-  <h1>Meine belegten Kurse</h1>
-  {% if courses or classes %}
-  <div class="course-list">
-    {% for course in courses %}
-    <div class="course-card">
-      <h3>{{ course.name }}</h3>
-      <p>Kurs-ID: {{ course.code }}</p>
-      <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
-      <div class="btn-group">
-        <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+    <!-- Admin: Kursliste -->
+    {% if courses or classes %}
+      <div class="course-list">
+        {% for course in courses %}
+        <div class="course-card">
+          <h3>{{ course.name }}</h3>
+          <p>Kurs-ID: {{ course.code }}</p>
+          <p>Dozent: {{ course.professor_name or "Nicht zugewiesen" }}</p>
+          <div class="btn-group">
+            <a href="/admin/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+            <a href="/admin/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+            <form method="POST" action="/admin/classes/delete/{{ course.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
+              <button type="submit" class="btn btn-danger">Löschen</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
       </div>
-    </div>
-    {% endfor %}
-    {% for course in classes %}
-    <div class="course-card">
-      <h3>{{ course.name }}</h3>
-      <p>Kurs-ID: {{ course.code }}</p>
-      <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
-      <div class="btn-group">
-        <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-
-{% else %}
-<!-- Fallback -->
-    {% if user.role == 'student' %}
-<p>Du bist aktuell in keinen Kurs eingeschrieben.</p>
-<p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
-    {% elif user.role == 'professor' %}
-<p>Aktuell betreuen Sie noch keine Kurse.</p>
-<p>Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.</p>
     {% else %}
-<p>Es sind derzeit keine Kurse im System.</p>
+      <p>Es sind derzeit keine Kurse im System.</p>
     {% endif %}
-{% endif %}
+
+  <!-- Inhalt für Professor:innen -->
+  {% elif user.role == 'professor' %}
+    <h1>Meine betreuten Kurse</h1>
+
+    {% if courses %}
+      <div class="course-list">
+        {% for course in courses %}
+        <div class="course-card">
+          <h3>{{ course.name }}</h3>
+          <p>Kurs-ID: {{ course.code }}</p>
+          <div class="btn-group">
+            <a href="/professor/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+            <a href="/professor/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Aktuell betreuen Sie noch keine Kurse.</p>
+      <p>Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.</p>
+    {% endif %}
+
+  <!-- Inhalt für Studierende -->
+  {% elif user.role == 'student' %}
+    <h1>Meine belegten Kurse</h1>
+
+    {% if courses or classes %}
+      <div class="course-list">
+        {% for course in courses %}
+        <div class="course-card">
+          <h3>{{ course.name }}</h3>
+          <p>Kurs-ID: {{ course.code }}</p>
+          <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
+          <div class="btn-group">
+            <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+          </div>
+        </div>
+        {% endfor %}
+        {% for course in classes %}
+        <div class="course-card">
+          <h3>{{ course.name }}</h3>
+          <p>Kurs-ID: {{ course.code }}</p>
+          <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
+          <div class="btn-group">
+            <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Du bist aktuell in keinen Kurs eingeschrieben.</p>
+      <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
+    {% endif %}
+  {% endif %}
+
 </div>
 {% endblock %}
-
