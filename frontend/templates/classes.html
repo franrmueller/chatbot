@@ -24,7 +24,6 @@ Meine Vorlesungen – Vorlesungschatbot
     <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
 </div>
 
-{# Form to create a new class (Vorlesung). The course (Studiengang) must be selected. #}
 <form id="add-class-form" class="form-inline" method="POST" action="/admin/classes">
     <h2>Neue Vorlesung erstellen</h2>
     <input type="text" name="name" placeholder="Vorlesungsname" required>
@@ -58,10 +57,12 @@ Meine Vorlesungen – Vorlesungschatbot
     <div class="class-card">
         <h3>{{ class.name }}</h3>
         <p>Vorlesungs-ID: {{ class.id }}</p>
-        <p>Kurs (Studiengang): {{ class.code }}</p>
+        <p>Kurs (Studiengang): {{ class.course_name }}</p> <!-- ✅ geändert -->
+
         {% if user.role == 'admin' %}
         <p>Dozent: {{ class.professor_name or "Nicht zugewiesen" }}</p>
         {% endif %}
+
         <div class="btn-group">
             {% if user.role == 'student' %}
             <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
