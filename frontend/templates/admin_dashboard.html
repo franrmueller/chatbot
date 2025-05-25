@@ -17,68 +17,95 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 3. Der Nutzer muss im Backend als Admin authentifiziert sein, um diese Seite aufzurufen.
 4. Optional: Es könnten später dynamische Statistiken ergänzt werden (z. B. Anzahl der Professor:innen, Kurse, Studierenden).
 -->
- 
+
 {% extends "base.html" %}
- 
+
 {% block title %}
 Admin-Dashboard – Vorlesungschatbot
 {% endblock %}
- 
+
 {% block content %}
-<div class="dashboard-container">
-<h1>Administrator-Dashboard</h1>
-<p>Wählen Sie eine Übersicht, die Sie verwalten möchten:</p>
- 
-<div class="admin-options">
- 
-    <!-- Professor:innen verwalten -->
-<div class="admin-card">
-<h2>Professor:innen</h2>
-<p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
-<a href="/admin/professors" class="btn btn-primary">Professor:innen verwalten</a>
+<div class="dashboard-container" style="padding: 2rem;">
+    <h1 style="margin-bottom: 0.5rem;">Administrator-Dashboard</h1>
+    <p style="margin-bottom: 2rem; color: #555;">Wählen Sie einen Bereich, den Sie verwalten möchten:</p>
+
+    <div class="admin-options" style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+    ">
+
+        <!--  Professor:innen verwalten -->
+        <div class="admin-card" style="
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        ">
+            <h2 style="margin-top: 0;">Professor:innen</h2>
+            <p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
+            <a href="/admin/professors" class="btn btn-primary">Professor:innen verwalten</a>
+        </div>
+
+        <!--  Vorlesungen verwalten -->
+        <div class="admin-card" style="
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        ">
+            <h2 style="margin-top: 0;">Vorlesungen</h2>
+            <p>Alle Vorlesungen im System. Erstellen, zuordnen oder entfernen.</p>
+            <a href="/classes" class="btn btn-primary">Vorlesungen verwalten</a>
+        </div>
+
+        <!--  Studierende verwalten -->
+        <div class="admin-card" style="
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        ">
+            <h2 style="margin-top: 0;">Studierende</h2>
+            <p>Liste aller registrierten Studierenden (anonymisiert). Kurse und Aktivitäten einsehen.</p>
+            <a href="/admin/students" class="btn btn-primary">Studierende verwalten</a>
+        </div>
+
+        <!-- Chathistorien ansehen -->
+        <div class="admin-card" style="
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        ">
+            <h2 style="margin-top: 0;">Chathistorien</h2>
+            <p>Alle gestellten Fragen pro Kurs anonymisiert einsehen.</p>
+            <a href="/admin/chathistory" class="btn btn-primary">Chathistorie anzeigen</a>
+        </div>
+
+    </div>
 </div>
- 
-    <!-- Kurse verwalten -->
-<div class="admin-card">
-<h2>Vorlesungen</h2>
-<p>Alle Vorlesungen im System. Erstellen, zuordnen oder entfernen.</p>
-<a href="/classes" class="btn btn-primary">Vorlesungen verwalten</a>
-</div>
- 
-    <!-- Studierende verwalten -->
-<div class="admin-card">
-<h2>Studierende</h2>
-<p>Liste aller registrierten Studierenden (anonymisiert). Kurse und Aktivitäten einsehen.</p>
-<a href="/admin/students" class="btn btn-primary">Studierende verwalten</a>
-</div>
- 
-    <!-- Chathistorien ansehen -->
-<div class="admin-card">
-<h2>Chathistorien</h2>
-<p>Alle gestellten Fragen pro Kurs anonymisiert einsehen.</p>
-<a href="/admin/chathistory" class="btn btn-primary">Chathistorie anzeigen</a>
-</div>
- 
-</div>
-</div>
+
+<!-- Navigation beim Zurück-Button absichern -->
 <script>
-// Back button handling with login page detection
 (function() {
   const referrer = document.referrer;
   const isFromLogin = referrer.includes('/login/');
-  
+
   if (isFromLogin) {
-    // Replace the current history entry instead of adding a new one
     window.history.replaceState({ page: 'dashboard' }, '', window.location.href);
   }
-  
+
   setTimeout(function() {
     window.history.pushState({ page: 'dashboard' }, '', window.location.href);
   }, 100);
-  
+
   window.addEventListener('popstate', function(e) {
     const wantsToLeave = confirm('Möchten Sie sich abmelden? Wenn Sie auf "Abbrechen" klicken, bleiben Sie angemeldet.');
-    
     if (wantsToLeave) {
       window.location.href = '/auth/logout';
     } else {
