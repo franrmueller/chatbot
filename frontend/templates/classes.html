@@ -1,93 +1,116 @@
 {% extends "base.html" %}
- 
+
 {% block title %}
 {% if user.role == 'admin' %}
-Kurse verwalten – Admin
+Vorlesungen verwalten – Admin
 {% elif user.role == 'professor' %}
-Meine Kurse – Professor:innenansicht
+Meine Vorlesungen – Professor:innenansicht
 {% else %}
-Meine Kurse – Vorlesungschatbot
+Meine Vorlesungen – Vorlesungschatbot
 {% endif %}
 {% endblock %}
- 
+
 {% block content %}
 <div class="dashboard-container">
- 
-<!-- Titel je nach Rolle -->
+
+{# Admin section: navigation and class creation form #}
 {% if user.role == 'admin' %}
-<h1>Kurse verwalten</h1>
- 
-<!-- Admin: Navigation -->
+<h1>Vorlesungen verwalten</h1>
+
 <div class="btn-group" style="margin-bottom: 1rem;">
-<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-<a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
-<a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
-<a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
+    <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+    <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
+    <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
+    <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
 </div>
- 
-<!-- Admin: Formular für neuen Kurs -->
-<form id="add-class-form" class="form-inline" method="POST">
-<h2>Neuen Kurs erstellen</h2>
-<input type="text" name="name" placeholder="Kursname (z. B. Datenbanken)" required>
-<input type="text" name="code" placeholder="Kurs-ID (z. B. WI123)" required>
-<button type="submit" class="btn btn-primary">Kurs hinzufügen</button>
+
+{# Form to create a new class (Vorlesung). The course (Studiengang) must be selected. #}
+<form id="add-class-form" class="form-inline" method="POST" action="/admin/classes">
+    <h2>Neue Vorlesung erstellen</h2>
+    <input type="text" name="name" placeholder="Vorlesungsname" required>
+    <div class="form-group">
+        <label for="course">Kurs (Studiengang) auswählen:</label>
+        <select id="course" name="course" required>
+            <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
+            {# Courses (Studiengänge) will be loaded by JS #}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Vorlesung hinzufügen</button>
 </form>
- 
+
 {% if success %}
 <div class="success-message">{{ success }}</div>
 {% endif %}
 {% if error %}
 <div class="error-message">{{ error }}</div>
 {% endif %}
- 
+
 {% elif user.role == 'professor' %}
-<h1>Meine betreuten Kurse</h1>
+<h1>Meine betreuten Vorlesungen</h1>
 {% else %}
-<h1>Meine Kurse</h1>
+<h1>Meine Vorlesungen</h1>
 {% endif %}
- 
-<!-- Kursliste -->
-{% if courses or classes %}
-<div class="course-list">
-    {% for course in courses or classes %}
-<div class="course-card">
-<h3>{{ course.name }}</h3>
-<p>Kurs-ID: {{ course.code }}</p>
- 
-    {% if user.role == 'admin' %}
-<p>Dozent: {{ course.professor_name or "Nicht zugewiesen" }}</p>
-    {% endif %}
- 
-    <div class="btn-group">
-        {% if user.role == 'student' %}
-<a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'professor' %}
-<a href="/professor/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-<a href="/professor/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        {% elif user.role == 'admin' %}
-<a href="/admin/pdf/{{ course.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-<a href="/admin/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-<form method="POST" action="/admin/classes/delete/{{ course.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
-<button type="submit" class="btn btn-danger">Löschen</button>
-</form>
+
+{# List of classes (Vorlesungen) #}
+{% if classes %}
+<div class="class-list">
+    {% for class in classes %}
+    <div class="class-card">
+        <h3>{{ class.name }}</h3>
+        <p>Vorlesungs-ID: {{ class.id }}</p>
+        <p>Kurs (Studiengang): {{ class.code }}</p>
+        {% if user.role == 'admin' %}
+        <p>Dozent: {{ class.professor_name or "Nicht zugewiesen" }}</p>
         {% endif %}
-</div>
-</div>
+        <div class="btn-group">
+            {% if user.role == 'student' %}
+            <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+            {% elif user.role == 'professor' %}
+            <a href="/professor/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+            <a href="/professor/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+            {% elif user.role == 'admin' %}
+            <a href="/admin/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+            <a href="/admin/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+            <form method="POST" action="/admin/classes/delete/{{ class.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
+                <button type="submit" class="btn btn-danger">Löschen</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
     {% endfor %}
 </div>
- 
 {% else %}
-<!-- Fallback -->
+{# Fallback if no classes are available #}
     {% if user.role == 'student' %}
-<p>Du bist aktuell in keinen Kurs eingeschrieben.</p>
-<p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
+    <p>Du bist aktuell in keiner Vorlesung eingeschrieben.</p>
+    <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
     {% elif user.role == 'professor' %}
-<p>Aktuell betreuen Sie noch keine Kurse.</p>
-<p>Bitte wenden Sie sich an den Admin, um Kurse zugewiesen zu bekommen.</p>
+    <p>Aktuell betreuen Sie noch keine Vorlesungen.</p>
+    <p>Bitte wenden Sie sich an den Admin, um Vorlesungen zugewiesen zu bekommen.</p>
     {% else %}
-<p>Es sind derzeit keine Kurse im System.</p>
+    <p>Es sind derzeit keine Vorlesungen im System.</p>
     {% endif %}
 {% endif %}
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+    // Load courses (Studiengänge) for the select dropdown via /api/courses
+    document.addEventListener('DOMContentLoaded', async function () {
+        try {
+            const response = await fetch('/api/courses');
+            const data = await response.json();
+            const courseSelect = document.getElementById('course');
+            data.courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course.id;
+                option.textContent = course.name;
+                courseSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Fehler beim Laden der Kurse:', error);
+        }
+    });
+</script>
+{% endblock %}

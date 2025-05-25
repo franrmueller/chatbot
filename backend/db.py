@@ -2,6 +2,7 @@ import logging
 import mysql.connector
 from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
+from fastapi import UploadFile, File
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -88,7 +89,7 @@ def reset_database():
         cursor.execute("""
         INSERT INTO professors (username, password, first_name, last_name, role)
         VALUES (%s, %s, %s, %s, %s)
-        """, ('kirchberg', hashed_password, 'Paul', 'Kirchgberg', 'admin'))
+        """, ('kirchberg', hashed_password, 'Paul', 'Kirchberg', 'admin'))
 
         # Now create courses table
         cursor.execute("""
@@ -482,3 +483,221 @@ def get_courses_for_user(user):
         cursor.close()
         connection.close()
     return courses
+
+# ===============================
+# Classes
+# ===============================
+
+# Class retrieval function
+def get_all_classes():
+    """Return all classes with course and professor info."""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                cls.id, 
+                cls.name, 
+                cls.created_at, 
+                cls.course_id as code,
+                c.name as course_name,
+                CONCAT(p.first_name, ' ', p.last_name) as professor_name
+            FROM classes cls
+            LEFT JOIN courses c ON cls.course_id = c.id
+            LEFT JOIN professors p ON cls.taught_by = p.username
+            ORDER BY cls.name
+        """)
+        classes = cursor.fetchall()
+        return classes
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_classes_for_student(student_username):
+    """Return all classes for a given student (based on their course)"""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                cls.id, 
+                cls.name, 
+                cls.created_at, 
+                cls.course_id as code,
+                c.name as course_name,
+                CONCAT(p.first_name, ' ', p.last_name) as professor_name
+            FROM students s
+            JOIN classes cls ON s.course = cls.course_id
+            LEFT JOIN courses c ON cls.course_id = c.id
+            LEFT JOIN professors p ON cls.taught_by = p.username
+            WHERE s.username = %s
+            ORDER BY cls.name
+        """, (student_username,))
+        classes = cursor.fetchall()
+        return classes
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_classes_for_professor(professor_username):
+    """Return all classes taught by a given professor"""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                cls.id, 
+                cls.name, 
+                cls.created_at, 
+                cls.course_id as code,
+                c.name as course_name,
+                CONCAT(p.first_name, ' ', p.last_name) as professor_name
+            FROM classes cls
+            LEFT JOIN courses c ON cls.course_id = c.id
+            LEFT JOIN professors p ON cls.taught_by = p.username
+            WHERE cls.taught_by = %s
+            ORDER BY cls.name
+        """, (professor_username,))
+        classes = cursor.fetchall()
+        return classes
+    finally:
+        cursor.close()
+        connection.close()
+
+def add_class(class_data):
+    """Add a new class (Vorlesung) to the database."""
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
+        cursor.execute("""
+            INSERT INTO classes (name, course_id, taught_by)
+            VALUES (%s, %s, %s)
+        """, (
+            class_data["name"],
+            class_data["course_id"],
+            class_data["taught_by"]
+        ))
+        connection.commit()
+        return True, "Vorlesung erfolgreich hinzugefügt."
+    except Exception as e:
+        logging.error(f"Error adding class: {str(e)}")
+        return False, f"Fehler beim Hinzufügen: {str(e)}"
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def delete_class(class_id):
+    """Delete a class (Vorlesung) and its documents from the database."""
+    connection = sql_connect()
+    cursor = connection.cursor()
+    try:
+        # Optionally delete documents first if ON DELETE CASCADE is not set
+        cursor.execute("DELETE FROM documents WHERE class_id = %s", (class_id,))
+        cursor.execute("DELETE FROM classes WHERE id = %s", (class_id,))
+        connection.commit()
+        return True, "Vorlesung erfolgreich gelöscht."
+    except Exception as e:
+        logging.error(f"Error deleting class: {str(e)}")
+        return False, f"Fehler beim Löschen: {str(e)}"
+    finally:
+        cursor.close()
+        connection.close()
+
+
+# ===============================
+# PDFs
+# ===============================
+
+def get_pdfs_for_class(class_id):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT d.id, d.name, d.created_at as uploaded_at, d.file_path, d.file_type
+        FROM documents d
+        WHERE d.class_id = %s
+        ORDER BY d.created_at DESC
+    """, (class_id,))
+    pdfs = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return pdfs
+
+def get_pdfs_for_admin():
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT d.id, d.name, d.created_at as uploaded_at, c.name as course_name,
+               d.created_by as uploader, d.file_path, d.file_type,
+               'indexed' as status  -- Placeholder, replace with real status if available
+        FROM documents d
+        LEFT JOIN classes cls ON d.class_id = cls.id
+        LEFT JOIN courses c ON cls.course_id = c.id
+        ORDER BY d.created_at DESC
+    """)
+    pdfs = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return pdfs
+
+def get_pdfs_for_professor_course(course_id):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT d.id, d.name, d.created_at as uploaded_at, d.file_path, d.file_type
+        FROM documents d
+        LEFT JOIN classes cls ON d.class_id = cls.id
+        WHERE cls.course_id = %s
+        ORDER BY d.created_at DESC
+    """, (course_id,))
+    pdfs = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return pdfs
+
+def get_course_by_id(course_id):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT id, name FROM courses WHERE id = %s", (course_id,))
+    course = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return course
+
+def get_class_by_course_and_professor(course_id, professor_username):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        "SELECT id FROM classes WHERE course_id = %s AND taught_by = %s",
+        (course_id, professor_username)
+    )
+    cls = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return cls
+
+def update_pdf(pdf_id, file: UploadFile):
+    # Overwrite file and update DB (implement as needed)
+    # For demo: just update name and file_type
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute(
+        "UPDATE documents SET name=%s, file_type=%s WHERE id=%s",
+        (file.filename, file.content_type, pdf_id)
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()
+    return True
+
+def delete_pdf(pdf_id):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM documents WHERE id=%s", (pdf_id,))
+    connection.commit()
+    cursor.close()
+    connection.close()
+    return True

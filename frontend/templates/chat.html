@@ -27,7 +27,7 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 {% extends "base.html" %}
  
 {% block title %}
-Chat – Vorlesung {{ course.name }}
+Chat – Vorlesung {{ class.name }}
 {% endblock %}
  
 {% block content %}
@@ -37,11 +37,11 @@ Chat – Vorlesung {{ course.name }}
  
 <!-- Navigationsbuttons oben -->
 <div class="btn-group" style="margin-bottom: 20px;">
-    {% if user.role == 'STUDENT' %}
-<a href="/student/classes" class="btn btn-secondary">Zur Kursübersicht</a>
-    {% elif user.role == 'PROFESSOR' %}
+    {% if user.role == 'student' %}
+<a href="/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    {% elif user.role == 'admin' %}
 <a href="/professor/classes" class="btn btn-secondary">Zur Kursübersicht</a>
-    {% elif user.role == 'ADMIN' %}
+    {% elif user.role == '' %}
 <a href="/admin/classes" class="btn btn-secondary">Zur Kursübersicht</a>
     {% endif %}
 <button id="reset-chat" class="btn btn-warning">Reset</button>

@@ -73,10 +73,10 @@ def register_student(student_data):
 
         # Insert new student
         query = """
-            INSERT INTO students (username, password, first_name, last_name, created_at)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO students (username, password, first_name, last_name, course, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (username, password, first_name, last_name, created_at))
+        cursor.execute(query, (username, password, first_name, last_name, course_id, created_at))
         connection.commit()
 
         return {

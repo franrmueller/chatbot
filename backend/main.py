@@ -8,6 +8,7 @@ from backend import auth
 from backend.auth import register_student, login_student, login_professor
 import backend.db as db
 import logging
+from fastapi import UploadFile, File
 
 # API instantiation
 app = FastAPI()
@@ -104,13 +105,31 @@ async def student_dashboard(request: Request):
         return user
     return templates.TemplateResponse("student_dashboard.html", {"request": request, "user": user})
 
-# @app.get("/student/classes", response_class=HTMLResponse)
-# async def student_classes(request: Request):
-#     user = await verify_role(request, ["student"])
-#     if isinstance(user, RedirectResponse):
-#         return user
-#     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
+@app.post("/admin/classes", response_class=HTMLResponse)
+async def admin_add_class(
+    request: Request,
+    name: str = Form(...),
+    course: str = Form(...)
+):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
 
+    # Insert new class into DB
+    success, message = db.add_class({
+        "name": name,
+        "course_id": course,
+        "taught_by": user["username"]  # or let admin select a professor
+    })
+
+    # Reload classes for display
+    classes = db.get_all_classes()
+    return templates.TemplateResponse("classes.html", {
+        "request": request,
+        "user": user,
+        "classes": classes,
+        "success" if success else "error": message
+    })
 # =========================================
 # Professor Routes
 # =========================================
@@ -156,25 +175,24 @@ async def admin_chathistory(request: Request):
 
 # Legacy route for backward compatibility
 @app.get("/classes", response_class=HTMLResponse)
-async def legacy_classes_redirect(request: Request):
+async def show_classes(request: Request):
     user = await get_current_user(request)
     if isinstance(user, RedirectResponse):
         return user
 
-    courses = db.get_courses_for_user(user)
+    if user["role"] == "student":
+        classes = db.get_classes_for_student(user["username"])
+    elif user["role"] == "professor":
+        classes = db.get_classes_for_professor(user["username"])
+    else:  # admin
+        classes = db.get_all_classes()
+
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
-        "courses": courses
+        "classes": classes
     })
-
     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
-    # if user.get("role") == "student":
-    #     return RedirectResponse(url="/student/classes", status_code=302)
-    # elif user.get("role") == "professor":
-    #     return RedirectResponse(url="/professor/classes", status_code=302)
-    # else:  # admin
-    #     return RedirectResponse(url="/admin/dashboard", status_code=302)
     
 @app.get("/admin/professors", response_class=HTMLResponse)
 async def admin_professors_page(request: Request):
@@ -391,3 +409,184 @@ async def legacy_api_logout():
 @app.post("/api/register")
 async def legacy_api_register(student_data: dict = Body(...)):
     return await api_register(student_data)
+
+# =========================================
+# Classes
+# =========================================
+
+@app.get("/chat/{class_code}", response_class=HTMLResponse)
+async def chat_page(request: Request, class_code: str):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Get class/course info by code
+    connection = db.sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM classes WHERE course_id = %s", (class_code,))
+    course = cursor.fetchone()
+    cursor.close()
+    connection.close()
+
+    if not course:
+        return HTMLResponse(content="Kurs nicht gefunden.", status_code=404)
+
+    return templates.TemplateResponse("chat.html", {
+        "request": request,
+        "user": user,
+        "course": course
+    })
+
+@app.post("/admin/classes/delete/{class_id}")
+async def admin_delete_class(request: Request, class_id: int):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Use the db function for deletion
+    success, message = db.delete_class(class_id)
+
+    # Reload classes for display
+    classes = db.get_all_classes()
+    return templates.TemplateResponse("classes.html", {
+        "request": request,
+        "user": user,
+        "classes": classes,
+        "success" if success else "error": message
+    })
+
+# PDF
+# --- Admin PDF Übersicht ---
+@app.get("/admin/pdf", response_class=HTMLResponse)
+async def admin_pdf_overview(request: Request, class_id: int = None):
+    user = await verify_role(request, ["admin"])
+    if class_id:
+        pdfs = db.get_pdfs_for_class(class_id)
+        connection = db.sql_connect()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM classes WHERE id = %s", (class_id,))
+        cls = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        return templates.TemplateResponse("pdf.html", {
+        	"request": request,
+            "user": user,
+            "pdfs": pdfs,
+            "class_id": class_id,
+            "course": cls if cls else None
+        })
+    else:
+        pdfs = db.get_pdfs_for_admin()
+        return templates.TemplateResponse("pdf.html", {
+            "request": request,
+            "user": user,
+            "pdfs": pdfs
+        })
+
+# --- Professor PDF Übersicht für Kurs ---
+@app.get("/professor/pdf", response_class=HTMLResponse)
+async def professor_pdf_overview(request: Request, class_id: int):
+    user = await verify_role(request, ["professor", "admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    pdfs = db.get_pdfs_for_class(class_id)
+    return templates.TemplateResponse("pdf.html", {
+        "request": request,
+        "user": user,
+        "pdfs": pdfs,
+        "class_id": class_id
+    })
+# --- PDF Upload (Professor) ---
+@app.post("/professor/pdf", response_class=HTMLResponse)
+async def upload_pdf_professor(
+    request: Request,
+    course_id: str,
+    pdf: UploadFile = File(...)
+):
+    user = await verify_role(request, ["professor"])
+    course = db.get_course_by_id(course_id)
+    cls = db.get_class_by_course_and_professor(course_id, user["username"])
+    if not cls:
+        return templates.TemplateResponse("pdf.html", {
+            "request": request,
+            "user": user,
+            "pdfs": db.get_pdfs_for_professor_course(course_id),
+            "course": course,
+            "error": "Keine zugewiesene Klasse für diesen Kurs."
+        })
+    # Save file (implement your own logic)
+    content = await pdf.read()
+    db.add_document({
+        "name": pdf.filename,
+        "created_by": user["username"],
+        "class_id": cls["id"],
+        "file_type": pdf.content_type
+    }, content)
+    pdfs = db.get_pdfs_for_professor_course(course_id)
+    return templates.TemplateResponse("pdf.html", {
+        "request": request,
+        "user": user,
+        "pdfs": pdfs,
+        "course": course,
+        "success": "PDF erfolgreich hochgeladen."
+    })
+
+# --- PDF Update ---
+@app.post("/admin/pdf/update/{pdf_id}", response_class=HTMLResponse)
+async def admin_update_pdf(request: Request, pdf_id: int, updated_pdf: UploadFile = File(...)):
+    user = await verify_role(request, ["admin"])
+    db.update_pdf(pdf_id, updated_pdf)
+    pdfs = db.get_pdfs_for_admin()
+    return templates.TemplateResponse("pdf.html", {
+        "request": request,
+        "user": user,
+        "pdfs": pdfs,
+        "success": "PDF erfolgreich aktualisiert."
+    })
+
+@app.post("/professor/pdf/{course_id}/update/{pdf_id}", response_class=HTMLResponse)
+async def professor_update_pdf(
+    request: Request,
+    course_id: str,
+    pdf_id: int,
+    updated_pdf: db.UploadFile = db.File(...)
+):
+    user = await verify_role(request, ["professor"])
+    db.update_pdf(pdf_id, updated_pdf)
+    pdfs = db.get_pdfs_for_professor_course(course_id)
+    course = db.get_course_by_id(course_id)
+    return templates.TemplateResponse("pdf.html", {
+        "request": request,
+        "user": user,
+        "pdfs": pdfs,
+        "course": course,
+        "success": "PDF erfolgreich aktualisiert."
+    })
+
+# --- PDF Delete ---
+@app.post("/admin/pdf/delete/{pdf_id}", response_class=HTMLResponse)
+async def admin_delete_pdf(request: Request, pdf_id: int):
+    user = await verify_role(request, ["admin"])
+    db.delete_pdf(pdf_id)
+    pdfs = db.get_pdfs_for_admin()
+    return templates.TemplateResponse("pdf.html", {
+        "request": request,
+        "user": user,
+        "pdfs": pdfs,
+        "success": "PDF erfolgreich gelöscht."
+    })
+
+@app.post("/professor/pdf/{course_id}/delete/{pdf_id}", response_class=HTMLResponse)
+async def professor_delete_pdf(request: Request, course_id: str, pdf_id: int):
+    user = await verify_role(request, ["professor"])
+    db.delete_pdf(pdf_id)
+    pdfs = db.get_pdfs_for_professor_course(course_id)
+    course = db.get_course_by_id(course_id)
+    return templates.TemplateResponse("pdf.html", {
+        "request": request,
+        "user": user,
+        "pdfs": pdfs,
+        "course": course,
+        "success": "PDF erfolgreich gelöscht."
+    })
