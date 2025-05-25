@@ -73,37 +73,35 @@ Meine Kurse – Vorlesungschatbot
         {% endif %}
 </div>
 </div>
-    {% endfor %}
-</div>
+ <!--   {% endfor %}
+</div>-->
 
 <!-- Student -->
  {% elif user.role == 'student' %}
-<h1>Meine belegten Kurse</h1>
-
-{% if courses or classes %}
-<div class="course-list">
-
+  <h1>Meine belegten Kurse</h1>
+  {% if courses or classes %}
+  <div class="course-list">
     {% for course in courses %}
     <div class="course-card">
-        <h3>{{ course.name }}</h3>
-        <p>Kurs-ID: {{ course.code }}</p>
-        <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
-        <div class="btn-group">
-            <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        </div>
+      <h3>{{ course.name }}</h3>
+      <p>Kurs-ID: {{ course.code }}</p>
+      <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
+      <div class="btn-group">
+        <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+      </div>
     </div>
     {% endfor %}
-
     {% for course in classes %}
     <div class="course-card">
-        <h3>{{ course.name }}</h3>
-        <p>Kurs-ID: {{ course.code }}</p>
-        <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
-        <div class="btn-group">
-            <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
-        </div>
+      <h3>{{ course.name }}</h3>
+      <p>Kurs-ID: {{ course.code }}</p>
+      <p>Dozent: {{ course.professor_name or "Nicht bekannt" }}</p>
+      <div class="btn-group">
+        <a href="/student/chat/{{ course.id }}" class="btn btn-primary">Zum Chat</a>
+      </div>
     </div>
     {% endfor %}
+  </div>
 
 {% else %}
 <!-- Fallback -->
