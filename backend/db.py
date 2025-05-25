@@ -256,6 +256,10 @@ def get_courses():
         return {"courses": []}
     
 
+# ================================
+# Professors
+# ================================
+
 def get_all_professors_with_courses():
     """Get all professors with their assigned courses"""
     connection = None
@@ -310,46 +314,38 @@ def get_all_professors_with_courses():
             connection.close()
 
 def add_professor(professor_data):
-    """Add a new professor"""
+    """Add a new professor or admin"""
     connection = None
     cursor = None
-    
     try:
         connection = sql_connect()
         cursor = connection.cursor(dictionary=True)
-        
+
         # Check if username already exists
         cursor.execute("SELECT * FROM professors WHERE username = %s", (professor_data['username'],))
         if cursor.fetchone():
             return False, "Benutzername existiert bereits"
-        
+
         # Hash password
         password_hash = pwd_context.hash(professor_data['password'])
-        
-        # Parse name into first_name and last_name
-        name_parts = professor_data['name'].split(' ', 1)
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ""
-        
-        # Insert professor
+
+        # Insert professor/admin
         cursor.execute("""
             INSERT INTO professors (username, password, first_name, last_name, role)
             VALUES (%s, %s, %s, %s, %s)
         """, (
             professor_data['username'],
             password_hash,
-            first_name,
-            last_name,
-            'professor'  # Default role
+            professor_data['first_name'],
+            professor_data['last_name'],
+            professor_data['role']
         ))
-        
+
         connection.commit()
         return True, "Professor erfolgreich hinzugefügt"
-    
     except Exception as e:
         logging.error(f"Error adding professor: {str(e)}")
         return False, f"Fehler beim Hinzufügen: {str(e)}"
-    
     finally:
         if cursor:
             cursor.close()

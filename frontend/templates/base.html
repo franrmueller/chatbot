@@ -16,7 +16,7 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
  
     <!-- Link to main CSS file -->
 <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
- <link rel="stylesheet" href="/static/style.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
  
     <!-- Placeholder for extra CSS that individual pages can inject -->
     {% block extra_css %}{% endblock %}
@@ -44,15 +44,15 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
         <!-- Navigation links depending on user role -->
 <div class="nav-links">
             {% if user %}
-                {% if user.role == 'ADMIN' %}
+                {% if user.role == 'admin' %}
 <a href="/admin/dashboard">Dashboard</a>
 <a href="/admin/classes">Kurse</a>
 <a href="/admin/professors">Professor:innen</a>
 <a href="/admin/students">Studierende</a>
 <a href="/admin/chathistory">Chathistorie</a>
-                {% elif user.role == 'PROFESSOR' %}
+                {% elif user.role == 'professor' %}
 <a href="/professor/classes">Meine Kurse</a>
-                {% elif user.role == 'STUDENT' %}
+                {% elif user.role == 'student' %}
 <a href="/student/classes">Meine belegten Kurse</a>
                 {% endif %}
 <a href="/auth/logout">Abmelden</a>

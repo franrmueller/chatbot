@@ -46,11 +46,16 @@ Professor:innen verwalten – Admin
  
 <!-- Neuen Professor hinzufügen -->
 <form id="add-professor-form" class="form-inline" method="POST">
-<h2>Neuen Professor hinzufügen</h2>
-<input type="text" name="name" placeholder="Name" required>
-<input type="username" name="username" placeholder="Benutzername" required>
-<input type="password" name="password" placeholder="Passwort" required>
-<button type="submit" class="btn btn-primary">Hinzufügen</button>
+    <h2>Neuen Professor hinzufügen</h2>
+    <input type="text" name="first_name" placeholder="Vorname" required>
+    <input type="text" name="last_name" placeholder="Nachname" required>
+    <input type="text" name="username" placeholder="Benutzername" required>
+    <input type="password" name="password" placeholder="Passwort" required>
+    <select name="role" required>
+        <option value="professor" selected>Professor:in</option>
+        <option value="admin">Administrator:in</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Hinzufügen</button>
 </form>
  
 {% if success %}
@@ -60,40 +65,44 @@ Professor:innen verwalten – Admin
 <div class="error-message">{{ error }}</div>
 {% endif %}
  
-<!-- Liste der Professor:innen -->
+<!-- List of professors -->
 <h2>Bestehende Professor:innen</h2>
 {% if professors %}
 <table class="admin-table">
-<thead>
-<tr>
-<th>Name</th>
-<th>Benutzername</th>
-<th>Zugewiesene Kurse</th>
-<th>Aktionen</th>
-</tr>
-</thead>
-<tbody>
-    {% for professor in professors %}
-<tr>
-<td>{{ professor.name }}</td>
-<td>{{ professor.username }}</td>
-<td>
-    {% for course in professor.courses %}
-        {{ course.name }}{% if not loop.last %}, {% endif %}
-    {% endfor %}
-</td>
-<td>
-<form method="POST" action="/admin/professors/delete/{{ professor.username }}" onsubmit="return confirm('Wirklich löschen?');" style="display:inline-block;">
-<button class="btn btn-danger">Löschen</button>
-</form>
-<a href="/admin/professors/edit/{{ professor.username }}" class="btn btn-warning">Bearbeiten</a>
-</td>
-</tr>
-    {% endfor %}
-</tbody>
+    <thead>
+        <tr>
+            <th>Benutzername</th>
+            <th>Name</th>
+            <th>Rolle</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for professor in professors %}
+        <tr>
+            <td>{{ professor.username }}</td>
+            <td>{{ professor.name }}</td>
+            <td>
+                {% if professor.role == 'admin' %}
+                    Administrator:in
+                {% else %}
+                    Professor:in
+                {% endif %}
+            </td>
+            <td>
+                <!-- Edit button (optional, link to edit page or modal) -->
+                <a href="/admin/professors/edit/{{ professor.username }}" class="btn btn-sm btn-warning">Bearbeiten</a>
+                <!-- Delete button -->
+                <form method="POST" action="/admin/professors/delete/{{ professor.username }}" style="display:inline-block;" onsubmit="return confirm('Wirklich löschen?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 {% else %}
-<p>Es sind aktuell keine Professor:innen im System.</p>
+<p>Keine Professor:innen gefunden.</p>
 {% endif %}
 </div>
 {% endblock %}

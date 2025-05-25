@@ -213,43 +213,33 @@ async def admin_professors_page(request: Request):
 @app.post("/admin/professors", response_class=HTMLResponse)
 async def admin_add_professor(
     request: Request,
-    name: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
     username: str = Form(...),
-    password: str = Form(...)
+    password: str = Form(...),
+    role: str = Form(...)
 ):
-    """Add a new professor"""
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
-    
-    # Create professor data
+
     professor_data = {
-        "name": name,
+        "first_name": first_name,
+        "last_name": last_name,
         "username": username,
-        "password": password
+        "password": password,
+        "role": role
     }
-    
-    # Add professor
+
     success, message = db.add_professor(professor_data)
-    
-    # Get all professors for display
     professors = db.get_all_professors_with_courses()
-    
-    # Return template with appropriate message
-    if success:
-        return templates.TemplateResponse("admin_professors.html", {
-            "request": request, 
-            "user": user,
-            "professors": professors,
-            "success": message
-        })
-    else:
-        return templates.TemplateResponse("admin_professors.html", {
-            "request": request, 
-            "user": user,
-            "professors": professors,
-            "error": message
-        })
+
+    return templates.TemplateResponse("admin_professors.html", {
+        "request": request,
+        "user": user,
+        "professors": professors,
+        "success" if success else "error": message
+    })
 
 @app.post("/admin/professors/delete/{professor_username}")
 async def admin_delete_professor(request: Request, professor_username: int):
