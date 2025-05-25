@@ -13,7 +13,6 @@ Meine Vorlesungen – Vorlesungschatbot
 {% block content %}
 <div class="dashboard-container">
 
-{# Admin section: navigation and class creation form #}
 {% if user.role == 'admin' %}
 <h1>Vorlesungen verwalten</h1>
 
@@ -31,7 +30,6 @@ Meine Vorlesungen – Vorlesungschatbot
         <label for="course">Kurs (Studiengang) auswählen:</label>
         <select id="course" name="course" required>
             <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
-            {# Courses (Studiengänge) will be loaded by JS #}
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Vorlesung hinzufügen</button>
@@ -50,38 +48,43 @@ Meine Vorlesungen – Vorlesungschatbot
 <h1>Meine Vorlesungen</h1>
 {% endif %}
 
-{# List of classes (Vorlesungen) #}
 {% if classes %}
 <div class="class-list">
     {% for class in classes %}
-    <div class="class-card">
-        <h3>{{ class.name }}</h3>
-        <p>Vorlesungs-ID: {{ class.id }}</p>
-        <p>Kurs (Studiengang): {{ class.course_name }}</p> <!-- ✅ geändert -->
+    <div class="class-card" style="padding: 1rem; border: 1px solid #ccc; margin-bottom: 1.5rem; border-radius: 0.5rem;">
+
+        <!-- NEUES LAYOUT BEGINN -->
+        <p style="margin: 0 0 0.25rem;"><strong>Kurs:</strong> {{ class.code }} – {{ class.course_name }}</p>
+        <p style="margin: 0 0 0.75rem;"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">{{ class.name }}</h3>
+
+            <div class="btn-group">
+                {% if user.role == 'student' %}
+                <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+                {% elif user.role == 'professor' %}
+                <a href="/professor/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+                <a href="/professor/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+                {% elif user.role == 'admin' %}
+                <a href="/admin/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+                <a href="/admin/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+                {% endif %}
+            </div>
+        </div>
 
         {% if user.role == 'admin' %}
-        <p>Dozent: {{ class.professor_name or "Nicht zugewiesen" }}</p>
+        <p style="margin-top: 0.75rem;"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
+        <form method="POST" action="/admin/classes/delete/{{ class.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="margin-top: 0.5rem;">
+            <button type="submit" class="btn btn-danger">Löschen</button>
+        </form>
         {% endif %}
+        <!-- NEUES LAYOUT ENDE -->
 
-        <div class="btn-group">
-            {% if user.role == 'student' %}
-            <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
-            {% elif user.role == 'professor' %}
-            <a href="/professor/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-            <a href="/professor/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
-            {% elif user.role == 'admin' %}
-            <a href="/admin/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-            <a href="/admin/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
-            <form method="POST" action="/admin/classes/delete/{{ class.id }}" onsubmit="return confirm('Diesen Kurs wirklich löschen?');" style="display:inline-block;">
-                <button type="submit" class="btn btn-danger">Löschen</button>
-            </form>
-            {% endif %}
-        </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-{# Fallback if no classes are available #}
     {% if user.role == 'student' %}
     <p>Du bist aktuell in keiner Vorlesung eingeschrieben.</p>
     <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
@@ -97,7 +100,6 @@ Meine Vorlesungen – Vorlesungschatbot
 
 {% block extra_js %}
 <script>
-    // Load courses (Studiengänge) for the select dropdown via /api/courses
     document.addEventListener('DOMContentLoaded', async function () {
         try {
             const response = await fetch('/api/courses');
