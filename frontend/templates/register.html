@@ -26,64 +26,64 @@ Anforderungen an das Backend, damit diese Seite funktioniert (DE):
 -->
  
 {% extends "base.html" %}
- 
+
 {% block title %}
 Registrieren - Vorlesungschatbot
 {% endblock %}
- 
+
 {% block content %}
 <div class="auth-container">
-<h1>Studierenden-Registrierung</h1>
- 
-<!-- Fehleranzeige -->
-<div class="error-message" id="error-message" style="display: none;"></div>
- 
-<!-- Registrierungsformular -->
-<form id="register-form" class="auth-form">
- 
-    <div class="form-group">
-<label for="first-name">Vorname:</label>
-<input type="text" id="first-name" name="first-name" required>
-</div>
- 
-    <div class="form-group">
-<label for="last-name">Nachname:</label>
-<input type="text" id="last-name" name="last-name" required>
-</div>
- 
-    <div class="form-group">
-<label for="username">Benutzername:</label>
-<input type="text" id="username" name="username" required>
-</div>
- 
-    <!-- Dynamisch geladene Kursauswahl -->
-<div class="form-group">
-<label for="course">Kurs auswählen:</label>
-<select id="course" name="course" required>
-<option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
-<!-- Kurse werden per JS geladen -->
-</select>
-</div>
- 
-    <div class="form-group">
-<label for="password">Passwort:</label>
-<input type="password" id="password" name="password" required minlength="8">
-</div>
- 
-    <div class="form-group">
-<label for="confirm-password">Passwort bestätigen:</label>
-<input type="password" id="confirm-password" name="confirm-password" required minlength="8">
-</div>
- 
-    <button type="submit" class="btn btn-primary">Registrieren</button>
-</form>
- 
-<div class="auth-links">
-<p>Bereits ein Konto? <a href="/login">Anmelden</a></p>
-</div>
+    <h1>Studierenden-Registrierung</h1>
+
+    <!-- Fehleranzeige -->
+    <div class="error-message" id="error-message" style="display: none;"></div>
+
+    <!-- Registrierungsformular -->
+    <form id="register-form" class="auth-form">
+
+        <div class="form-group">
+            <label for="first-name">Vorname:</label>
+            <input type="text" id="first-name" name="first-name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="last-name">Nachname:</label>
+            <input type="text" id="last-name" name="last-name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="username">Benutzername:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+
+        <!-- Dynamisch geladene Kursauswahl -->
+        <div class="form-group">
+            <label for="course">Kurs auswählen:</label>
+            <select id="course" name="course" required>
+                <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
+                <!-- Kurse werden per JS geladen -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Passwort:</label>
+            <input type="password" id="password" name="password" required minlength="8">
+        </div>
+
+        <div class="form-group">
+            <label for="confirm-password">Passwort bestätigen:</label>
+            <input type="password" id="confirm-password" name="confirm-password" required minlength="8">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Registrieren</button>
+    </form>
+
+    <div class="auth-links">
+        <p>Bereits ein Konto? <a href="/login">Anmelden</a></p>
+    </div>
 </div>
 {% endblock %}
- 
+
 {% block extra_js %}
 <script>
     // Kurse beim Laden der Seite von /api/courses laden
@@ -102,46 +102,47 @@ Registrieren - Vorlesungschatbot
             console.error('Fehler beim Laden der Kurse:', error);
         }
     });
- 
+
     // Registrierungsformular absenden
     document.getElementById('register-form').addEventListener('submit', async function (e) {
         e.preventDefault();
- 
+
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirm-password').value;
         const errorMessage = document.getElementById('error-message');
- 
+
         if (password !== confirmPassword) {
             errorMessage.textContent = 'Passwörter stimmen nicht überein.';
             errorMessage.style.display = 'block';
             return;
         }
- 
+
         const userData = {
             first_name: document.getElementById('first-name').value,
             last_name: document.getElementById('last-name').value,
             username: document.getElementById('username').value,
             password: password,
-            course_id: document.getElementById('course').value
+            course_id: document.getElementById('course').value,
+            role: "student" // ✅ hinzugefügt, damit Kurs gespeichert wird
         };
- 
+
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userData)
             });
- 
+
             const data = await response.json();
- 
+
             if (!response.ok) {
                 errorMessage.textContent = data.detail || 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.';
                 errorMessage.style.display = 'block';
                 return;
             }
- 
+
             window.location.href = '/login?registered=true';
- 
+
         } catch (error) {
             errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
             errorMessage.style.display = 'block';
