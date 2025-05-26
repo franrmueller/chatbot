@@ -18,7 +18,7 @@ from backend.rag.chains import (
 )
 from backend.rag.utils import BaseLogger
 
-from backend.rag.zneo4j_operations import NEO4J_USERNAME, NEO4J_PASSWORD
+#from backend.rag.zneo4j_operations import NEO4J_USERNAME, NEO4J_PASSWORD
 
 
 # API instantiation
