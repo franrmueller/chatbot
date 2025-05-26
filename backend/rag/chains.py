@@ -14,7 +14,7 @@ from langchain.prompts.chat import (
     HumanMessagePromptTemplate,
 )
 from typing import List, Any
-from utils import BaseLogger, extract_title_and_question
+from backend.rag.utils import BaseLogger, extract_title_and_question
 
 
 def load_embedding_model(embedding_model_name: str, logger=BaseLogger(), config={}):
@@ -220,3 +220,17 @@ def generate_ticket(neo4j_graph, llm_chain, input_question):
     )
     new_title, new_question = extract_title_and_question(llm_response["answer"])
     return (new_title, new_question)
+
+def send_documents_to_rag(class_id, documents):
+    """
+    Send the list of documents for a class to the RAG system.
+    You can adapt this to your actual RAG ingestion logic.
+    """
+    # Example: send file paths and names to your RAG system
+    # This could be an API call, or direct ingestion if local
+    for doc in documents:
+        print(f"Sending to RAG: {doc['file_path']} ({doc['name']})")
+        # TODO: Replace with actual RAG ingestion logic
+        # e.g., rag_ingest_pdf(doc['file_path'], class_id)
+    # Optionally, return a status
+    return True

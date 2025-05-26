@@ -3,7 +3,7 @@ import mysql.connector
 from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from fastapi import UploadFile, File
-
+import os
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -137,7 +137,7 @@ def reset_database():
         cursor.execute("""
         CREATE TABLE documents (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
+            name VARCHAR(100) NOT NULL UNIQUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by VARCHAR(50) NOT NULL,
             class_id INT NOT NULL,
@@ -386,61 +386,32 @@ def delete_professor(professor_username):
         if connection:
             connection.close()
 
-def add_document(document_data, file_content):
-    """
-    Add a new document to the database and file system
-    Args:
-        document_data: dict with keys 'name', 'created_by', 'class_id', 'file_type'
-        file_content: binary content of the file
-    Returns:
-        (success: bool, message_or_id: str|int)
-    """
-    import os
-    import uuid
-    connection = None
-    cursor = None
-    try:
-        connection = sql_connect()
-        cursor = connection.cursor()
 
-        # Ensure upload directory exists
-        upload_dir = os.path.join(os.getcwd(), 'uploads')
-        if not os.path.exists(upload_dir):
-            os.makedirs(upload_dir)
+# ===============================
+# Courses
+# ===============================
 
-        # Generate a unique filename
-        file_extension = document_data['file_type'].split('/')[-1]
-        filename = f"{uuid.uuid4().hex}.{file_extension}"
-        file_path = os.path.join(upload_dir, filename)
+def get_course_by_id(course_id):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT id, name FROM courses WHERE id = %s", (course_id,))
+    course = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return course
 
-        # Save file to disk
-        with open(file_path, 'wb') as f:
-            f.write(file_content)
+def get_class_by_course_and_professor(course_id, professor_username):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(
+        "SELECT id FROM classes WHERE course_id = %s AND taught_by = %s",
+        (course_id, professor_username)
+    )
+    cls = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return cls
 
-        # Insert document record into database
-        cursor.execute("""
-            INSERT INTO documents (name, created_by, class_id, file_path, file_type, content_extracted)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (
-            document_data['name'],
-            document_data['created_by'],
-            document_data['class_id'],
-            file_path,
-            document_data['file_type'],
-            False
-        ))
-        connection.commit()
-        return True, cursor.lastrowid
-    except Exception as e:
-        logging.error(f"Error adding document: {str(e)}")
-        return False, f"Fehler beim Hinzufügen des Dokuments: {str(e)}"
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-# Course retrieval function
 def get_courses_for_user(user):
     """Return a list of courses/classes for the given user based on their role."""
     connection = sql_connect()
@@ -480,6 +451,7 @@ def get_courses_for_user(user):
         connection.close()
     return courses
 
+
 # ===============================
 # Classes
 # ===============================
@@ -508,6 +480,28 @@ def get_all_classes():
     finally:
         cursor.close()
         connection.close()
+
+def get_class_by_id(class_id):
+    """Retrieve a class by its ID."""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT 
+            cls.id, 
+            cls.name, 
+            cls.created_at, 
+            cls.course_id, 
+            c.name as course_name,
+            CONCAT(p.first_name, ' ', p.last_name) as professor_name
+        FROM classes cls
+        LEFT JOIN courses c ON cls.course_id = c.id
+        LEFT JOIN professors p ON cls.taught_by = p.username
+        WHERE cls.id = %s
+    """, (class_id,))
+    cls = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return cls
 
 def get_classes_for_student(student_username):
     """Return all classes for a given student (based on their course)"""
@@ -609,10 +603,11 @@ def delete_class(class_id):
 # ===============================
 
 def get_pdfs_for_class(class_id):
+    """Get all PDFs for a given class."""
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
     cursor.execute("""
-        SELECT d.id, d.name, d.created_at as uploaded_at, d.file_path, d.file_type
+        SELECT d.id, d.name, d.created_by, d.created_at as uploaded_at, d.file_path, d.file_type
         FROM documents d
         WHERE d.class_id = %s
         ORDER BY d.created_at DESC
@@ -622,78 +617,76 @@ def get_pdfs_for_class(class_id):
     connection.close()
     return pdfs
 
-def get_pdfs_for_admin():
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT d.id, d.name, d.created_at as uploaded_at, c.name as course_name,
-               d.created_by as uploader, d.file_path, d.file_type,
-               'indexed' as status  -- Placeholder, replace with real status if available
-        FROM documents d
-        LEFT JOIN classes cls ON d.class_id = cls.id
-        LEFT JOIN courses c ON cls.course_id = c.id
-        ORDER BY d.created_at DESC
-    """)
-    pdfs = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return pdfs
+def add_document(document_data, file_content):
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
 
-def get_pdfs_for_professor_course(course_id):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT d.id, d.name, d.created_at as uploaded_at, d.file_path, d.file_type
-        FROM documents d
-        LEFT JOIN classes cls ON d.class_id = cls.id
-        WHERE cls.course_id = %s
-        ORDER BY d.created_at DESC
-    """, (course_id,))
-    pdfs = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return pdfs
+        upload_dir = os.path.join(os.getcwd(), 'uploads')
+        if not os.path.exists(upload_dir):
+            os.makedirs(upload_dir)
 
-def get_course_by_id(course_id):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT id, name FROM courses WHERE id = %s", (course_id,))
-    course = cursor.fetchone()
-    cursor.close()
-    connection.close()
-    return course
+        filename = document_data['name']
+        file_path = os.path.join(upload_dir, filename)
 
-def get_class_by_course_and_professor(course_id, professor_username):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute(
-        "SELECT id FROM classes WHERE course_id = %s AND taught_by = %s",
-        (course_id, professor_username)
-    )
-    cls = cursor.fetchone()
-    cursor.close()
-    connection.close()
-    return cls
+        # Save file to disk
+        with open(file_path, 'wb') as f:
+            f.write(file_content)
 
-def update_pdf(pdf_id, file: UploadFile):
-    # Overwrite file and update DB (implement as needed)
-    # For demo: just update name and file_type
-    connection = sql_connect()
-    cursor = connection.cursor()
-    cursor.execute(
-        "UPDATE documents SET name=%s, file_type=%s WHERE id=%s",
-        (file.filename, file.content_type, pdf_id)
-    )
-    connection.commit()
-    cursor.close()
-    connection.close()
-    return True
+        # Insert document record into database
+        cursor.execute("""
+            INSERT INTO documents (name, created_by, class_id, file_path, file_type, content_extracted)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            filename,
+            document_data['created_by'],
+            document_data['class_id'],
+            filename,  # Store just the filename
+            document_data['file_type'],
+            False
+        ))
+        connection.commit()
+        return True, cursor.lastrowid
+    except Exception as e:
+        logging.error(f"Error adding document: {str(e)}")
+        return False, f"Fehler beim Hinzufügen des Dokuments: {str(e)}"
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 
 def delete_pdf(pdf_id):
+    """Delete a PDF document and its file."""
     connection = sql_connect()
-    cursor = connection.cursor()
+    cursor = connection.cursor(dictionary=True)
+    # Get file path
+    cursor.execute("SELECT file_path FROM documents WHERE id=%s", (pdf_id,))
+    doc = cursor.fetchone()
+    if doc and doc["file_path"]:
+        file_path = os.path.join(os.getcwd(), 'uploads', doc["file_path"])
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            # Optionally log the error
+            print(f"Error deleting file: {e}")
+    # Delete from DB
     cursor.execute("DELETE FROM documents WHERE id=%s", (pdf_id,))
     connection.commit()
     cursor.close()
     connection.close()
     return True
+
+def get_class_id_by_pdf(pdf_id):
+    """Get the class_id for a given PDF/document."""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT class_id FROM documents WHERE id=%s", (pdf_id,))
+    doc = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return doc["class_id"] if doc else None

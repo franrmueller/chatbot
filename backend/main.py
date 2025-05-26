@@ -21,6 +21,7 @@ db.initialize_database()
 # Configure frontend templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # =========================================
 # Authentication Functions (unchanged)
@@ -404,29 +405,6 @@ async def legacy_api_register(student_data: dict = Body(...)):
 # Classes
 # =========================================
 
-@app.get("/chat/{class_code}", response_class=HTMLResponse)
-async def chat_page(request: Request, class_code: str):
-    user = await get_current_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
-
-    # Get class/course info by code
-    connection = db.sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM classes WHERE course_id = %s", (class_code,))
-    course = cursor.fetchone()
-    cursor.close()
-    connection.close()
-
-    if not course:
-        return HTMLResponse(content="Kurs nicht gefunden.", status_code=404)
-
-    return templates.TemplateResponse("chat.html", {
-        "request": request,
-        "user": user,
-        "course": course
-    })
-
 @app.post("/admin/classes/delete/{class_id}")
 async def admin_delete_class(request: Request, class_id: int):
     user = await verify_role(request, ["admin"])
@@ -445,138 +423,146 @@ async def admin_delete_class(request: Request, class_id: int):
         "success" if success else "error": message
     })
 
-# PDF
-# --- Admin PDF Übersicht ---
-@app.get("/admin/pdf", response_class=HTMLResponse)
-async def admin_pdf_overview(request: Request, class_id: int = None):
-    user = await verify_role(request, ["admin"])
-    if class_id:
-        pdfs = db.get_pdfs_for_class(class_id)
-        connection = db.sql_connect()
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM classes WHERE id = %s", (class_id,))
-        cls = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        return templates.TemplateResponse("pdf.html", {
-        	"request": request,
-            "user": user,
-            "pdfs": pdfs,
-            "class_id": class_id,
-            "course": cls if cls else None
-        })
-    else:
-        pdfs = db.get_pdfs_for_admin()
-        return templates.TemplateResponse("pdf.html", {
-            "request": request,
-            "user": user,
-            "pdfs": pdfs
-        })
+# =========================================
+# PDFs
+# =========================================
 
-# --- Professor PDF Übersicht für Kurs ---
-@app.get("/professor/pdf", response_class=HTMLResponse)
-async def professor_pdf_overview(request: Request, class_id: int):
+# PDF Overview
+@app.get("/pdf", response_class=HTMLResponse)
+async def pdf_overview(request: Request, class_id: int):
     user = await verify_role(request, ["professor", "admin"])
     if isinstance(user, RedirectResponse):
         return user
 
     pdfs = db.get_pdfs_for_class(class_id)
+    cls = db.get_class_by_id(class_id)
     return templates.TemplateResponse("pdf.html", {
         "request": request,
         "user": user,
         "pdfs": pdfs,
-        "class_id": class_id
+        "class_id": int(class_id),
+        "course": cls
     })
-# --- PDF Upload (Professor) ---
-@app.post("/professor/pdf", response_class=HTMLResponse)
-async def upload_pdf_professor(
+
+# PDF Upload
+@app.post("/pdf", response_class=HTMLResponse)
+async def upload_pdf(
     request: Request,
-    course_id: str,
+    class_id: int = Form(...),
+    name: str = Form(...),
     pdf: UploadFile = File(...)
 ):
-    user = await verify_role(request, ["professor"])
-    course = db.get_course_by_id(course_id)
-    cls = db.get_class_by_course_and_professor(course_id, user["username"])
+    user = await verify_role(request, ["professor", "admin"])
+    cls = db.get_class_by_id(class_id)
     if not cls:
         return templates.TemplateResponse("pdf.html", {
             "request": request,
             "user": user,
-            "pdfs": db.get_pdfs_for_professor_course(course_id),
-            "course": course,
-            "error": "Keine zugewiesene Klasse für diesen Kurs."
+            "pdfs": [],
+            "error": "Klasse nicht gefunden."
         })
-    # Save file (implement your own logic)
     content = await pdf.read()
     db.add_document({
-        "name": pdf.filename,
+        "name": name,
         "created_by": user["username"],
-        "class_id": cls["id"],
+        "class_id": int(class_id),
         "file_type": pdf.content_type
     }, content)
-    pdfs = db.get_pdfs_for_professor_course(course_id)
+    pdfs = db.get_pdfs_for_class(class_id)
     return templates.TemplateResponse("pdf.html", {
         "request": request,
         "user": user,
         "pdfs": pdfs,
-        "course": course,
+        "class_id": class_id,
+        "course": cls,
         "success": "PDF erfolgreich hochgeladen."
     })
 
-# --- PDF Update ---
-@app.post("/admin/pdf/update/{pdf_id}", response_class=HTMLResponse)
-async def admin_update_pdf(request: Request, pdf_id: int, updated_pdf: UploadFile = File(...)):
-    user = await verify_role(request, ["admin"])
-    db.update_pdf(pdf_id, updated_pdf)
-    pdfs = db.get_pdfs_for_admin()
-    return templates.TemplateResponse("pdf.html", {
-        "request": request,
-        "user": user,
-        "pdfs": pdfs,
-        "success": "PDF erfolgreich aktualisiert."
-    })
-
-@app.post("/professor/pdf/{course_id}/update/{pdf_id}", response_class=HTMLResponse)
-async def professor_update_pdf(
-    request: Request,
-    course_id: str,
-    pdf_id: int,
-    updated_pdf: db.UploadFile = db.File(...)
-):
-    user = await verify_role(request, ["professor"])
-    db.update_pdf(pdf_id, updated_pdf)
-    pdfs = db.get_pdfs_for_professor_course(course_id)
-    course = db.get_course_by_id(course_id)
-    return templates.TemplateResponse("pdf.html", {
-        "request": request,
-        "user": user,
-        "pdfs": pdfs,
-        "course": course,
-        "success": "PDF erfolgreich aktualisiert."
-    })
-
-# --- PDF Delete ---
-@app.post("/admin/pdf/delete/{pdf_id}", response_class=HTMLResponse)
-async def admin_delete_pdf(request: Request, pdf_id: int):
-    user = await verify_role(request, ["admin"])
+# PDF Delete
+@app.post("/pdf/delete/{pdf_id}", response_class=HTMLResponse)
+async def delete_pdf(request: Request, pdf_id: int):
+    user = await verify_role(request, ["professor", "admin"])
+    class_id = db.get_class_id_by_pdf(pdf_id)
     db.delete_pdf(pdf_id)
-    pdfs = db.get_pdfs_for_admin()
+    pdfs = db.get_pdfs_for_class(class_id)
+    cls = db.get_class_by_id(class_id)
     return templates.TemplateResponse("pdf.html", {
         "request": request,
         "user": user,
         "pdfs": pdfs,
+        "class_id": class_id,
+        "course": cls,
         "success": "PDF erfolgreich gelöscht."
     })
 
-@app.post("/professor/pdf/{course_id}/delete/{pdf_id}", response_class=HTMLResponse)
-async def professor_delete_pdf(request: Request, course_id: str, pdf_id: int):
-    user = await verify_role(request, ["professor"])
-    db.delete_pdf(pdf_id)
-    pdfs = db.get_pdfs_for_professor_course(course_id)
-    course = db.get_course_by_id(course_id)
-    return templates.TemplateResponse("pdf.html", {
-        "request": request,
-        "user": user,
-        "pdfs": pdfs,
-        "course": course,
-        "success": "PDF erfolgreich gelöscht."
-    })
+# =========================================
+# Chat
+# =========================================
+
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+from backend.rag.chains import load_embedding_model, load_llm
+from langchain.chains import RetrievalQA
+from langchain.vectorstores.neo4j_vector import Neo4jVector
+import os
+
+# Load RAG models once at startup (adjust as needed)
+embedding_model_name = os.getenv("EMBEDDING_MODEL", "SentenceTransformer")
+llm_name = os.getenv("LLM", "llama2")
+ollama_base_url = os.getenv("OLLAMA_BASE_URL")
+neo4j_url = os.getenv("NEO4J_URI")
+neo4j_username = os.getenv("NEO4J_USERNAME")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+embeddings, dimension = load_embedding_model(
+    embedding_model_name, config={"ollama_base_url": ollama_base_url}
+)
+llm = load_llm(llm_name, config={"ollama_base_url": ollama_base_url})
+
+@app.post("/api/chat/{class_id}")
+async def chat_api(class_id: int, body: dict):
+    prompt = body.get("prompt")
+    if not prompt:
+        return JSONResponse({"error": "No prompt provided"}, status_code=400)
+
+    # Get all documents for this class
+    pdfs = db.get_pdfs_for_class(class_id)
+    chunks = []
+    from PyPDF2 import PdfReader
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+    # Extract and split text from all PDFs
+    for pdf in pdfs:
+        file_path = os.path.join("uploads", pdf["file_path"])
+        try:
+            with open(file_path, "rb") as f:
+                reader = PdfReader(f)
+                text = ""
+                for page in reader.pages:
+                    text += page.extract_text() or ""
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000, chunk_overlap=200, length_function=len
+                )
+                chunks.extend(text_splitter.split_text(text=text))
+        except Exception as e:
+            continue  # Optionally log
+
+    # Create vectorstore (optionally cache this for performance)
+    vectorstore = Neo4jVector.from_texts(
+        chunks,
+        url=neo4j_url,
+        username=neo4j_username,
+        password=neo4j_password,
+        embedding=embeddings,
+        index_name="pdf_bot",
+        node_label="PdfBotChunk",
+        pre_delete_collection=False,  # Don't delete existing data!
+    )
+
+    qa = RetrievalQA.from_chain_type(
+        llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever()
+    )
+
+    answer = qa.run(prompt)
+    # Optionally, add source info if available
+    return {"answer": answer, "source": None}

@@ -16,14 +16,14 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if user.role == 'admin' %}
 <h1>Vorlesungen verwalten</h1>
 
-<div class="btn-group-nav">
+<div class="btn-group-nav mb-3">
     <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
     <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
     <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
     <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
 </div>
 
-<form id="add-class-form" class="form-inline" method="POST" action="/admin/classes">
+<form id="add-class-form" class="form-inline mb-4" method="POST" action="/admin/classes">
     <h2>Neue Vorlesung erstellen</h2>
     <input type="text" name="name" placeholder="Vorlesungsname" required>
     <div class="form-group">
@@ -36,12 +36,11 @@ Meine Vorlesungen – Vorlesungschatbot
 </form>
 
 {% if success %}
-<div class="success-message">{{ success }}</div>
+<div class="alert alert-success">{{ success }}</div>
 {% endif %}
 {% if error %}
-<div class="error-message">{{ error }}</div>
+<div class="alert alert-danger">{{ error }}</div>
 {% endif %}
-
 {% elif user.role == 'professor' %}
 <h1>Meine betreuten Vorlesungen</h1>
 {% else %}
@@ -51,29 +50,19 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if classes %}
 <div class="class-list">
     {% for class in classes %}
-    <div class="class-card">
-        <p class="class-meta"><strong>Kurs:</strong> {{ class.code }} – {{ class.course_name }}</p>
-        <p class="class-submeta"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
-
-        <div class="class-header">
-            <h3>{{ class.name }}</h3>
-
+    <div class="class-card mb-4 p-3 border rounded shadow-sm">
+        <p class="class-meta mb-1"><strong>Kurs:</strong> {{ class.code }} – {{ class.course_name }}</p>
+        <p class="class-submeta mb-1"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
+        <div class="class-header d-flex justify-content-between align-items-center">
+            <h3 class="mb-0">{{ class.name }}</h3>
             <div class="btn-group">
-                {% if user.role == 'student' %}
+                <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
                 <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
-                {% elif user.role == 'professor' %}
-                <a href="/professor/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-                <a href="/professor/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
-                {% elif user.role == 'admin' %}
-                <a href="/admin/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
-                <a href="/admin/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
-                {% endif %}
             </div>
         </div>
-
         {% if user.role == 'admin' %}
-        <p class="class-teacher"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
-        <form method="POST" action="/admin/classes/delete/{{ class.id }}" class="class-delete-form"
+        <p class="class-teacher mt-2"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
+        <form method="POST" action="/admin/classes/delete/{{ class.id }}" class="class-delete-form mt-2"
               onsubmit="return confirm('Diesen Kurs wirklich löschen?');">
             <button type="submit" class="btn btn-danger">Löschen</button>
         </form>
@@ -83,13 +72,13 @@ Meine Vorlesungen – Vorlesungschatbot
 </div>
 {% else %}
     {% if user.role == 'student' %}
-    <p>Du bist aktuell in keiner Vorlesung eingeschrieben.</p>
-    <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
+        <p>Du bist aktuell in keiner Vorlesung eingeschrieben.</p>
+        <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
     {% elif user.role == 'professor' %}
-    <p>Aktuell betreuen Sie noch keine Vorlesungen.</p>
-    <p>Bitte wenden Sie sich an den Admin, um Vorlesungen zugewiesen zu bekommen.</p>
+        <p>Aktuell betreuen Sie noch keine Vorlesungen.</p>
+        <p>Bitte wenden Sie sich an den Admin, um Vorlesungen zugewiesen zu bekommen.</p>
     {% else %}
-    <p>Es sind derzeit keine Vorlesungen im System.</p>
+        <p>Es sind derzeit keine Vorlesungen im System.</p>
     {% endif %}
 {% endif %}
 </div>
@@ -102,12 +91,14 @@ Meine Vorlesungen – Vorlesungschatbot
             const response = await fetch('/api/courses');
             const data = await response.json();
             const courseSelect = document.getElementById('course');
-            data.courses.forEach(course => {
-                const option = document.createElement('option');
-                option.value = course.id;
-                option.textContent = course.name;
-                courseSelect.appendChild(option);
-            });
+            if (courseSelect) {
+                data.courses.forEach(course => {
+                    const option = document.createElement('option');
+                    option.value = course.id;
+                    option.textContent = course.name;
+                    courseSelect.appendChild(option);
+                });
+            }
         } catch (error) {
             console.error('Fehler beim Laden der Kurse:', error);
         }

@@ -1,48 +1,66 @@
 {% extends "base.html" %}
 
 {% block title %}
-{% if user.role == 'admin' %}
-PDF-Übersicht mit Metadaten – Admin
-{% else %}
 PDF-Übersicht – Kurs {{ course.name }}
-{% endif %}
 {% endblock %}
 
 {% block content %}
 <div class="container my-4">
-
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <h1 class="h4 mb-3">PDF-Übersicht für Kurs: {{ course.name }}</h1>
             <a href="/classes" class="btn btn-secondary mb-3">Zur Kursübersicht</a>
 
-            {% if user.role == 'professor' or user.role == 'admin' %}
-            <form id="upload-form" class="row g-3 align-items-center mb-4" enctype="multipart/form-data" method="POST" action="{% if user.role == 'admin' %}/admin/pdf/upload{% else %}/professor/pdf/upload{% endif %}">
-                {% if user.role == 'admin' %}
-                <div class="col-md-3">
-                    <label for="class_id" class="form-label">Klasse auswählen:</label>
-                    <select name="class_id" id="class_id" class="form-select" required>
-                        <option value="">Bitte wählen...</option>
-                        {% for cls in classes %}
-                        <option value="{{ cls.id }}">{{ cls.name }} ({{ cls.course_name }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% endif %}
-                <div class="col-md-3">
-                    <label for="doc-name" class="form-label">Dokumentname:</label>
-                    <input type="text" name="name" id="doc-name" class="form-control" required>
-                </div>
-                <div class="col-md-3">
-                    <label for="pdf-file" class="form-label">PDF Datei:</label>
-                    <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
-                </div>
-                <div class="col-md-2 align-self-end">
-                    <button type="submit" class="btn btn-primary w-100">Hochladen</button>
-                </div>
-            </form>
-            {% endif %}
-            
+            <<form id="upload-form" class="row g-3 align-items-center mb-4"
+            enctype="multipart/form-data" method="POST" action="/pdf">
+            <input type="hidden" name="class_id" value="{{ class_id }}">
+            <div class="col-md-4">
+                <label for="pdf-file" class="form-label">PDF Datei:</label>
+                <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
+            </div>
+            <div class="col-md-2 align-self-end">
+                <button type="submit" class="btn btn-primary w-100">Hochladen</button>
+            </div>
+        </form>
+        <div id="upload-error" class="alert alert-danger d-none"></div>
+
+        <script>
+        const fileInput = document.getElementById('pdf-file');
+        fileInput.addEventListener('change', function() {
+            let nameInput = document.querySelector('input[name="name"]');
+            if (!nameInput) {
+                nameInput = document.createElement('input');
+                nameInput.type = 'hidden';
+                nameInput.name = 'name';
+                fileInput.form.appendChild(nameInput);
+            }
+            if (fileInput.files.length > 0) {
+                nameInput.value = fileInput.files[0].name;
+            }
+        });    
+
+        document.getElementById('upload-form').addEventListener('submit', async function(e) {
+            const fileInput = document.getElementById('pdf-file');
+            const file = fileInput.files[0];
+            const classId = document.querySelector('input[name="class_id"]').value;
+            const errorDiv = document.getElementById('upload-error');
+            errorDiv.classList.add('d-none');
+            errorDiv.textContent = '';
+
+            if (!file) return;
+
+            // Set the file name as a hidden input for the backend
+            let nameInput = document.querySelector('input[name="name"]');
+            if (!nameInput) {
+                nameInput = document.createElement('input');
+                nameInput.type = 'hidden';
+                nameInput.name = 'name';
+                this.appendChild(nameInput);
+            }
+            nameInput.value = file.name;
+        });
+        </script>
+
             {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
             {% endif %}
@@ -63,57 +81,31 @@ PDF-Übersicht – Kurs {{ course.name }}
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-dark">
-                        <tr>
-                            <th>Dateiname</th>
-                            {% if user.role == 'admin' %}<th>Kurs</th>{% endif %}
-                            {% if user.role == 'admin' %}<th>Hochgeladen von</th>{% endif %}
-                            <th>Hochgeladen am</th>
-                            {% if user.role == 'admin' %}<th>Status</th>{% endif %}
-                            <th>Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for pdf in pdfs %}
-                        <tr>
-                            <td>
-                                <strong>{{ pdf.name }}</strong>
-                                <div class="mt-1">
-                                    <a href="{{ pdf.file_path }}" target="_blank" class="btn btn-sm btn-info me-1" title="PDF anzeigen">Anzeigen</a>
-                                    <a href="{{ pdf.file_path }}" download class="btn btn-sm btn-secondary" title="PDF herunterladen">Download</a>
-                                </div>
-                            </td>
-                            {% if user.role == 'admin' %}
-                            <td>{{ pdf.course_name }}</td>
-                            <td>{{ pdf.uploader or "Unbekannt" }}</td>
-                            {% endif %}
-                            <td>{{ pdf.uploaded_at }}</td>
-                            {% if user.role == 'admin' %}
-                            <td>
-                                {% if pdf.status == 'indexing' %}
-                                <span class="badge bg-warning text-dark">Wird verarbeitet</span>
-                                {% elif pdf.status == 'indexed' %}
-                                <span class="badge bg-success">Indexiert</span>
-                                {% elif pdf.status == 'error' %}
-                                <span class="badge bg-danger">Fehlgeschlagen</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Unbekannt</span>
-                                {% endif %}
-                            </td>
-                            {% endif %}
-                            <td>
-                                <div class="d-flex flex-column flex-md-row gap-2">
-                                    <form action="{% if user.role == 'admin' %}/admin/pdf/update/{{ pdf.id }}{% else %}/professor/pdf/{{ course.id }}/update/{{ pdf.id }}{% endif %}" method="POST" enctype="multipart/form-data" class="d-inline-block">
-                                        <input type="file" name="updated_pdf" accept="application/pdf" class="form-control form-control-sm mb-1" required>
-                                        <button class="btn btn-warning btn-sm w-100" type="submit">Aktualisieren</button>
-                                    </form>
-                                    <form action="{% if user.role == 'admin' %}/admin/pdf/delete/{{ pdf.id }}{% else %}/professor/pdf/{{ course.id }}/delete/{{ pdf.id }}{% endif %}" method="POST" onsubmit="return confirm('Wirklich löschen?');" class="d-inline-block">
-                                        <button class="btn btn-danger btn-sm w-100" type="submit">Löschen</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+                    <tr>
+                        <th>Dateiname</th>
+                        <th>Hochgeladen von</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pdf in pdfs %}
+                    <tr>
+                        <td>
+                            <strong>{{ pdf.name }}</strong>
+                        </td>
+                        <td>{{ pdf.created_by }}</td>
+                        <td>
+                            <div class="d-flex flex-column flex-md-row gap-2">
+                                <a href="/uploads/{{ pdf.file_path }}" target="_blank" class="btn btn-sm btn-info me-1" title="PDF anzeigen">Anzeigen</a>
+                                <a href="/uploads/{{ pdf.file_path }}" download class="btn btn-sm btn-secondary" title="PDF herunterladen">Download</a>
+                                <form action="/pdf/delete/{{ pdf.id }}" method="POST" onsubmit="return confirm('Wirklich löschen?');" class="d-inline-block">
+                                    <button class="btn btn-danger btn-sm w-100" type="submit">Löschen</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
                 </table>
             </div>
             {% else %}
