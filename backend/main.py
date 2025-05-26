@@ -10,6 +10,17 @@ import backend.db as db
 import logging
 from fastapi import UploadFile, File
 
+#  HINZUGEFÜGT: Chatbot-Module importieren
+from backend.rag.chains import (
+    load_embedding_model,
+    load_llm,
+    configure_qa_rag_chain,
+)
+from backend.rag.utils import BaseLogger
+
+from backend.rag.zneo4j_operations import NEO4J_USERNAME, NEO4J_PASSWORD
+
+
 # API instantiation
 app = FastAPI()
 
@@ -580,3 +591,89 @@ async def professor_delete_pdf(request: Request, course_id: str, pdf_id: int):
         "course": course,
         "success": "PDF erfolgreich gelöscht."
     })
+
+
+# =========================================
+# Authentication Functions (unchanged)
+# =========================================
+
+async def get_current_user(request: Request):
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        return RedirectResponse(url=f"/login/student?next={request.url.path}", status_code=302)
+    user = db.get_user_by_session(session_token)
+    if not user:
+        return RedirectResponse(url=f"/login/student?next={request.url.path}", status_code=302)
+    return user
+
+async def verify_role(request: Request, allowed_roles: list):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    if user.get("role") not in allowed_roles:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return user
+
+# =========================================
+# NEU: Chatbot-Rückfrage-Endpunkt
+# =========================================
+
+@app.post("/api/chat")
+async def ask_question(request: Request, question: str = Form(...), class_code: str = Form(...)):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    config = {
+        "ollama_base_url": "http://localhost:11434"
+    }
+
+    embeddings, dim = load_embedding_model("ollama", config=config)
+    llm = load_llm("llama2", config=config)
+
+    qa_chain = configure_qa_rag_chain(
+        llm=llm,
+        embeddings=embeddings,
+        embeddings_store_url="bolt://localhost:7687",
+        username=NEO4J_USERNAME,
+        password=NEO4J_PASSWORD
+    )
+
+    result = qa_chain({"question": question})
+    return {"answer": result["answer"], "sources": result.get("sources", "")}
+
+
+
+# =========================================
+# NEU: JSON-basierter Endpunkt für chat.html
+# =========================================
+@app.post("/api/chat/{course_id}")
+async def chat_api(request: Request, course_id: str, body: Dict[str, str] = Body(...)):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        raise HTTPException(status_code=401, detail="Nicht eingeloggt.")
+
+    prompt = body.get("prompt")
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Kein Prompt erhalten.")
+
+    config = {
+        "ollama_base_url": "http://localhost:11434"
+    }
+
+    embeddings, dim = load_embedding_model("ollama", config=config)
+    llm = load_llm("llama2", config=config)
+
+    qa_chain = configure_qa_rag_chain(
+        llm=llm,
+        embeddings=embeddings,
+        embeddings_store_url="bolt://localhost:7687",
+        username=NEO4J_USERNAME,
+        password=NEO4J_PASSWORD  
+    )
+
+    result = qa_chain({"question": prompt})
+    return {
+        "answer": result.get("answer", "Keine Antwort gefunden."),
+        "source": result.get("sources", "Keine Quelle angegeben.")
+    }
