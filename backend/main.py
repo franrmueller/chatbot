@@ -10,6 +10,17 @@ import backend.db as db
 import logging
 from fastapi import UploadFile, File
 
+#  HINZUGEFÜGT: Chatbot-Module importieren
+from backend.rag.chains import (
+    load_embedding_model,
+    load_llm,
+    configure_qa_rag_chain,
+)
+from backend.rag.utils import BaseLogger
+
+#from backend.rag.zneo4j_operations import NEO4J_USERNAME, NEO4J_PASSWORD
+
+
 # API instantiation
 app = FastAPI()
 

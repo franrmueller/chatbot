@@ -320,3 +320,9 @@ footer {
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
