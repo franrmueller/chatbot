@@ -510,6 +510,23 @@ async def delete_pdf(request: Request, pdf_id: int):
 # Chat
 # =========================================
 
+@app.get("/chat/{class_id}", response_class=HTMLResponse)
+async def chat_page(request: Request, class_id: int):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    cls = db.get_class_by_id(class_id)
+    if not cls:
+        return HTMLResponse(content="Kurs nicht gefunden.", status_code=404)
+
+    return templates.TemplateResponse("chat.html", {
+        "request": request,
+        "user": user,
+        "class": cls,
+        "class_id": class_id
+    })
+
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from backend.rag.chains import load_embedding_model, load_llm
@@ -530,7 +547,7 @@ embeddings, dimension = load_embedding_model(
 )
 llm = load_llm(llm_name, config={"ollama_base_url": ollama_base_url})
 
-@app.post("/api/chat/{class_id}")
+@app.post("/chat/{class_id}")
 async def chat_api(class_id: int, body: dict):
     prompt = body.get("prompt")
     if not prompt:

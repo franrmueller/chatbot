@@ -1,29 +1,4 @@
-<!--
-Requirements for Backend to make this page work (EN):
-1. The backend must pass a 'course' object to the template.
-   - course.name → name of the course (for display)
-   - course.id → course ID used for sending chat requests
-2. The backend must provide a POST API endpoint at '/api/chat/{course_id}'.
-3. The API must accept:
-   - JSON body with a field 'prompt' (the user's question)
-4. The API must respond with:
-   - 'answer' → the chatbot's answer
-   - 'source' → optional, the source document (e.g., PDF page)
-5. Optional: Reset button could be linked to an endpoint to clear the chat session.
- 
-Anforderungen an das Backend, damit diese Seite funktioniert (DE):
-1. Das Backend muss ein 'course'-Objekt an das Template übergeben.
-   - course.name → Name des Kurses (zur Anzeige)
-   - course.id → Kurs-ID für das Absenden der Chatanfragen
-2. Das Backend muss einen POST-API-Endpunkt unter '/api/chat/{course_id}' bereitstellen.
-3. Die API muss akzeptieren:
-   - JSON-Body mit einem Feld 'prompt' (Frage des Benutzers)
-4. Die API muss antworten mit:
-   - 'answer' → Antwort des Chatbots
-   - 'source' → optional, Quellenangabe zum Dokument (z.B. PDF-Seite)
-5. Optional: Reset-Button könnte mit einem Endpunkt verbunden werden, der den Chat-Verlauf zurücksetzt.
--->
- 
+
 {% extends "base.html" %}
  
 {% block title %}
@@ -33,7 +8,7 @@ Chat – Vorlesung {{ class.name }}
 {% block content %}
 <!-- Unified chat layout for all roles -->
 <div class="dashboard-container">
-<h1>Chatbot für Kurs: {{ course.name }}</h1>
+<h1>Chatbot für Vorlesung {{ class.name }}</h1>
  
 <!-- Navigationsbuttons oben -->
 <div class="btn-group" style="margin-bottom: 20px;">
@@ -88,7 +63,7 @@ Chat – Vorlesung {{ class.name }}
         userInput.value = '';
  
         try {
-            const response = await fetch('/api/chat/{{ course.id }}', {
+            const response = await fetch('/chat/{{ class.id }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: question })
