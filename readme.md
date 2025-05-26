@@ -1,0 +1,4 @@
+http://kanban.kirchbergnet.de/board.html?team_id=21
+
+https://onedrive.live.com/personal/5b9e32e20564cf92/_layouts/15/Doc.aspx?sourcedoc=%7Bd3791526-e656-4e36-b7f3-90a07a8b3b3b%7D&action=default&redeem=aHR0cHM6Ly8xZHJ2Lm1zL3gvYy81YjllMzJlMjA1NjRjZjkyL0VTWVZlZE5XNWpaT3RfT1FvSHFMT3pzQm50eDZORE41d3BoZlo5VTAwQjNqV1E_ZT1nR1c5Qnk&slrid=1ceaa1a1-9028-d000-0a30-99d942a95478&originalPath=aHR0cHM6Ly8xZHJ2Lm1zL3gvYy81YjllMzJlMjA1NjRjZjkyL0VTWVZlZE5XNWpaT3RfT1FvSHFMT3pzQm50eDZORE41d3BoZlo5VTAwQjNqV1E_cnRpbWU9TmpOWmtFeWMzVWc&CID=b2419f76-2982-4571-95a8-e52480c39b03&_SRM=0:G:58
+
