@@ -614,66 +614,66 @@ async def verify_role(request: Request, allowed_roles: list):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return user
 
-# =========================================
-# NEU: Chatbot-Rückfrage-Endpunkt
-# =========================================
+# # =========================================
+# # NEU: Chatbot-Rückfrage-Endpunkt
+# # =========================================
 
-@app.post("/api/chat")
-async def ask_question(request: Request, question: str = Form(...), class_code: str = Form(...)):
-    user = await get_current_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
+# @app.post("/api/chat")
+# async def ask_question(request: Request, question: str = Form(...), class_code: str = Form(...)):
+#     user = await get_current_user(request)
+#     if isinstance(user, RedirectResponse):
+#         return user
 
-    config = {
-        "ollama_base_url": "http://localhost:11434"
-    }
+#     config = {
+#         "ollama_base_url": "http://localhost:11434"
+#     }
 
-    embeddings, dim = load_embedding_model("ollama", config=config)
-    llm = load_llm("llama2", config=config)
+#     embeddings, dim = load_embedding_model("ollama", config=config)
+#     llm = load_llm("llama2", config=config)
 
-    qa_chain = configure_qa_rag_chain(
-        llm=llm,
-        embeddings=embeddings,
-        embeddings_store_url="bolt://localhost:7687",
-        username=NEO4J_USERNAME,
-        password=NEO4J_PASSWORD
-    )
+#     qa_chain = configure_qa_rag_chain(
+#         llm=llm,
+#         embeddings=embeddings,
+#         embeddings_store_url="bolt://localhost:7687",
+#         username=NEO4J_USERNAME,
+#         password=NEO4J_PASSWORD
+#     )
 
-    result = qa_chain({"question": question})
-    return {"answer": result["answer"], "sources": result.get("sources", "")}
+#     result = qa_chain({"question": question})
+#     return {"answer": result["answer"], "sources": result.get("sources", "")}
 
 
 
-# =========================================
-# NEU: JSON-basierter Endpunkt für chat.html
-# =========================================
-@app.post("/api/chat/{course_id}")
-async def chat_api(request: Request, course_id: str, body: Dict[str, str] = Body(...)):
-    user = await get_current_user(request)
-    if isinstance(user, RedirectResponse):
-        raise HTTPException(status_code=401, detail="Nicht eingeloggt.")
+# # =========================================
+# # NEU: JSON-basierter Endpunkt für chat.html
+# # =========================================
+# @app.post("/api/chat/{course_id}")
+# async def chat_api(request: Request, course_id: str, body: Dict[str, str] = Body(...)):
+#     user = await get_current_user(request)
+#     if isinstance(user, RedirectResponse):
+#         raise HTTPException(status_code=401, detail="Nicht eingeloggt.")
 
-    prompt = body.get("prompt")
-    if not prompt:
-        raise HTTPException(status_code=400, detail="Kein Prompt erhalten.")
+#     prompt = body.get("prompt")
+#     if not prompt:
+#         raise HTTPException(status_code=400, detail="Kein Prompt erhalten.")
 
-    config = {
-        "ollama_base_url": "http://localhost:11434"
-    }
+#     config = {
+#         "ollama_base_url": "http://localhost:11434"
+#     }
 
-    embeddings, dim = load_embedding_model("ollama", config=config)
-    llm = load_llm("llama2", config=config)
+#     embeddings, dim = load_embedding_model("ollama", config=config)
+#     llm = load_llm("llama2", config=config)
 
-    qa_chain = configure_qa_rag_chain(
-        llm=llm,
-        embeddings=embeddings,
-        embeddings_store_url="bolt://localhost:7687",
-        username=NEO4J_USERNAME,
-        password=NEO4J_PASSWORD  
-    )
+#     qa_chain = configure_qa_rag_chain(
+#         llm=llm,
+#         embeddings=embeddings,
+#         embeddings_store_url="bolt://localhost:7687",
+#         username=NEO4J_USERNAME,
+#         password=NEO4J_PASSWORD  
+#     )
 
-    result = qa_chain({"question": prompt})
-    return {
-        "answer": result.get("answer", "Keine Antwort gefunden."),
-        "source": result.get("sources", "Keine Quelle angegeben.")
-    }
+#     result = qa_chain({"question": prompt})
+#     return {
+#         "answer": result.get("answer", "Keine Antwort gefunden."),
+#         "source": result.get("sources", "Keine Quelle angegeben.")
+#     }
