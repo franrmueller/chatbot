@@ -740,3 +740,25 @@ def update_course(course_id, name):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+
+# STUDENT
+
+def get_all_students():
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT username, course, last_login FROM students")
+    students = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return students
+
+def count_prompts_by_user(username):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute("SELECT COUNT(*) FROM chat_history WHERE user = %s", (username,))
+    count = cursor.fetchone()[0]
+    cursor.close()
+    connection.close()
+    return count
