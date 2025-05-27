@@ -26,14 +26,19 @@
     </tr>
     {% for course in courses %}
     <tr>
-        <td>{{ course.id }}</td>
-        <td>{{ course.name }}</td>
-        <td>{{ course.created_by }}</td>
-        <td>
+        <form method="post" action="/admin/courses/update/{{ course.id }}">
+            <td>{{ course.id }}</td>
+            <td>
+                <input type="text" name="name" value="{{ course.name }}" class="form-control" />
+            </td>
+            <td>{{ course.created_by }}</td>
+            <td>
+                <button type="submit" class="btn btn-primary btn-sm">Speichern</button>
+            </form>
             <form method="post" action="/admin/courses/delete/{{ course.id }}" style="display:inline;">
                 <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
             </form>
-        </td>
+            </td>
     </tr>
     {% endfor %}
 </table>
