@@ -28,11 +28,14 @@
                 </div>
                 <div class="btn-group">
                     {% if edit_course and edit_course.id == course.id %}
-                    <!-- Bearbeitungsformular -->
-                    <form method="post" action="/admin/courses/edit/{{ course.id }}">
-                        <input type="text" name="name" value="{{ course.name }}" class="form-control" required />
-                        <button type="submit" class="btn btn-success btn-sm uniform-btn" style="margin-top: 0.5rem;">Speichern</button>
-                        <a href="/admin/courses" class="btn btn-secondary btn-sm uniform-btn" style="margin-top: 0.5rem;">Abbrechen</a>
+                    <!-- Bearbeitungsformular mit größerem Feld -->
+                    <form method="post" action="/admin/courses/edit/{{ course.id }}" style="margin-top: 0.5rem;">
+                        <input type="text" name="name" value="{{ course.name }}" class="form-control"
+                               style="width: 100%; font-size: 1.1rem; padding: 0.6rem;" required />
+                        <div style="margin-top: 0.5rem;">
+                            <button type="submit" class="btn btn-success btn-sm uniform-btn">Speichern</button>
+                            <a href="/admin/courses" class="btn btn-secondary btn-sm uniform-btn">Abbrechen</a>
+                        </div>
                     </form>
                     {% else %}
                     <!-- Standard Buttons -->
