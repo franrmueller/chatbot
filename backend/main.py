@@ -178,28 +178,26 @@ async def admin_dashboard(request: Request):
 #         return user
 #     return templates.TemplateResponse("admin_students.html", {"request": request, "user": user})
 
-@app.get("/admin/students", response_class=HTMLResponse)
-async def admin_students(request: Request):
+@app.get("/admin/students/list", response_class=HTMLResponse)
+async def admin_student_list(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
 
-    raw_students = db.get_all_students()  # z. B. SELECT * FROM students
+    raw_students = db.get_all_students()
     students = []
-
     for student in raw_students:
         students.append({
-            "id": student["username"],  # anonymisiert anzeigen
-            "course": student["course"],
-            "last_login": student.get("last_login"),
-            "prompt_count": db.count_prompts_by_user(student["username"]),
+            "id": student["username"],
+            "course": student["course"]
         })
 
-    return templates.TemplateResponse("admin_students.html", {
+    return templates.TemplateResponse("admin_students_list.html", {
         "request": request,
         "user": user,
         "students": students
     })
+
 
 
 @app.get("/admin/chathistory", response_class=HTMLResponse)

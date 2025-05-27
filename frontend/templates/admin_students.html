@@ -1,62 +1,44 @@
-<!--
-Anforderungen an das Backend:
-1. Das Template erwartet eine Liste 'students'.
-2. Jeder Eintrag in 'students' benötigt:
-   - id → anonymisierte Benutzer-ID (nicht Klarname!)
-   - course → Studiengang (z.B. WWI-BE122)
-   - prompt_count → Anzahl der Prompts
-   - last_login → Zeitstempel oder None
-3. Optional: Chathistorie-Link pro Nutzer: /admin/chathistory?user={id}
-4. POST an: /admin/students/delete/{id}
--->
-
 {% extends "base.html" %}
 
-{% block title %}Studierende verwalten – Admin{% endblock %}
+{% block title %}Studierendenliste – Admin{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-  <h1>Studierendenübersicht (anonymisiert)</h1>
+  <h1>Registrierte Studierende (anonymisiert)</h1>
 
   <!-- Navigation -->
-  <div class="btn-group" style="margin-bottom: 1rem;">
+  <div class="btn-group mb-3">
     <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-    <a href="/classes" class="btn btn-outline-primary">Kurse</a>
-    <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
+    <a href="/admin/students" class="btn btn-outline-primary">Verwaltung öffnen</a>
   </div>
 
   {% if students %}
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>Benutzer-ID</th>
-        <th>Studiengang</th>
-        <th>Letzter Login</th>
-        <th>Prompts</th>
-        <th>Aktionen</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for student in students %}
-      <tr>
-        <td>{{ student.id }}</td>
-        <td>{{ student.course or "–" }}</td>
-        <td>{{ student.last_login or "Keine Info" }}</td>
-        <td>{{ student.prompt_count }}</td>
-        <td>
-          <div class="btn-group">
-            <a href="/admin/chathistory?user={{ student.id }}" class="btn btn-info btn-sm">Chathistorie</a>
-            <form method="POST" action="/admin/students/delete/{{ student.id }}" onsubmit="return confirm('Diesen Studierenden wirklich entfernen?');" style="display:inline;">
-              <button class="btn btn-danger btn-sm">Entfernen</button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead class="thead-light">
+        <tr>
+          <th>Benutzer-ID</th>
+          <th>Studiengang</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in students %}
+        <tr>
+          <td>{{ student.id }}</td>
+          <td>{{ student.course or "–" }}</td>
+          <td>
+            <a href="/admin/chathistory?user={{ student.id }}" class="btn btn-info btn-sm" title="Chathistorie ansehen">
+              Chathistorie
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-  <p>Aktuell sind keine Studierenden registriert.</p>
+  <p class="text-muted">Es sind derzeit keine Studierenden registriert.</p>
   {% endif %}
 </div>
 {% endblock %}
