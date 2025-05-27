@@ -1,15 +1,16 @@
 {% extends "base.html" %}
-
 {% block title %}Kursverwaltung{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
     <h1>Kursverwaltung</h1>
 
+    <!-- Formular: Neuer Kurs -->
     <h2>Neuen Kurs hinzufügen</h2>
     <form method="post" action="/admin/courses/add">
         <input type="text" name="id" placeholder="Kurs-ID (z.B. WWI-BE122)" required class="form-control" />
         <input type="text" name="name" placeholder="Kursname" required class="form-control" />
+        <br>
         <button type="submit" class="btn btn-success btn-sm uniform-btn">Hinzufügen</button>
     </form>
 
@@ -26,12 +27,22 @@
                     <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
                 </div>
                 <div class="btn-group">
+                    {% if edit_course and edit_course.id == course.id %}
+                    <!-- Bearbeitungsformular -->
+                    <form method="post" action="/admin/courses/edit/{{ course.id }}">
+                        <input type="text" name="name" value="{{ course.name }}" class="form-control" required />
+                        <button type="submit" class="btn btn-success btn-sm uniform-btn" style="margin-top: 0.5rem;">Speichern</button>
+                        <a href="/admin/courses" class="btn btn-secondary btn-sm uniform-btn" style="margin-top: 0.5rem;">Abbrechen</a>
+                    </form>
+                    {% else %}
+                    <!-- Standard Buttons -->
                     <form method="get" action="/admin/courses/edit/{{ course.id }}">
                         <button type="submit" class="btn btn-warning btn-sm uniform-btn">Bearbeiten</button>
                     </form>
                     <form method="post" action="/admin/courses/delete/{{ course.id }}">
                         <button type="submit" class="btn btn-danger btn-sm uniform-btn">Löschen</button>
                     </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

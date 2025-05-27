@@ -692,30 +692,51 @@ def get_class_id_by_pdf(pdf_id):
     return doc["class_id"] if doc else None
 
 
-def get_courses():
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
+def get_all_courses():
+    conn = sql_connect()
+    cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM courses")
     courses = cursor.fetchall()
     cursor.close()
-    connection.close()
+    conn.close()
     return courses
 
-def add_course(id, name, created_by):
-    connection = sql_connect()
-    cursor = connection.cursor()
-    cursor.execute(
-        "INSERT INTO courses (id, name, created_by) VALUES (%s, %s, %s)",
-        (id, name, created_by)
-    )
-    connection.commit()
-    cursor.close()
-    connection.close()
+def add_course(course_data):
+    conn = sql_connect()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO courses (id, name, created_by) VALUES (%s, %s, %s)", 
+                       (course_data["id"], course_data["name"], course_data["created_by"]))
+        conn.commit()
+        return True, "Kurs hinzugefügt"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        cursor.close()
+        conn.close()
 
 def delete_course(course_id):
-    connection = sql_connect()
-    cursor = connection.cursor()
+    conn = sql_connect()
+    cursor = conn.cursor()
     cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
-    connection.commit()
+    conn.commit()
     cursor.close()
-    connection.close()
+    conn.close()
+    return True, "Kurs gelöscht"
+
+def get_course_by_id(course_id):
+    conn = sql_connect()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM courses WHERE id = %s", (course_id,))
+    course = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return course
+
+def update_course(course_id, name):
+    conn = sql_connect()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE courses SET name = %s WHERE id = %s", (name, course_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
