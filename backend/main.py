@@ -682,3 +682,26 @@ async def admin_edit_course_inline(request: Request, course_id: str):
     })
 
 
+
+@app.get("/admin/students", response_class=HTMLResponse)
+async def admin_students(request: Request):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Studenten mit zusätzlichen Feldern abrufen
+    raw_students = db.get_all_students()
+    students = []
+    for student in raw_students:
+        students.append({
+            "id": student["username"],  # wichtig!
+            "course": student["course"],
+            "last_login": student.get("last_login"),
+            "prompt_count": db.count_prompts_by_user(student["username"])  # optional
+        })
+
+    return templates.TemplateResponse("admin_students.html", {
+        "request": request,
+        "user": user,
+        "students": students
+    })
