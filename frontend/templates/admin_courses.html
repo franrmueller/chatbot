@@ -6,38 +6,36 @@
 <div class="dashboard-container">
     <h1>Kursverwaltung</h1>
 
+    <h2>Neuen Kurs hinzufügen</h2>
+    <form method="post" action="/admin/courses/add">
+        <input type="text" name="id" placeholder="Kurs-ID (z.B. WWI-BE122)" required class="form-control" />
+        <input type="text" name="name" placeholder="Kursname" required class="form-control" />
+        <button type="submit" class="btn btn-success btn-sm uniform-btn">Hinzufügen</button>
+    </form>
 
-<h2>Neuen Kurs hinzufügen</h2>
-<form method="post" action="/admin/courses/add">
-    <input type="text" name="id" placeholder="Kurs-ID (z.B. WWI-BE122)" required class="form-control" />
-    <input type="text" name="name" placeholder="Kursname" required class="form-control" />
-    <button type="submit" class="btn btn-success" style="margin-top: 1rem;">Hinzufügen</button>
-</form>
+    <hr>
 
-<hr>
-
-<h2>Vorhandene Kurse</h2>
-
-<div class="class-list">
-    {% for course in courses %}
-    <div class="class-card">
-        <div class="class-header">
-            <div>
-                <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
-                <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
-                <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
-            </div>
-            <div class="btn-group">
-                <form method="get" action="/admin/courses/edit/{{ course.id }}">
-                    <button type="submit" class="btn btn-warning btn-sm">Bearbeiten</button>
-                </form>
-                <form method="post" action="/admin/courses/delete/{{ course.id }}">
-                    <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
-                </form>
+    <h2>Vorhandene Kurse</h2>
+    <div class="class-list">
+        {% for course in courses %}
+        <div class="class-card">
+            <div class="class-header">
+                <div>
+                    <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
+                    <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
+                    <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
+                </div>
+                <div class="btn-group">
+                    <form method="get" action="/admin/courses/edit/{{ course.id }}">
+                        <button type="submit" class="btn btn-warning btn-sm uniform-btn">Bearbeiten</button>
+                    </form>
+                    <form method="post" action="/admin/courses/delete/{{ course.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm uniform-btn">Löschen</button>
+                    </form>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
-
 {% endblock %}
