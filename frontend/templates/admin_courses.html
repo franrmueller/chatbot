@@ -21,17 +21,20 @@
 <div class="class-list">
     {% for course in courses %}
     <div class="class-card">
-        <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
-        <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
-        <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
-
-        <div class="btn-group" style="margin-top: 1rem;">
-            <form method="get" action="/admin/courses/edit/{{ course.id }}">
-                <button type="submit" class="btn btn-warning btn-sm">Bearbeiten</button>
-            </form>
-            <form method="post" action="/admin/courses/delete/{{ course.id }}">
-                <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
-            </form>
+        <div class="class-header">
+            <div>
+                <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
+                <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
+                <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
+            </div>
+            <div class="btn-group">
+                <form method="get" action="/admin/courses/edit/{{ course.id }}">
+                    <button type="submit" class="btn btn-warning btn-sm">Bearbeiten</button>
+                </form>
+                <form method="post" action="/admin/courses/delete/{{ course.id }}">
+                    <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+                </form>
+            </div>
         </div>
     </div>
     {% endfor %}
