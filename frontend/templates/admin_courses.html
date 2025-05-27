@@ -17,29 +17,24 @@
 <hr>
 
 <h2>Vorhandene Kurse</h2>
-<table class="table">
-    <tr>
-        <th>Kurs-ID</th>
-        <th>Name</th>
-        <th>Erstellt von</th>
-        <th>Aktionen</th>
-    </tr>
+
+<div class="class-list">
     {% for course in courses %}
-    <tr>
-        <td>{{ course.id }}</td>
-        <td>{{ course.name }}</td>
-        <td>{{ course.created_by }}</td>
-        <td>
-            <form method="get" action="/admin/courses/edit/{{ course.id }}" style="display:inline;">
+    <div class="class-card">
+        <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
+        <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
+        <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
+
+        <div class="btn-group" style="margin-top: 1rem;">
+            <form method="get" action="/admin/courses/edit/{{ course.id }}">
                 <button type="submit" class="btn btn-warning btn-sm">Bearbeiten</button>
             </form>
-            <form method="post" action="/admin/courses/delete/{{ course.id }}" style="display:inline;">
+            <form method="post" action="/admin/courses/delete/{{ course.id }}">
                 <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
             </form>
-        </td>
-    </tr>
+        </div>
+    </div>
     {% endfor %}
-</table>
-
 </div>
+
 {% endblock %}
