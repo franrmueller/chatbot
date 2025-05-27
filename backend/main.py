@@ -627,16 +627,16 @@ async def admin_delete_course(request: Request, course_id: str):
     return RedirectResponse(url="/admin/courses", status_code=303)
 
 
-# Kurs bearbeiten
-@app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
-async def admin_edit_course_page(request: Request, course_id: str):
-    user = await verify_role(request, ["admin"])
-    course = db.get_course_by_id(course_id)
-    return templates.TemplateResponse("admin_course_edit.html", {
-        "request": request,
-        "user": user,
-        "course": course
-    })
+# # Kurs bearbeiten
+# @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
+# async def admin_edit_course_page(request: Request, course_id: str):
+#     user = await verify_role(request, ["admin"])
+#     course = db.get_course_by_id(course_id)
+#     return templates.TemplateResponse("admin_course_edit.html", {
+#         "request": request,
+#         "user": user,
+#         "course": course
+#     })
 
 # Kurs bearbeiten
 @app.post("/admin/courses/edit/{course_id}")
@@ -645,7 +645,8 @@ async def admin_edit_course(request: Request, course_id: str, name: str = Form(.
     db.update_course(course_id, name)
     return RedirectResponse(url="/admin/courses", status_code=303)
 
-# Kurs erhalten
+
+# Kurs bearbeiten
 @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
 async def admin_edit_course_inline(request: Request, course_id: str):
     user = await verify_role(request, ["admin"])
@@ -657,4 +658,5 @@ async def admin_edit_course_inline(request: Request, course_id: str):
         "courses": courses,
         "edit_course": edit_course
     })
+
 
