@@ -56,7 +56,9 @@ Meine Vorlesungen – Vorlesungschatbot
         <div class="class-header d-flex justify-content-between align-items-center">
             <h3 class="mb-0">{{ class.name }}</h3>
             <div class="btn-group">
+                {% if user.role == 'professor' or user.role == 'admin' %}
                 <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+                {% endif %}
                 <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
             </div>
         </div>
