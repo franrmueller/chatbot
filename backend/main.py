@@ -178,25 +178,25 @@ async def admin_dashboard(request: Request):
 #         return user
 #     return templates.TemplateResponse("admin_students.html", {"request": request, "user": user})
 
-@app.get("/admin/students/list", response_class=HTMLResponse)
-async def admin_student_list(request: Request):
-    user = await verify_role(request, ["admin"])
-    if isinstance(user, RedirectResponse):
-        return user
+# @app.get("/admin/students/list", response_class=HTMLResponse)
+# async def admin_student_list(request: Request):
+#     user = await verify_role(request, ["admin"])
+#     if isinstance(user, RedirectResponse):
+#         return user
 
-    raw_students = db.get_all_students()
-    students = []
-    for student in raw_students:
-        students.append({
-            "id": student["username"],
-            "course": student["course"]
-        })
+#     raw_students = db.get_all_students()
+#     students = []
+#     for student in raw_students:
+#         students.append({
+#             "id": student["username"],
+#             "course": student["course"]
+#         })
 
-    return templates.TemplateResponse("admin_students_list.html", {
-        "request": request,
-        "user": user,
-        "students": students
-    })
+#     return templates.TemplateResponse("admin_students_list.html", {
+#         "request": request,
+#         "user": user,
+#         "students": students
+#     })
 
 
 
@@ -684,24 +684,25 @@ async def admin_edit_course_inline(request: Request, course_id: str):
 
 
 @app.get("/admin/students", response_class=HTMLResponse)
-async def admin_students(request: Request):
+async def admin_students_page(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
 
-    # Studenten mit zusätzlichen Feldern abrufen
     raw_students = db.get_all_students()
-    students = []
-    for student in raw_students:
-        students.append({
-            "id": student["username"],  # wichtig!
-            "course": student["course"],
-            "last_login": student.get("last_login"),
-            "prompt_count": db.count_prompts_by_user(student["username"])  # optional
-        })
+    students = [
+        {
+            "username": s["username"],
+            "first_name": s.get("first_name", ""),
+            "last_name": s.get("last_name", ""),
+            "course": s.get("course", "")
+        }
+        for s in raw_students
+    ]
 
     return templates.TemplateResponse("admin_students.html", {
         "request": request,
         "user": user,
         "students": students
     })
+

@@ -745,14 +745,20 @@ def update_course(course_id, name):
 
 # STUDENT
 
+# def get_all_students():
+#     connection = sql_connect()
+#     cursor = connection.cursor(dictionary=True)
+#     cursor.execute("SELECT username, course, last_login FROM students")
+#     students = cursor.fetchall()
+#     cursor.close()
+#     connection.close()
+#     return students
+
 def get_all_students():
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT username, course, last_login FROM students")
-    students = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    return students
+    cursor.execute("SELECT username, first_name, last_name, course FROM students")
+
 
 def count_prompts_by_user(username):
     connection = sql_connect()

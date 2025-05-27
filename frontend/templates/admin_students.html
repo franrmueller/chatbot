@@ -4,12 +4,11 @@
 
 {% block content %}
 <div class="dashboard-container">
-  <h1>Registrierte Studierende (anonymisiert)</h1>
+  <h1>Registrierte Studierende</h1>
 
   <!-- Navigation -->
   <div class="btn-group mb-3">
     <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-    <a href="/admin/students" class="btn btn-outline-primary">Verwaltung öffnen</a>
   </div>
 
   {% if students %}
@@ -17,7 +16,9 @@
     <table class="table table-bordered table-hover">
       <thead class="thead-light">
         <tr>
-          <th>Benutzer-ID</th>
+          <th>Benutzername</th>
+          <th>Vorname</th>
+          <th>Nachname</th>
           <th>Studiengang</th>
           <th>Aktionen</th>
         </tr>
@@ -25,12 +26,12 @@
       <tbody>
         {% for student in students %}
         <tr>
-          <td>{{ student.id }}</td>
+          <td>{{ student.username }}</td>
+          <td>{{ student.first_name or "–" }}</td>
+          <td>{{ student.last_name or "–" }}</td>
           <td>{{ student.course or "–" }}</td>
           <td>
-            <a href="/admin/chathistory?user={{ student.id }}" class="btn btn-info btn-sm" title="Chathistorie ansehen">
-              Chathistorie
-            </a>
+            <a href="/admin/chathistory?user={{ student.username }}" class="btn btn-info btn-sm">Chathistorie</a>
           </td>
         </tr>
         {% endfor %}
