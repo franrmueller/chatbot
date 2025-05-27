@@ -117,6 +117,20 @@ async def student_dashboard(request: Request):
         return user
     return templates.TemplateResponse("student_dashboard.html", {"request": request, "user": user})
 
+@app.get("/admin/classes", response_class=HTMLResponse)
+async def admin_classes_page(request: Request):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    classes = db.get_all_classes()
+    return templates.TemplateResponse("classes.html", {
+        "request": request,
+        "user": user,
+        "classes": classes
+    })
+
+
 @app.post("/admin/classes", response_class=HTMLResponse)
 async def admin_add_class(
     request: Request,
