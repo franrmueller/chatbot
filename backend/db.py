@@ -690,3 +690,32 @@ def get_class_id_by_pdf(pdf_id):
     cursor.close()
     connection.close()
     return doc["class_id"] if doc else None
+
+
+def get_courses():
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM courses")
+    courses = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return courses
+
+def add_course(id, name, created_by):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT INTO courses (id, name, created_by) VALUES (%s, %s, %s)",
+        (id, name, created_by)
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+def delete_course(course_id):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
+    connection.commit()
+    cursor.close()
+    connection.close()

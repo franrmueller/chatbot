@@ -594,3 +594,51 @@ async def chat_api(class_id: int, body: dict):
     answer = qa.run(prompt)
     # Optionally, add source info if available
     return {"answer": answer, "source": None}
+
+
+
+
+# Kursverwaltung anzeigen
+@app.get("/admin/courses", response_class=HTMLResponse)
+async def admin_courses_page(request: Request):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    courses = db.get_courses()
+    return templates.TemplateResponse("admin_courses.html", {
+        "request": request,
+        "user": user,
+        "courses": courses
+    })
+
+
+# Kurs hinzufügen
+@app.post("/admin/courses/add")
+async def admin_add_course(
+    request: Request,
+    id: str = Form(...),
+    name: str = Form(...)
+):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Verwende aktuellen Benutzer als "created_by"
+    created_by = user["username"]
+    db.add_course(id, name, created_by)
+
+    return RedirectResponse(url="/admin/courses", status_code=303)
+
+
+
+# Kurs löschen
+@app.post("/admin/courses/delete/{course_id}")
+async def admin_delete_course(request: Request, course_id: str):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    db.delete_course(course_id)
+    return RedirectResponse(url="/admin/courses", status_code=303)
+

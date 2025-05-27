@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Kursverwaltung{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>Kursverwaltung</h1>
+
+
+<h2>Neuen Kurs hinzufügen</h2>
+<form method="post" action="/admin/courses/add">
+    <input type="text" name="id" placeholder="Kurs-ID (z.B. WWI-BE122)" required class="form-control" />
+    <input type="text" name="name" placeholder="Kursname" required class="form-control" />
+    <button type="submit" class="btn btn-success" style="margin-top: 1rem;">Hinzufügen</button>
+</form>
+
+<hr>
+
+<h2>Vorhandene Kurse</h2>
+<table class="table">
+    <tr>
+        <th>Kurs-ID</th>
+        <th>Name</th>
+        <th>Erstellt von</th>
+        <th>Aktionen</th>
+    </tr>
+    {% for course in courses %}
+    <tr>
+        <td>{{ course.id }}</td>
+        <td>{{ course.name }}</td>
+        <td>{{ course.created_by }}</td>
+        <td>
+            <form method="post" action="/admin/courses/delete/{{ course.id }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+</div>
+{% endblock %}
