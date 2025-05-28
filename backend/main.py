@@ -706,9 +706,8 @@ async def admin_students_page(request: Request):
     raw_students = db.get_all_students()
     students = [
         {
-            "username": s["username"],
-            "first_name": s.get("first_name", ""),
-            "last_name": s.get("last_name", ""),
+            "username": s["username"],  # noch für Link nötig
+            "anonymized": s["anonymized"],  # <-- HINZUGEFÜGT
             "course": s.get("course", "")
         }
         for s in raw_students
@@ -719,4 +718,5 @@ async def admin_students_page(request: Request):
         "user": user,
         "students": students
     })
+
 

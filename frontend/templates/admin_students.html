@@ -17,21 +17,17 @@
       <thead class="thead-light">
         <tr>
           <th>Benutzername</th>
-          <th>Vorname</th>
-          <th>Nachname</th>
-          <th>Studiengang</th>
+          <th>Kurs</th>
           <th>Aktionen</th>
         </tr>
       </thead>
       <tbody>
         {% for student in students %}
         <tr>
-          <td>{{ student.username }}</td>
-          <td>{{ student.first_name or "–" }}</td>
-          <td>{{ student.last_name or "–" }}</td>
+          <td>{{ student.anonymized }}</td>
           <td>{{ student.course or "–" }}</td>
           <td>
-            <a href="/admin/chathistory?user={{ student.username }}" class="btn btn-info btn-sm">Chathistorie</a>
+              <a href="/admin/chathistory?user={{ student.username }}" class="btn btn-info btn-sm">Chathistorie</a>
           </td>
         </tr>
         {% endfor %}

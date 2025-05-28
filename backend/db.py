@@ -4,6 +4,9 @@ from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from fastapi import UploadFile, File
 import os
+import hashlib
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -745,15 +748,23 @@ def update_course(course_id, name):
 
 # STUDENT
 
+def anonymize_username(username):
+    # Nutzt SHA1-Hash (alternativ SHA256)
+    return hashlib.sha1(username.encode()).hexdigest()[:10] 
 
 def get_all_students():
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT username, first_name, last_name, course FROM students")
+    cursor.execute("SELECT username, course FROM students")
     students = cursor.fetchall()
     cursor.close()
     connection.close()
+
+    # Benutzername hashen für Admin-Anzeige
+    for student in students:
+        student["anonymized"] = anonymize_username(student["username"])
     return students
+
 
 
 
@@ -765,3 +776,4 @@ def count_prompts_by_user(username):
     cursor.close()
     connection.close()
     return count
+
