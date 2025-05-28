@@ -51,7 +51,7 @@ Meine Vorlesungen – Vorlesungschatbot
 <div class="class-list">
     {% for class in classes %}
     <div class="class-card mb-4 p-3 border rounded shadow-sm">
-        <p class="class-meta mb-1"><strong>Kurs:</strong> {{ class.code }} – {{ class.course_name }}</p>
+        <p class="class-meta mb-1"><strong>Kurs:</strong> {{ class.course_name }}</p>
         <p class="class-submeta mb-1"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
         <div class="class-header d-flex justify-content-between align-items-center">
             <h3 class="mb-0">{{ class.name }}</h3>
