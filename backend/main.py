@@ -502,6 +502,7 @@ async def chat_page(request: Request, class_id: int):
     if isinstance(user, RedirectResponse):
         return user
     cls = db.get_class_by_id(class_id)
+    await rag.ingest_pdfs(class_id)
     return templates.TemplateResponse("chat.html", {
         "request": request,
         "user": user,

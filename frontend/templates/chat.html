@@ -48,7 +48,7 @@ Chat – Vorlesung {{ class.name }}
         const msg = document.createElement('div');
         msg.classList.add('chat-message', sender);
         msg.style.margin = "0.5rem 0";
-        msg.innerHTML = `<strong>${sender === 'user' ? 'Du' : 'Bot'}:</strong> ${text}`;
+        msg.innerHTML = `<strong>${sender === 'user' ? 'Du' : 'Vorlesungschatbot'}:</strong> ${text}`;
         chatWindow.appendChild(msg);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
@@ -70,9 +70,9 @@ Chat – Vorlesung {{ class.name }}
             });
  
             const data = await response.json();
-            appendMessage('bot', data.answer + '<br><small>Quelle: ' + (data.source || 'Unbekannt') + '</small>');
+            appendMessage('Vorlesungschatbot', data.answer);
         } catch (error) {
-            appendMessage('bot', 'Fehler beim Abrufen der Antwort.');
+            appendMessage('Vorlesungschatbot', 'Fehler beim Abrufen der Antwort.');
             console.error(error);
         }
     });
