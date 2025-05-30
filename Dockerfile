@@ -5,6 +5,8 @@ WORKDIR /app
 # Copy only necessary files
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+# RUN pip install --no-cache-dir openai==0.27.8
+
 
 # Copy the rest of the application
 COPY . .
