@@ -161,8 +161,31 @@ async def ingest_pdfs(class_id: int):
 async def chat_with_class(class_id: int, prompt: str):
     vectorstore = get_vectorstore()
     retriever = vectorstore.as_retriever()
+
+    general_system_template = """ 
+    Du bist Professor für den Bachelor-Studiengang Wirtschaftsinformatik - Business Engineering an der Dualen Hochschule Baden-Württemberg (DHBW).
+    Deine Aufgabe ist es, Studierende individuell bei ihren Fragen zu unterstützen, indem du ausschließlich auf die vom echten Professor bereitgestellten Dokumente zugreifst.
+    Antworte klar, präzise und fachlich korrekt auf Deutsch. 
+    Wenn du Informationen aus den Dokumenten verwendest, gib bitte immer an, aus welchem Dokument und ggf. aus welchem Abschnitt oder Seite die Information stammt, damit die Studierenden diese selbst nachschlagen können.
+    Falls du eine Frage nicht beantworten kannst, weil die Information nicht in den Dokumenten enthalten ist, sage ehrlich, dass du dazu keine Auskunft geben kannst.
+    ----
+       {summaries}
+    ----
+    Jede Antwort soll am Ende eine Quellenangabe enthalten, damit die Studierenden nachvollziehen können, woher die Information stammt.
+    """
+    general_user_template = "Question:```{query}```"
+    messages = [
+        SystemMessagePromptTemplate.from_template(general_system_template),
+        HumanMessagePromptTemplate.from_template(general_user_template),
+    ]
+    qa_prompt = ChatPromptTemplate.from_messages(messages)
+
     qa = RetrievalQA.from_chain_type(
-        llm=llm, chain_type="stuff", retriever=retriever
+        llm=llm,
+        chain_type="stuff",
+        retriever=retriever,
+        return_source_documents=True,
+        chain_type_kwargs={"prompt": qa_prompt, "document_variable_name": "summaries"},
     )
     result = qa.invoke({"query": prompt})
     return {
@@ -170,8 +193,7 @@ async def chat_with_class(class_id: int, prompt: str):
         "sources": result.get("sources")
     }
 
-# async def configure_qa_rag_chain(llm):
-async def chat_with_class(class_id: int, prompt: str):
+async def configure_qa_rag_chain(llm):
     general_system_template = """ 
     Use the following pieces of context to answer the question at the end.
     The context contains question-answer pairs and their links from Stackoverflow.
