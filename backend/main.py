@@ -1,38 +1,23 @@
-from fastapi import FastAPI, Request, HTTPException, Body, Depends, Cookie, Form
+from fastapi import (
+    FastAPI, Request, HTTPException,
+    Body, Depends, Cookie, Form,
+    UploadFile, File
+    )
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from typing import Optional, Dict, Any, Union
-import uvicorn
-from backend import auth
-from backend.auth import register_student, login_student, login_professor
 import backend.db as db
-import logging
-from fastapi import UploadFile, File
+import backend.rag as rag
 
-#  HINZUGEFÜGT: Chatbot-Module importieren
-from backend.rag.chains import (
-    load_embedding_model,
-    load_llm,
-    configure_qa_rag_chain,
-)
-from backend.rag.utils import BaseLogger
-
-#from backend.rag.zneo4j_operations import NEO4J_USERNAME, NEO4J_PASSWORD
-
-
-# API instantiation
 app = FastAPI()
-
-pwd_context = auth.pwd_context
-
-# Initialize database on first startup
+pwd_context = db.pwd_context
 db.initialize_database()
 
 # Configure frontend templates and static files
 templates = Jinja2Templates(directory="frontend/templates")
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 
 # =========================================
 # Authentication Functions (unchanged)
@@ -106,6 +91,7 @@ async def logout():
     response.delete_cookie(key="session_token", path="/", domain=None, secure=False, httponly=True)
     return response
 
+
 # =========================================
 # Student Routes
 # =========================================
@@ -156,6 +142,8 @@ async def admin_add_class(
         "classes": classes,
         "success" if success else "error": message
     })
+
+
 # =========================================
 # Professor Routes
 # =========================================
@@ -166,13 +154,6 @@ async def professor_dashboard(request: Request):
     if isinstance(user, RedirectResponse):
         return user
     return templates.TemplateResponse("professor_dashboard.html", {"request": request, "user": user})
-
-# @app.get("/professor/classes", response_class=HTMLResponse)
-# async def professor_classes(request: Request):
-#     user = await verify_role(request, ["admin", "professor"])
-#     if isinstance(user, RedirectResponse):
-#         return user
-#     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
 
 # =========================================
 # Admin Routes
@@ -185,35 +166,6 @@ async def admin_dashboard(request: Request):
         return user
     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
 
-# @app.get("/admin/students", response_class=HTMLResponse)
-# async def admin_students(request: Request):
-#     user = await verify_role(request, ["admin"])
-#     if isinstance(user, RedirectResponse):
-#         return user
-#     return templates.TemplateResponse("admin_students.html", {"request": request, "user": user})
-
-# @app.get("/admin/students/list", response_class=HTMLResponse)
-# async def admin_student_list(request: Request):
-#     user = await verify_role(request, ["admin"])
-#     if isinstance(user, RedirectResponse):
-#         return user
-
-#     raw_students = db.get_all_students()
-#     students = []
-#     for student in raw_students:
-#         students.append({
-#             "id": student["username"],
-#             "course": student["course"]
-#         })
-
-#     return templates.TemplateResponse("admin_students_list.html", {
-#         "request": request,
-#         "user": user,
-#         "students": students
-#     })
-
-
-
 @app.get("/admin/chathistory", response_class=HTMLResponse)
 async def admin_chathistory(request: Request):
     user = await verify_role(request, ["admin"])
@@ -221,7 +173,6 @@ async def admin_chathistory(request: Request):
         return user
     return templates.TemplateResponse("admin_chathistory.html", {"request": request, "user": user})
 
-# Legacy route for backward compatibility
 @app.get("/classes", response_class=HTMLResponse)
 async def show_classes(request: Request):
     user = await get_current_user(request)
@@ -296,10 +247,8 @@ async def admin_delete_professor(request: Request, professor_username: int):
     if isinstance(user, RedirectResponse):
         return user
     
-    # Delete professor
     success, message = db.delete_professor(professor_username)
-    
-    # Redirect back to professors page
+
     if success:
         return RedirectResponse(
             url=f"/admin/professors?success={message}",
@@ -346,6 +295,7 @@ async def admin_edit_professor_page(request: Request, professor_username: int):
         "professor": professor_data
     })
 
+
 # =========================================
 # API Routes
 # =========================================
@@ -353,7 +303,7 @@ async def admin_edit_professor_page(request: Request, professor_username: int):
 # Authentication API endpoints
 @app.post("/api/auth/login/student")
 async def api_student_login(username: str = Form(...), password: str = Form(...)):
-    user = login_student(username, password)
+    user = db.login_student(username, password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -367,7 +317,7 @@ async def api_student_login(username: str = Form(...), password: str = Form(...)
 
 @app.post("/api/auth/login/professor")
 async def api_professor_login(username: str = Form(...), password: str = Form(...)):
-    user = login_professor(username, password)
+    user = db.login_professor(username, password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
@@ -412,7 +362,7 @@ async def api_logout():
 @app.post("/api/auth/register")
 async def api_register(student_data: dict = Body(...)):
     try:
-        new_student = register_student(student_data)
+        new_student = db.register_student(student_data)
         return {"success": True, "student_id": new_student.get("id")}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -542,20 +492,16 @@ async def delete_pdf(request: Request, pdf_id: int):
         "success": "PDF erfolgreich gelöscht."
     })
 
+
 # =========================================
 # Chat
 # =========================================
-
 @app.get("/chat/{class_id}", response_class=HTMLResponse)
 async def chat_page(request: Request, class_id: int):
     user = await get_current_user(request)
     if isinstance(user, RedirectResponse):
         return user
-
     cls = db.get_class_by_id(class_id)
-    if not cls:
-        return HTMLResponse(content="Kurs nicht gefunden.", status_code=404)
-
     return templates.TemplateResponse("chat.html", {
         "request": request,
         "user": user,
@@ -563,76 +509,21 @@ async def chat_page(request: Request, class_id: int):
         "class_id": class_id
     })
 
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
-from backend.rag.chains import load_embedding_model, load_llm
-from langchain.chains import RetrievalQA
-from langchain.vectorstores.neo4j_vector import Neo4jVector
-import os
-
-# Load RAG models once at startup (adjust as needed)
-embedding_model_name = os.getenv("EMBEDDING_MODEL", "SentenceTransformer")
-llm_name = os.getenv("LLM", "llama2")
-ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-neo4j_url = os.getenv("NEO4J_URI")
-neo4j_username = os.getenv("NEO4J_USERNAME")
-neo4j_password = os.getenv("NEO4J_PASSWORD")
-
-embeddings, dimension = load_embedding_model(
-    embedding_model_name, config={"ollama_base_url": ollama_base_url}
-)
-llm = load_llm(llm_name, config={"ollama_base_url": ollama_base_url})
+@app.post("/api/ingest_pdfs/{class_id}")
+async def ingest_pdfs(class_id: int):
+    return await rag.ingest_pdfs(class_id)
 
 @app.post("/chat/{class_id}")
 async def chat_api(class_id: int, body: dict):
     prompt = body.get("prompt")
     if not prompt:
         return JSONResponse({"error": "No prompt provided"}, status_code=400)
-
-    # Get all documents for this class
-    pdfs = db.get_pdfs_for_class(class_id)
-    chunks = []
-    from PyPDF2 import PdfReader
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-    # Extract and split text from all PDFs
-    for pdf in pdfs:
-        file_path = os.path.join("uploads", pdf["file_path"])
-        try:
-            with open(file_path, "rb") as f:
-                reader = PdfReader(f)
-                text = ""
-                for page in reader.pages:
-                    text += page.extract_text() or ""
-                text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=1000, chunk_overlap=200, length_function=len
-                )
-                chunks.extend(text_splitter.split_text(text=text))
-        except Exception as e:
-            continue  # Optionally log
-
-    # Create vectorstore (optionally cache this for performance)
-    vectorstore = Neo4jVector.from_texts(
-        chunks,
-        url=neo4j_url,
-        username=neo4j_username,
-        password=neo4j_password,
-        embedding=embeddings,
-        index_name="pdf_bot",
-        node_label="PdfBotChunk",
-        pre_delete_collection=False,  # Don't delete existing data!
-    )
-
-    qa = RetrievalQA.from_chain_type(
-        llm=llm, chain_type="stuff", retriever=vectorstore.as_retriever()
-    )
-
-    answer = qa.run(prompt)
-    # Optionally, add source info if available
-    return {"answer": answer, "source": None}
+    return await rag.chat_with_class(class_id, prompt)
 
 
-
+# =========================================	
+# Admin Course Management
+# =========================================
 
 # Kursverwaltung anzeigen
 @app.get("/admin/courses", response_class=HTMLResponse)
@@ -718,5 +609,3 @@ async def admin_students_page(request: Request):
         "user": user,
         "students": students
     })
-
-
