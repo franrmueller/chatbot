@@ -173,7 +173,7 @@ async def chat_with_class(class_id: int, prompt: str):
     ----
     Jede Antwort soll am Ende eine Quellenangabe enthalten, damit die Studierenden nachvollziehen können, woher die Information stammt.
     """
-    general_user_template = "Question:```{query}```"
+    general_user_template = "Frage:```{question}```"
     messages = [
         SystemMessagePromptTemplate.from_template(general_system_template),
         HumanMessagePromptTemplate.from_template(general_user_template),
@@ -193,43 +193,43 @@ async def chat_with_class(class_id: int, prompt: str):
         "sources": result.get("sources")
     }
 
-async def configure_qa_rag_chain(llm):
-    general_system_template = """ 
-    Use the following pieces of context to answer the question at the end.
-    The context contains question-answer pairs and their links from Stackoverflow.
-    You should prefer information from accepted or more upvoted answers.
-    Make sure to rely on information from the answers and not on questions to provide accuate responses.
-    When you find particular answer in the context useful, make sure to cite it in the answer using the link.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
-    ----
-    {summaries}
-    ----
-    Each answer you generate should contain a section at the end of links to 
-    Stackoverflow questions and answers you found useful, which are described under Source value.
-    You can only use links to StackOverflow questions that are present in the context and always
-    add links to the end of the answer in the style of citations.
-    Generate concise answers with references sources section of links to 
-    relevant StackOverflow questions only at the end of the answer.
-    """
-    general_user_template = "Question:```{query}```"
-    messages = [
-        SystemMessagePromptTemplate.from_template(general_system_template),
-        HumanMessagePromptTemplate.from_template(general_user_template),
-    ]
-    qa_prompt = ChatPromptTemplate.from_messages(messages)
+# async def configure_qa_rag_chain(llm):
+#     general_system_template = """ 
+#     Use the following pieces of context to answer the question at the end.
+#     The context contains question-answer pairs and their links from Stackoverflow.
+#     You should prefer information from accepted or more upvoted answers.
+#     Make sure to rely on information from the answers and not on questions to provide accuate responses.
+#     When you find particular answer in the context useful, make sure to cite it in the answer using the link.
+#     If you don't know the answer, just say that you don't know, don't try to make up an answer.
+#     ----
+#     {summaries}
+#     ----
+#     Each answer you generate should contain a section at the end of links to 
+#     Stackoverflow questions and answers you found useful, which are described under Source value.
+#     You can only use links to StackOverflow questions that are present in the context and always
+#     add links to the end of the answer in the style of citations.
+#     Generate concise answers with references sources section of links to 
+#     relevant StackOverflow questions only at the end of the answer.
+#     """
+#     general_user_template = "Question:```{query}```"
+#     messages = [
+#         SystemMessagePromptTemplate.from_template(general_system_template),
+#         HumanMessagePromptTemplate.from_template(general_user_template),
+#     ]
+#     qa_prompt = ChatPromptTemplate.from_messages(messages)
 
-    qa = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=get_vectorstore().as_retriever(),
-        return_source_documents=True,
-        chain_type_kwargs={"prompt": qa_prompt, "document_variable_name": "summaries"},
-    )
-    result = qa.invoke({"query": prompt})
-    return {
-        "answer": result.get("result") or result.get("answer"),
-        "sources": result.get("sources")
-    }
+#     qa = RetrievalQA.from_chain_type(
+#         llm=llm,
+#         chain_type="stuff",
+#         retriever=get_vectorstore().as_retriever(),
+#         return_source_documents=True,
+#         chain_type_kwargs={"prompt": qa_prompt, "document_variable_name": "summaries"},
+#     )
+#     result = qa.invoke({"query": prompt})
+#     return {
+#         "answer": result.get("result") or result.get("answer"),
+#         "sources": result.get("sources")
+#     }
 
 # ========== GENERATE TICKET ==========
 
