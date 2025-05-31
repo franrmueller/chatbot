@@ -863,3 +863,4 @@ def count_prompts_by_user(username):
     connection.close()
     return count
 
+

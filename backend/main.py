@@ -20,7 +20,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 # =========================================
-# Authentication Functions (unchanged)
+# Authentication Functions
 # =========================================
 
 async def get_current_user(request: Request):
@@ -153,7 +153,7 @@ async def professor_dashboard(request: Request):
     user = await verify_role(request, ["admin", "professor"])
     if isinstance(user, RedirectResponse):
         return user
-    return templates.TemplateResponse("professor_dashboard.html", {"request": request, "user": user})
+    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
 
 # =========================================
 # Admin Routes
@@ -610,3 +610,6 @@ async def admin_students_page(request: Request):
         "user": user,
         "students": students
     })
+
+
+
