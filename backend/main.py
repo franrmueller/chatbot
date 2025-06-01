@@ -125,27 +125,25 @@ async def admin_classes_page(request: Request):
 async def admin_add_class(
     request: Request,
     name: str = Form(...),
-    course: str = Form(...),
-    professor: str = Form(...)
+    course: str = Form(...)
 ):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
 
-    # Neue Klasse in DB speichern
+    # Insert new class into DB
     success, message = db.add_class({
         "name": name,
         "course_id": course,
-        "taught_by": professor  # <-- Hier wird der ausgewählte Professor gespeichert
+        "taught_by": user["username"]  # or let admin select a professor
     })
 
+    # Reload classes for display
     classes = db.get_all_classes()
-    professors = db.get_all_professors()
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
         "classes": classes,
-        "professors": professors,
         "success" if success else "error": message
     })
 
@@ -364,11 +362,7 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-<<<<<<< Updated upstream
-    # Return JSON response with redirect information
-=======
     # RICHTIGE Weiterleitung nach Login
->>>>>>> Stashed changes
     redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/classes"
     
     response = JSONResponse({
