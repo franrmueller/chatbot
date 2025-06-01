@@ -110,10 +110,12 @@ async def admin_classes_page(request: Request):
         return user
 
     classes = db.get_all_classes()
+    professors = db.get_all_professors_with_courses()
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
-        "classes": classes
+        "classes": classes,
+        "professors": professors
     })
 
 
@@ -121,7 +123,8 @@ async def admin_classes_page(request: Request):
 async def admin_add_class(
     request: Request,
     name: str = Form(...),
-    course: str = Form(...)
+    course: str = Form(...),
+    taught_by: str = Form(...)
 ):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
@@ -131,20 +134,25 @@ async def admin_add_class(
     success, message = db.add_class({
         "name": name,
         "course_id": course,
-        "taught_by": user["username"]  # or let admin select a professor
+        "taught_by": taught_by
     })
 
     # Reload classes for display
     classes = db.get_all_classes()
+    professors = db.get_all_professors()
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
         "classes": classes,
+        "professors": professors,
         "success" if success else "error": message
     })
 
+@app.get("/all/professors")
+async def test_professors():
+    return db.get_all_professors()
 
-# =========================================
+# ======<===================================
 # Professor Routes
 # =========================================
 
@@ -153,7 +161,11 @@ async def professor_dashboard(request: Request):
     user = await verify_role(request, ["admin", "professor"])
     if isinstance(user, RedirectResponse):
         return user
-    return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
+    return templates.TemplateResponse("classes.html", {"request": request, "user": user})
+
+@app.get("/api/professors")
+async def api_professors():
+    return {"professors": db.get_all_professors()}
 
 # =========================================
 # Admin Routes

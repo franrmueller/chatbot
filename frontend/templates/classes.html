@@ -32,6 +32,9 @@ Meine Vorlesungen – Vorlesungschatbot
             <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
         </select>
     </div>
+    <select id="taught_by" name="taught_by" required>
+    <option value="" disabled selected>Bitte wählen Sie eine:n Dozent:in</option>
+</select>
     <button type="submit" class="btn btn-primary">Vorlesung hinzufügen</button>
 </form>
 
@@ -103,6 +106,24 @@ Meine Vorlesungen – Vorlesungschatbot
             }
         } catch (error) {
             console.error('Fehler beim Laden der Kurse:', error);
+        }
+    });
+
+        document.addEventListener('DOMContentLoaded', async function () {
+        try {
+            const response = await fetch('/api/professors');
+            const data = await response.json();
+            const profSelect = document.getElementById('taught_by');
+            if (profSelect) {
+                data.professors.forEach(prof => {
+                    const option = document.createElement('option');
+                    option.value = prof.username;
+                    option.textContent = prof.name;
+                    profSelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der Professoren:', error);
         }
     });
 </script>

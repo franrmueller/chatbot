@@ -349,6 +349,21 @@ def get_courses():
 # Professors
 # ================================
 
+def get_all_professors():
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT username, first_name, last_name FROM professors")
+    professors = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return [
+        {
+            "username": prof["username"],
+            "name": f"{prof['first_name']} {prof['last_name']}"
+        }
+        for prof in professors
+    ]
+
 def get_all_professors_with_courses():
     """Get all professors with their assigned courses"""
     connection = None

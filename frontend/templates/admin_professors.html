@@ -1,31 +1,3 @@
-<!--
-Requirements for Backend to make this page work (EN):
-1. The backend must pass a 'professors' list to the template.
-2. Each professor object must have:
-   - professor.name → name of the professor
-   - professor.username → username address
-   - professor.courses → list of courses the professor teaches (each course has course.name)
-   - professor.id → for delete and edit actions
-3. The backend must handle:
-   - POST requests to '/admin/professors/delete/{professor_id}' for deleting professors
-   - (Optional) GET/POST for '/admin/professors/edit/{professor_id}' to edit professors
-4. The backend must handle form submissions to add a new professor (name, username, password).
-5. Success and error messages should optionally be passed to the template.
- 
-Anforderungen an das Backend, damit diese Seite funktioniert (DE):
-1. Das Backend muss eine Liste namens 'professors' an das Template übergeben.
-2. Jeder Professor muss enthalten:
-   - professor.name → Name des Professors
-   - professor.username → Benutzername-Adresse
-   - professor.courses → Liste der unterrichteten Kurse (jeder Kurs hat course.name)
-   - professor.id → für Lösch- und Bearbeitungsaktionen
-3. Das Backend muss folgende Funktionen bereitstellen:
-   - POST-Anfragen an '/admin/professors/delete/{professor_id}' zum Löschen
-   - (Optional) GET/POST für '/admin/professors/edit/{professor_id}' zum Bearbeiten
-4. Formularübermittlung zur Erstellung eines neuen Professors (Name, Benutzername, Passwort) muss verarbeitet werden.
-5. Erfolgs- und Fehlermeldungen sollen optional an das Template übergeben werden.
--->
- 
 {% extends "base.html" %}
  
 {% block title %}
