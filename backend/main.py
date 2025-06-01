@@ -630,22 +630,6 @@ async def admin_edit_course(
     db.update_course(course_id, name)
     return RedirectResponse(url="/admin/courses", status_code=303)
 
-
-# # Kurs bearbeiten
-# @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
-# async def admin_edit_course_inline(request: Request, course_id: str):
-#     user = await verify_role(request, ["admin"])
-#     courses = db.get_all_courses()
-#     edit_course = db.get_course_by_id(course_id)
-#     return templates.TemplateResponse("admin_courses.html", {
-#         "request": request,
-#         "user": user,
-#         "courses": courses,
-#         "edit_course": edit_course
-#     })
-
-
-
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students_page(request: Request):
     user = await verify_role(request, ["admin"])
