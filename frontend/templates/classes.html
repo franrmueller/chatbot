@@ -25,15 +25,30 @@ Meine Vorlesungen – Vorlesungschatbot
 
 <form id="add-class-form" class="form-inline mb-4" method="POST" action="/admin/classes">
     <h2>Neue Vorlesung erstellen</h2>
-    <input type="text" name="name" placeholder="Vorlesungsname" required>
-    <div class="form-group">
+
+    <input type="text" name="name" placeholder="Vorlesungsname" required class="form-control mb-2">
+
+    <div class="form-group mb-2">
         <label for="course">Kurs (Studiengang) auswählen:</label>
-        <select id="course" name="course" required>
+        <select id="course" name="course" class="form-control" required>
             <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
         </select>
     </div>
+
+    <div class="form-group mb-3">
+        <label for="professor">Professor:in zuweisen:</label>
+        <select name="professor" class="form-control" required>
+            <option value="" disabled selected>Bitte wählen</option>
+            {% for prof in professors %}
+                <option value="{{ prof.username }}">{{ prof.first_name }} {{ prof.last_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <button type="submit" class="btn btn-primary">Vorlesung hinzufügen</button>
 </form>
+
+
 
 {% if success %}
 <div class="alert alert-success">{{ success }}</div>
