@@ -116,7 +116,8 @@ async def admin_classes_page(request: Request):
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
-        "classes": classes
+        "classes": classes,
+        "professors": professors
     })
 
 

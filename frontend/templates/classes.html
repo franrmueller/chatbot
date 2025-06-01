@@ -25,36 +25,21 @@ Meine Vorlesungen – Vorlesungschatbot
 
 <form id="add-class-form" class="form-inline mb-4" method="POST" action="/admin/classes">
     <h2>Neue Vorlesung erstellen</h2>
-
-    <input type="text" name="name" placeholder="Vorlesungsname" required class="form-control mb-2">
-
-    <div class="form-group mb-2">
+    <input type="text" name="name" placeholder="Vorlesungsname" required>
+    <div class="form-group">
         <label for="course">Kurs (Studiengang) auswählen:</label>
-        <select id="course" name="course" class="form-control" required>
+        <select id="course" name="course" required>
             <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
         </select>
     </div>
-<<<<<<< HEAD
-    <select id="taught_by" name="taught_by" required>
-    <option value="" disabled selected>Bitte wählen Sie eine:n Dozent:in</option>
-</select>
-=======
-
-    <div class="form-group mb-3">
-        <label for="professor">Professor:in zuweisen:</label>
-        <select name="professor" class="form-control" required>
-            <option value="" disabled selected>Bitte wählen</option>
-            {% for prof in professors %}
-                <option value="{{ prof.username }}">{{ prof.first_name }} {{ prof.last_name }}</option>
-            {% endfor %}
+    <div class="form-group">
+        <label for="taught_by">Dozent:in auswählen:</label>
+        <select id="taught_by" name="taught_by" required>
+            <option value="" disabled selected>Bitte wählen Sie eine:n Dozent:in</option>
         </select>
     </div>
-
->>>>>>> 496526817e0b1b07d2a260a4a3a1917f82bbc93b
     <button type="submit" class="btn btn-primary">Vorlesung hinzufügen</button>
 </form>
-
-
 
 {% if success %}
 <div class="alert alert-success">{{ success }}</div>
@@ -110,11 +95,12 @@ Meine Vorlesungen – Vorlesungschatbot
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', async function () {
+        // Load courses
         try {
             const response = await fetch('/api/courses');
             const data = await response.json();
             const courseSelect = document.getElementById('course');
-            if (courseSelect) {
+            if (courseSelect && data.courses) {
                 data.courses.forEach(course => {
                     const option = document.createElement('option');
                     option.value = course.id;
@@ -125,14 +111,13 @@ Meine Vorlesungen – Vorlesungschatbot
         } catch (error) {
             console.error('Fehler beim Laden der Kurse:', error);
         }
-    });
 
-        document.addEventListener('DOMContentLoaded', async function () {
+        // Load professors
         try {
             const response = await fetch('/api/professors');
             const data = await response.json();
             const profSelect = document.getElementById('taught_by');
-            if (profSelect) {
+            if (profSelect && data.professors) {
                 data.professors.forEach(prof => {
                     const option = document.createElement('option');
                     option.value = prof.username;
