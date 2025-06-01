@@ -417,6 +417,23 @@ def get_all_professors_with_courses():
         if connection:
             connection.close()
 
+
+def get_all_professors():
+    """Returns all professors (ohne Admins) für Dropdown-Auswahl."""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT username, first_name, last_name
+        FROM professors
+        WHERE role = 'professor'
+        ORDER BY last_name, first_name
+    """)
+    professors = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return professors
+
+
 def add_professor(professor_data):
     """Add a new professor or admin"""
     connection = None

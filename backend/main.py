@@ -111,12 +111,17 @@ async def admin_classes_page(request: Request):
 
     classes = db.get_all_classes()
     professors = db.get_all_professors_with_courses()
+    professors = db.get_all_professors()  # Holt alle Prof-Datenbankeinträge
+
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
         "classes": classes,
         "professors": professors
+        "classes": classes,
+        "professors": professors
     })
+
 
 
 @app.post("/admin/classes", response_class=HTMLResponse)
@@ -156,11 +161,30 @@ async def test_professors():
 # Professor Routes
 # =========================================
 
+# @app.get("/professor/dashboard", response_class=HTMLResponse)
+# async def professor_dashboard(request: Request):
+#     user = await verify_role(request, ["admin", "professor"])
+#     if isinstance(user, RedirectResponse):
+#         return user
+#     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
+
+
 @app.get("/professor/dashboard", response_class=HTMLResponse)
 async def professor_dashboard(request: Request):
     user = await verify_role(request, ["admin", "professor"])
     if isinstance(user, RedirectResponse):
         return user
+
+    if user["role"] == "professor":
+        classes = db.get_classes_for_professor(user["username"])
+        return templates.TemplateResponse("classes.html", {
+            "request": request,
+            "user": user,
+            "classes": classes
+        })
+    else:  # Falls Admin versehentlich diesen Pfad aufruft
+        return RedirectResponse("/admin/dashboard")
+
     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
 
 @app.get("/api/professors")
@@ -327,13 +351,32 @@ async def api_student_login(username: str = Form(...), password: str = Form(...)
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
 
+# @app.post("/api/auth/login/professor")
+# async def api_professor_login(username: str = Form(...), password: str = Form(...)):
+#     user = db.login_professor(username, password)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+#     # Return JSON response with redirect information
+#     redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/professor/dashboard"
+    
+#     response = JSONResponse({
+#         "success": True,
+#         "role": user.get("role"),
+#         "redirect_url": redirect_url
+#     })
+    
+#     # Set authentication cookie
+#     response.set_cookie(key="session_token", value=user.get("session_token"))
+#     return response
+
 @app.post("/api/auth/login/professor")
 async def api_professor_login(username: str = Form(...), password: str = Form(...)):
     user = db.login_professor(username, password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Return JSON response with redirect information
+    # RICHTIGE Weiterleitung nach Login
     redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/classes"
     
     response = JSONResponse({
@@ -342,9 +385,10 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
         "redirect_url": redirect_url
     })
     
-    # Set authentication cookie
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
+
+
 
 @app.get("/api/auth/check")
 async def check_auth(request: Request):
@@ -546,17 +590,30 @@ async def admin_courses(request: Request):
         return user
 
     courses = db.get_all_courses()
+    professors = db.get_all_professors()  # Diese Funktion musst du ggf. in deiner db.py ergänzen
+
     return templates.TemplateResponse("admin_courses.html", {
         "request": request,
         "user": user,
-        "courses": courses
+        "courses": courses,
+        "professors": professors
     })
 
 # Kurs hinzufügen
 @app.post("/admin/courses/add")
-async def admin_add_course(request: Request, id: str = Form(...), name: str = Form(...)):
+async def admin_add_course(
+    request: Request,
+    id: str = Form(...),
+    name: str = Form(...),
+    professor: str = Form(...)
+):
     user = await verify_role(request, ["admin"])
-    db.add_course({"id": id, "name": name, "created_by": user["username"]})
+    db.add_course({
+        "id": id,
+        "name": name,
+        "created_by": user["username"],
+        "professor": professor
+    })
     return RedirectResponse(url="/admin/courses", status_code=303)
 
 # Kurs löschen
@@ -567,37 +624,47 @@ async def admin_delete_course(request: Request, course_id: str):
     return RedirectResponse(url="/admin/courses", status_code=303)
 
 
-# # Kurs bearbeiten
-# @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
-# async def admin_edit_course_page(request: Request, course_id: str):
-#     user = await verify_role(request, ["admin"])
-#     course = db.get_course_by_id(course_id)
-#     return templates.TemplateResponse("admin_course_edit.html", {
-#         "request": request,
-#         "user": user,
-#         "course": course
-#     })
-
-# Kurs bearbeiten
-@app.post("/admin/courses/edit/{course_id}")
-async def admin_edit_course(request: Request, course_id: str, name: str = Form(...)):
-    await verify_role(request, ["admin"])
-    db.update_course(course_id, name)
-    return RedirectResponse(url="/admin/courses", status_code=303)
-
-
 # Kurs bearbeiten
 @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
 async def admin_edit_course_inline(request: Request, course_id: str):
     user = await verify_role(request, ["admin"])
     courses = db.get_all_courses()
     edit_course = db.get_course_by_id(course_id)
+    professors = db.get_all_professors()
     return templates.TemplateResponse("admin_courses.html", {
         "request": request,
         "user": user,
         "courses": courses,
-        "edit_course": edit_course
+        "edit_course": edit_course,
+        "professors": professors
     })
+
+
+# Kurs bearbeiten
+@app.post("/admin/courses/edit/{course_id}")
+async def admin_edit_course(
+    request: Request,
+    course_id: str,
+    name: str = Form(...),
+    professor: str = Form(...)
+):
+    await verify_role(request, ["admin"])
+    db.update_course(course_id, name, professor)
+    return RedirectResponse(url="/admin/courses", status_code=303)
+
+
+# # Kurs bearbeiten
+# @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
+# async def admin_edit_course_inline(request: Request, course_id: str):
+#     user = await verify_role(request, ["admin"])
+#     courses = db.get_all_courses()
+#     edit_course = db.get_course_by_id(course_id)
+#     return templates.TemplateResponse("admin_courses.html", {
+#         "request": request,
+#         "user": user,
+#         "courses": courses,
+#         "edit_course": edit_course
+#     })
 
 
 
