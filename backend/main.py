@@ -322,7 +322,7 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Return JSON response with redirect information
-    redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/professor/dashboard"
+    redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/classes"
     
     response = JSONResponse({
         "success": True,
