@@ -349,25 +349,6 @@ async def api_student_login(username: str = Form(...), password: str = Form(...)
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
 
-# @app.post("/api/auth/login/professor")
-# async def api_professor_login(username: str = Form(...), password: str = Form(...)):
-#     user = db.login_professor(username, password)
-#     if not user:
-#         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-#     # Return JSON response with redirect information
-#     redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/professor/dashboard"
-    
-#     response = JSONResponse({
-#         "success": True,
-#         "role": user.get("role"),
-#         "redirect_url": redirect_url
-#     })
-    
-#     # Set authentication cookie
-#     response.set_cookie(key="session_token", value=user.get("session_token"))
-#     return response
-
 @app.post("/api/auth/login/professor")
 async def api_professor_login(username: str = Form(...), password: str = Form(...)):
     user = db.login_professor(username, password)
@@ -644,10 +625,9 @@ async def admin_edit_course(
     request: Request,
     course_id: str,
     name: str = Form(...),
-    professor: str = Form(...)
 ):
     await verify_role(request, ["admin"])
-    db.update_course(course_id, name, professor)
+    db.update_course(course_id, name)
     return RedirectResponse(url="/admin/courses", status_code=303)
 
 

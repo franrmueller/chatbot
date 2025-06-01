@@ -10,6 +10,7 @@
     <form method="post" action="/admin/courses/add">
         <input type="text" name="id" placeholder="Kurs-ID (z.B. WWI-BE122)" required class="form-control" />
         <input type="text" name="name" placeholder="Kursbeschreibung (z.B. WWI-BE122 (Wirtschaftsinformatik - Business Engineering))" required class="form-control" />
+        <input type="hidden" name="professor" value="{{ user.username }}">
         <br>
         <button type="submit" class="btn btn-success btn-sm uniform-btn">Hinzufügen</button>
     </form>
@@ -32,6 +33,7 @@
                     <form method="post" action="/admin/courses/edit/{{ course.id }}" style="margin-top: 0.5rem;">
                         <input type="text" name="name" value="{{ course.name }}" class="form-control"
                                style="width: 100%; font-size: 1.1rem; padding: 0.6rem;" required />
+                        <!-- <input type="hidden" name="professor" value="{{ user.username }}"> -->
                         <div style="margin-top: 0.5rem;">
                             <button type="submit" class="btn btn-success btn-sm uniform-btn">Speichern</button>
                             <a href="/admin/courses" class="btn btn-secondary btn-sm uniform-btn">Abbrechen</a>
