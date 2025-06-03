@@ -762,6 +762,15 @@ def add_document(document_data, file_content):
         if connection:
             connection.close()
 
+def get_document_by_id(pdf_id):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM documents WHERE id=%s", (int(pdf_id),))
+    doc = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return doc
+
 
 def delete_pdf(pdf_id):
     """Delete a PDF document and its file."""

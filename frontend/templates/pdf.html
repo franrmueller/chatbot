@@ -11,20 +11,19 @@ PDF-Übersicht – Kurs {{ course.name }}
             <h1 class="h4 mb-3">PDF-Übersicht für Kurs: {{ course.name }}</h1>
             <a href="/classes" class="btn btn-secondary mb-3">Zur Kursübersicht</a>
 
-            <<form id="upload-form" class="row g-3 align-items-center mb-4"
-            enctype="multipart/form-data" method="POST" action="/pdf">
+            <form id="upload-form" method="post" enctype="multipart/form-data">
             <input type="hidden" name="class_id" value="{{ class_id }}">
-            <div class="col-md-4">
+            <div class="mb-3">
                 <label for="pdf-file" class="form-label">PDF Datei:</label>
                 <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
             </div>
-            <div class="col-md-2 align-self-end">
-                <button type="submit" class="btn btn-primary w-100">Hochladen</button>
-            </div>
-        </form>
+            <button type="submit" class="btn btn-primary">Hochladen</button>
+            </form>
         <div id="upload-error" class="alert alert-danger d-none"></div>
 
         <script>
+        const formData = new FormData(document.getElementById('upload-form'));
+        formData.append('class_id', document.querySelector('input[name="class_id"]').value);
         const fileInput = document.getElementById('pdf-file');
         fileInput.addEventListener('change', function() {
             let nameInput = document.querySelector('input[name="name"]');

@@ -114,6 +114,53 @@ def get_vectorstore():
 
 # ========== PDF INGESTION ==========
 
+async def ingest_pdf(pdf_id: int):
+    doc = db.get_document_by_id(pdf_id)
+    if not doc:
+        logger.warning(f"No document found with id: {pdf_id}")
+        return {"success": False, "error": "Document not found"}
+    upload_dir = os.path.join(os.getcwd(), 'uploads')
+    file_name = doc.get("name", "")
+    file_path = os.path.join(upload_dir, file_name)
+    logger.info(f"Processing PDF: {file_path}")
+    if not os.path.exists(file_path):
+        logger.warning(f"File not found: {file_path}")
+        return {"success": False, "error": "File not found"}
+    with open(file_path, "rb") as f:
+        reader = PyPDF2.PdfReader(f)
+        text = ""
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text
+    if not text:
+        logger.warning(f"No text extracted from: {file_path}")
+        return {"success": False, "error": "No text extracted"}
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = splitter.split_text(text)
+    logger.info(f"Extracted {len(chunks)} chunks from {file_path}")
+    metadatas = [{"class_id": doc.get("class_id"), "source": file_path}] * len(chunks)
+    if chunks:
+        logger.info(f"Uploading {len(chunks)} chunks to Neo4j...")
+        Neo4jVector.from_texts(
+            texts=chunks,
+            embedding=embeddings,
+            url=NEO4J_URI,
+            username=NEO4J_USERNAME,
+            password=NEO4J_PASSWORD,
+            index_name="pdf_bot",
+            node_label="PdfBotChunk",
+            metadatas=metadatas,
+            pre_delete_collection=False,
+        )
+        logger.info("Upload complete.")
+        return {"success": True}
+    else:
+        logger.warning("No chunks to upload.")
+        return {"success": False, "error": "No chunks to upload"}
+
+# Optionally, keep the old ingest_pdfs for batch/class ingestion if needed.
+
 async def ingest_pdfs(class_id: int):
     pdfs = db.get_pdfs_for_class(class_id)
     all_texts = []
@@ -151,7 +198,7 @@ async def ingest_pdfs(class_id: int):
             index_name="pdf_bot",
             node_label="PdfBotChunk",
             metadatas=metadatas,
-            pre_delete_collection=True,
+            pre_delete_collection=False,
         )
         logger.info("Upload complete.")
     else:
@@ -160,7 +207,7 @@ async def ingest_pdfs(class_id: int):
 
 async def chat_with_class(class_id: int, prompt: str):
     vectorstore = get_vectorstore()
-    retriever = vectorstore.as_retriever()
+    retriever = vectorstore.as_retriever(search_kwargs={"filter": {"class_id": class_id}})
 
     general_system_template = """ 
     Du bist Professor für den Bachelor-Studiengang Wirtschaftsinformatik - Business Engineering an der Dualen Hochschule Baden-Württemberg (DHBW).
@@ -193,43 +240,25 @@ async def chat_with_class(class_id: int, prompt: str):
         "sources": result.get("sources")
     }
 
-# async def configure_qa_rag_chain(llm):
-#     general_system_template = """ 
-#     Use the following pieces of context to answer the question at the end.
-#     The context contains question-answer pairs and their links from Stackoverflow.
-#     You should prefer information from accepted or more upvoted answers.
-#     Make sure to rely on information from the answers and not on questions to provide accuate responses.
-#     When you find particular answer in the context useful, make sure to cite it in the answer using the link.
-#     If you don't know the answer, just say that you don't know, don't try to make up an answer.
-#     ----
-#     {summaries}
-#     ----
-#     Each answer you generate should contain a section at the end of links to 
-#     Stackoverflow questions and answers you found useful, which are described under Source value.
-#     You can only use links to StackOverflow questions that are present in the context and always
-#     add links to the end of the answer in the style of citations.
-#     Generate concise answers with references sources section of links to 
-#     relevant StackOverflow questions only at the end of the answer.
-#     """
-#     general_user_template = "Question:```{query}```"
-#     messages = [
-#         SystemMessagePromptTemplate.from_template(general_system_template),
-#         HumanMessagePromptTemplate.from_template(general_user_template),
-#     ]
-#     qa_prompt = ChatPromptTemplate.from_messages(messages)
-
-#     qa = RetrievalQA.from_chain_type(
-#         llm=llm,
-#         chain_type="stuff",
-#         retriever=get_vectorstore().as_retriever(),
-#         return_source_documents=True,
-#         chain_type_kwargs={"prompt": qa_prompt, "document_variable_name": "summaries"},
-#     )
-#     result = qa.invoke({"query": prompt})
-#     return {
-#         "answer": result.get("result") or result.get("answer"),
-#         "sources": result.get("sources")
-#     }
+def delete_vectors_for_pdf(pdf_id: int):
+    doc = db.get_document_by_id(pdf_id)
+    if not doc:
+        logger.warning(f"No document found with id: {pdf_id}")
+        return
+    file_name = doc.get("name", "")
+    file_path = os.path.join(os.getcwd(), 'uploads', file_name)
+    # Connect to Neo4j and delete all nodes with this source
+    vectorstore = get_vectorstore()
+    driver = vectorstore._driver
+    with driver.session() as session:
+        session.run(
+            """
+            MATCH (n:PdfBotChunk {source: $source})
+            DETACH DELETE n
+            """,
+            source=file_path
+        )
+    logger.info(f"Deleted vectors for PDF: {file_path}")
 
 # ========== GENERATE TICKET ==========
 

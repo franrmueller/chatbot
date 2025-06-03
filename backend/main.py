@@ -494,12 +494,22 @@ async def upload_pdf(
             "error": "Klasse nicht gefunden."
         })
     content = await pdf.read()
-    db.add_document({
+    success, pdf_id = db.add_document({
         "name": name,
         "created_by": user["username"],
         "class_id": int(class_id),
         "file_type": pdf.content_type
     }, content)
+    if not success:
+        return templates.TemplateResponse("pdf.html", {
+            "request": request,
+            "user": user,
+            "pdfs": [],
+            "class_id": class_id,
+            "course": cls,
+            "error": pdf_id
+        })
+    await rag.ingest_pdf(pdf_id)
     pdfs = db.get_pdfs_for_class(class_id)
     return templates.TemplateResponse("pdf.html", {
         "request": request,
@@ -515,6 +525,7 @@ async def upload_pdf(
 async def delete_pdf(request: Request, pdf_id: int):
     user = await verify_role(request, ["professor", "admin"])
     class_id = db.get_class_id_by_pdf(pdf_id)
+    rag.delete_vectors_for_pdf(pdf_id)
     db.delete_pdf(pdf_id)
     pdfs = db.get_pdfs_for_class(class_id)
     cls = db.get_class_by_id(class_id)
@@ -537,7 +548,7 @@ async def chat_page(request: Request, class_id: int):
     if isinstance(user, RedirectResponse):
         return user
     cls = db.get_class_by_id(class_id)
-    await rag.ingest_pdfs(class_id)
+    
     return templates.TemplateResponse("chat.html", {
         "request": request,
         "user": user,
