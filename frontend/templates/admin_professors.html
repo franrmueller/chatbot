@@ -1,80 +1,100 @@
 {% extends "base.html" %}
- 
+
 {% block title %}
 Professor:innen verwalten – Admin
 {% endblock %}
- 
+
 {% block content %}
 <div class="dashboard-container">
-<h1>Professor:innen verwalten</h1>
- 
-<!-- Navigationsleiste -->
-<div class="btn-group" style="margin-bottom: 1rem;">
-<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-<a href="/classes" class="btn btn-outline-primary">Zur Kursübersicht</a>
-<a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
-<a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
-</div>
- 
-<!-- Neuen Professor hinzufügen -->
-<form id="add-professor-form" class="form-inline" method="POST">
-    <h2>Neuen Professor hinzufügen</h2>
-    <input type="text" name="first_name" placeholder="Vorname" required>
-    <input type="text" name="last_name" placeholder="Nachname" required>
-    <input type="text" name="username" placeholder="Benutzername" required>
-    <input type="password" name="password" placeholder="Passwort" required>
-    <select name="role" required>
-        <option value="professor" selected>Professor:in</option>
-        <option value="admin">Administrator:in</option>
-    </select>
-    <button type="submit" class="btn btn-primary">Hinzufügen</button>
-</form>
- 
-{% if success %}
-<div class="success-message">{{ success }}</div>
-{% endif %}
-{% if error %}
-<div class="error-message">{{ error }}</div>
-{% endif %}
- 
-<!-- List of professors -->
-<h2>Bestehende Professor:innen</h2>
-{% if professors %}
-<table class="admin-table">
-    <thead>
-        <tr>
-            <th>Benutzername</th>
-            <th>Name</th>
-            <th>Rolle</th>
-            <th>Aktionen</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for professor in professors %}
-        <tr>
-            <td>{{ professor.username }}</td>
-            <td>{{ professor.name }}</td>
-            <td>
-                {% if professor.role == 'admin' %}
-                    Administrator:in
-                {% else %}
-                    Professor:in
-                {% endif %}
-            </td>
-            <td>
-                <!-- Edit button (optional, link to edit page or modal) -->
-                <a href="/admin/professors/edit/{{ professor.username }}" class="btn btn-sm btn-warning">Bearbeiten</a>
-                <!-- Delete button -->
-                <form method="POST" action="/admin/professors/delete/{{ professor.username }}" style="display:inline-block;" onsubmit="return confirm('Wirklich löschen?');">
-                    <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>Keine Professor:innen gefunden.</p>
-{% endif %}
+    <h1 class="dashboard-title">Professor:innen verwalten</h1>
+
+    <!-- Navigationsleiste -->
+    <div class="btn-group-nav mb-4">
+        <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
+        <a href="/classes" class="btn btn-outline-primary">Kursübersicht</a>
+        <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
+        <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
+    </div>
+
+    <!-- Neuen Professor hinzufügen -->
+    <form id="add-professor-form" method="POST" class="mb-4">
+        <h2 class="mb-3">Neuen Professor hinzufügen</h2>
+
+        <div class="form-group">
+            <label for="first_name">Vorname</label>
+            <input type="text" name="first_name" required class="form-control" placeholder="Max">
+        </div>
+
+        <div class="form-group">
+            <label for="last_name">Nachname</label>
+            <input type="text" name="last_name" required class="form-control" placeholder="Mustermann">
+        </div>
+
+        <div class="form-group">
+            <label for="username">Benutzername</label>
+            <input type="text" name="username" required class="form-control" placeholder="mmustermann">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Passwort</label>
+            <input type="password" name="password" required class="form-control" placeholder="********">
+        </div>
+
+        <div class="form-group">
+            <label for="role">Rolle</label>
+            <select name="role" class="form-control" required>
+                <option value="professor" selected>Professor:in</option>
+                <option value="admin">Administrator:in</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-2">Hinzufügen</button>
+    </form>
+
+    {% if success %}
+    <div class="alert alert-success">{{ success }}</div>
+    {% endif %}
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <!-- Bestehende Professor:innen -->
+    <h2 class="mt-4 mb-3">Bestehende Professor:innen</h2>
+
+    {% if professors %}
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Benutzername</th>
+                <th>Name</th>
+                <th>Rolle</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for professor in professors %}
+            <tr>
+                <td>{{ professor.username }}</td>
+                <td>{{ professor.name }}</td>
+                <td>
+                    {% if professor.role == 'admin' %}
+                        Administrator:in
+                    {% else %}
+                        Professor:in
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/admin/professors/edit/{{ professor.username }}" class="btn btn-sm btn-warning">Bearbeiten</a>
+                    <form method="POST" action="/admin/professors/delete/{{ professor.username }}" style="display:inline-block;" onsubmit="return confirm('Wirklich löschen?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Keine Professor:innen gefunden.</p>
+    {% endif %}
 </div>
 {% endblock %}
