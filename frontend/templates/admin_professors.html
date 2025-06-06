@@ -58,6 +58,38 @@ Professor:innen verwalten – Admin
     <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
 
+    <!-- HIER: Bearbeiten-Formular -->
+        
+    {% if edit_professor %}
+    <div class="card mb-4" id="edit-form-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Professor:in bearbeiten</h2>
+            <a href="/admin/professors" class="btn btn-sm btn-outline-secondary">✕ Schließen</a>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="/admin/professors/edit/{{ edit_professor.username }}">
+                <div class="form-group">
+                    <label for="first_name">Vorname</label>
+                    <input type="text" name="first_name" value="{{ edit_professor.first_name }}" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Nachname</label>
+                    <input type="text" name="last_name" value="{{ edit_professor.last_name }}" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="role">Rolle</label>
+                    <select name="role" class="form-control" required>
+                        <option value="professor" {% if edit_professor.role == 'professor' %}selected{% endif %}>Professor:in</option>
+                        <option value="admin" {% if edit_professor.role == 'admin' %}selected{% endif %}>Administrator:in</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">Änderungen speichern</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+
     <!-- Bestehende Professor:innen -->
     <h2 class="mt-4 mb-3">Bestehende Professor:innen</h2>
 
@@ -83,9 +115,14 @@ Professor:innen verwalten – Admin
                         Professor:in
                     {% endif %}
                 </td>
-                <td>
-                    <a href="/admin/professors/edit/{{ professor.username }}" class="btn btn-sm btn-warning">Bearbeiten</a>
-                    <form method="POST" action="/admin/professors/delete/{{ professor.username }}" style="display:inline-block;" onsubmit="return confirm('Wirklich löschen?');">
+                <td class="btn-group">
+                    <!-- Bearbeiten-Formular (GET) -->
+                    <form method="get" action="/admin/professors/edit/{{ professor.username }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-warning">Bearbeiten</button>
+                    </form>
+
+                    <!-- Löschen-Formular (POST) -->
+                    <form method="post" action="/admin/professors/delete/{{ professor.username }}" style="display:inline;" onsubmit="return confirm('Wirklich löschen?');">
                         <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
                     </form>
                 </td>

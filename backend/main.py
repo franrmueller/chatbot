@@ -296,16 +296,15 @@ async def admin_delete_professor(request: Request, professor_username: int):
 
 # Add edit professor functionality
 @app.get("/admin/professors/edit/{professor_username}", response_class=HTMLResponse)
-async def admin_edit_professor_page(request: Request, professor_username: int):
-    """Render the professor edit page"""
+async def admin_edit_professor_page(request: Request, professor_username: str):  # ✅ str statt int
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
     
-    # Get professor details
+    # Hole Professor-Daten aus der Datenbank
     connection = db.sql_connect()
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM professors WHERE id = %s", (professor_username,))
+    cursor.execute("SELECT * FROM professors WHERE username = %s", (professor_username,))
     professor = cursor.fetchone()
     cursor.close()
     connection.close()
@@ -315,20 +314,14 @@ async def admin_edit_professor_page(request: Request, professor_username: int):
             url="/admin/professors?error=Professor nicht gefunden",
             status_code=303
         )
-    
-    # Format professor data for template
-    professor_data = {
-        "id": professor["id"],
-        "username": professor["username"],
-        "name": f"{professor['first_name']} {professor['last_name']}"
-    }
-    
-    return templates.TemplateResponse("admin_edit_professor.html", {
+
+    # Beispiel: du könntest auf derselben Seite ein Inline-Edit-Formular anzeigen
+    return templates.TemplateResponse("admin_professors.html", {
         "request": request, 
         "user": user,
-        "professor": professor_data
+        "professors": db.get_all_professors_with_courses(),
+        "edit_professor": professor  # Übergib das zu bearbeitende Objekt
     })
-
 
 # =========================================
 # API Routes
