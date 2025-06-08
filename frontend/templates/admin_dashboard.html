@@ -14,45 +14,54 @@ Admin-Dashboard – Vorlesungschatbot
 
     <!-- Grid-Layout für die Verwaltungskarten -->
     <div class="admin-grid">
-        
-        <!-- Karte: Professor:innen -->
-        <div class="admin-card">
-            <h2>Professor:innen</h2>
-            <p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
-            <a href="/admin/professors" class="btn btn-primary">Professor:innen verwalten</a>
-        </div>
-
-        <!-- Karte: Vorlesungen -->
-        <div class="admin-card">
-            <h2>Vorlesungen</h2>
-            <p>Alle Vorlesungen im System. Erstellen, zuordnen oder entfernen.</p>
-            <a href="/classes" class="btn btn-primary">Vorlesungen verwalten</a>
-        </div>
-
-        <!-- Karte: Studierende -->
-        <div class="admin-card">
-            <h2>Studierende</h2>
-            <p>Liste aller registrierten Studierenden (anonymisiert). Kurse und Aktivitäten einsehen.</p>
-            <a href="/admin/students" class="btn btn-primary">Studierende verwalten</a>
-        </div>
-
-        <!-- Karte: Studiengangverwaltung -->
-        <div class="admin-card">
-            <h2>Kursverwaltung</h2>
-            <p>Alle Kurse im System. Erstellen, zuordnen oder entfernen.</p>
-            <a href="/admin/courses" class="btn btn-primary">Kurse verwalten </a>
-        </div>
-
-        <!-- Karte: Chathistorien -->
-        <div class="admin-card">
-            <h2>Chathistorien</h2>
-            <p>Alle gestellten Fragen pro Kurs anonymisiert einsehen.</p>
-            <a href="/admin/chathistory" class="btn btn-primary">Chathistorie anzeigen</a>
-        </div>
-
-
-
+    
+    <!-- Karte: Professor:innen -->
+    <div class="admin-card">
+        <h2>Professor:innen</h2>
+        <p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
+        <a href="/admin/professors" class="btn btn-primary" title="Professor:innen verwalten">
+            <i class="fas fa-user-tie"></i>
+        </a>
     </div>
+
+    <!-- Karte: Vorlesungen -->
+    <div class="admin-card">
+        <h2>Vorlesungen</h2>
+        <p>Alle Vorlesungen im System. Erstellen, zuordnen oder entfernen.</p>
+        <a href="/classes" class="btn btn-primary" title="Vorlesungen verwalten">
+            <i class="fas fa-chalkboard-teacher"></i>
+        </a>
+    </div>
+
+    <!-- Karte: Studierende -->
+    <div class="admin-card">
+        <h2>Studierende</h2>
+        <p>Liste aller registrierten Studierenden (anonymisiert). Kurse und Aktivitäten einsehen.</p>
+        <a href="/admin/students" class="btn btn-primary" title="Studierende verwalten">
+            <i class="fas fa-user-graduate"></i>
+        </a>
+    </div>
+
+    <!-- Karte: Studiengangverwaltung -->
+    <div class="admin-card">
+        <h2>Kursverwaltung</h2>
+        <p>Alle Kurse im System. Erstellen, zuordnen oder entfernen.</p>
+        <a href="/admin/courses" class="btn btn-primary" title="Kurse verwalten">
+            <i class="fas fa-book-open"></i>
+        </a>
+    </div>
+
+    <!-- Karte: Chathistorien -->
+    <div class="admin-card">
+        <h2>Chathistorien</h2>
+        <p>Alle gestellten Fragen pro Kurs anonymisiert einsehen.</p>
+        <a href="/admin/chathistory" class="btn btn-primary" title="Chathistorie anzeigen">
+            <i class="fas fa-comments"></i>
+        </a>
+    </div>
+
+</div>
+
 </div>
 
 <!-- Optionales Skript zur Absicherung des Zurück-Buttons -->

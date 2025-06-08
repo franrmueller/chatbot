@@ -16,12 +16,12 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if user.role == 'admin' %}
 <h1>Vorlesungen verwalten</h1>
 
-<div class="btn-group-nav mb-3">
-    <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-    <a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
-    <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
-    <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
+<div class="btn-group mb-3">
+  <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+    <i class="fas fa-arrow-left"></i>
+  </a>
 </div>
+
 
 <form id="add-class-form" class="form-inline mb-4" method="POST" action="/admin/classes">
     <h2>Neue Vorlesung erstellen</h2>
@@ -38,7 +38,10 @@ Meine Vorlesungen – Vorlesungschatbot
             <option value="" disabled selected>Bitte wählen Sie eine:n Dozent:in</option>
         </select>
     </div>
-    <button type="submit" class="btn btn-primary">Vorlesung hinzufügen</button>
+    <button type="submit" class="btn btn-primary" title="Vorlesung hinzufügen">
+  <i class="fas fa-plus"></i>
+</button>
+
 </form>
 
 {% if success %}
@@ -63,16 +66,26 @@ Meine Vorlesungen – Vorlesungschatbot
             <h3 class="mb-0">{{ class.name }}</h3>
             <div class="btn-group">
                 {% if user.role == 'professor' or user.role == 'admin' %}
-                <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary">PDF-Übersicht</a>
+                <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary" title="PDF-Übersicht">
+  <i class="fas fa-file-alt"></i>
+</a>
+
+
                 {% endif %}
-                <a href="/chat/{{ class.id }}" class="btn btn-primary">Zum Chat</a>
+                <a href="/chat/{{ class.id }}" class="btn btn-primary" title="Zum Chat">
+  <i class="fas fa-comments"></i>
+</a>
+
             </div>
         </div>
         {% if user.role == 'admin' %}
         <p class="class-teacher mt-2"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
         <form method="POST" action="/admin/classes/delete/{{ class.id }}" class="class-delete-form mt-2"
               onsubmit="return confirm('Diesen Kurs wirklich löschen?');">
-            <button type="submit" class="btn btn-danger">Löschen</button>
+            <button type="submit" class="btn btn-danger" title="Löschen">
+  <i class="fas fa-trash"></i>
+</button>
+
         </form>
         {% endif %}
     </div>

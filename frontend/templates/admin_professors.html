@@ -9,12 +9,13 @@ Professor:innen verwalten – Admin
     <h1 class="dashboard-title">Professor:innen verwalten</h1>
 
     <!-- Navigationsleiste -->
-    <div class="btn-group-nav mb-4">
-        <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-        <a href="/classes" class="btn btn-outline-primary">Kursübersicht</a>
-        <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
-        <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
-    </div>
+<div class="btn-group mb-3">
+  <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+</div>
+
+
 
     <!-- Neuen Professor hinzufügen -->
     <form id="add-professor-form" method="POST" class="mb-4">
@@ -48,7 +49,10 @@ Professor:innen verwalten – Admin
             </select>
         </div>
 
-        <button type="submit" class="btn btn-primary mt-2">Hinzufügen</button>
+        <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
+  <i class="fas fa-plus"></i>
+</button>
+
     </form>
 
     {% if success %}
@@ -64,7 +68,10 @@ Professor:innen verwalten – Admin
     <div class="card mb-4" id="edit-form-card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="mb-0">Professor:in bearbeiten</h2>
-            <a href="/admin/professors" class="btn btn-sm btn-outline-secondary">✕ Schließen</a>
+            <a href="/admin/professors" class="btn btn-sm btn-outline-secondary" title="Schließen">
+  <i class="fas fa-xmark"></i>
+</a>
+
         </div>
         <div class="card-body">
             <form method="POST" action="/admin/professors/edit/{{ edit_professor.username }}">
@@ -83,7 +90,10 @@ Professor:innen verwalten – Admin
                         <option value="admin" {% if edit_professor.role == 'admin' %}selected{% endif %}>Administrator:in</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary mt-2">Änderungen speichern</button>
+                <button type="submit" class="btn btn-primary mt-2" title="Speichern">
+  <i class="fas fa-floppy-disk"></i>
+</button>
+
             </form>
         </div>
     </div>
@@ -118,12 +128,18 @@ Professor:innen verwalten – Admin
                 <td class="btn-group">
                     <!-- Bearbeiten-Formular (GET) -->
                     <form method="get" action="/admin/professors/edit/{{ professor.username }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-warning">Bearbeiten</button>
+                        <button type="submit" class="btn btn-sm btn-warning" title="Bearbeiten">
+                            <i class="fas fa-pen"></i>
+                        </button>
+
                     </form>
 
                     <!-- Löschen-Formular (POST) -->
                     <form method="post" action="/admin/professors/delete/{{ professor.username }}" style="display:inline;" onsubmit="return confirm('Wirklich löschen?');">
-                        <button type="submit" class="btn btn-sm btn-danger">Löschen</button>
+                        <button type="submit" class="btn btn-sm btn-danger" title="Löschen">
+  <i class="fas fa-trash"></i>
+</button>
+
                     </form>
                 </td>
             </tr>

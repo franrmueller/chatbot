@@ -71,11 +71,10 @@ Chathistorien – Admin
 <h1>Chathistorien (anonymisiert)</h1>
  
 <!-- Navigationsbuttons oben -->
-<div class="btn-group" style="margin-bottom: 1rem;">
-<a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-<a href="/admin/classes" class="btn btn-outline-primary">Zur Kursübersicht</a>
-<a href="/admin/professors" class="btn btn-outline-primary">Professor:innen</a>
-<a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
+<div class="btn-group mb-3">
+  <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+    <i class="fas fa-arrow-left"></i>
+  </a>
 </div>
  
 <!-- Kursauswahl -->
@@ -91,7 +90,10 @@ Chathistorien – Admin
 
     {% endfor %}
 </select>
-<button type="submit" class="btn btn-primary">Anzeigen</button>
+<button type="submit" class="btn btn-primary" title="Anzeigen">
+  <i class="fas fa-eye"></i>
+</button>
+
 </form>
  
 <!-- Historie anzeigen -->

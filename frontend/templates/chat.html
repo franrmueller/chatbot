@@ -13,15 +13,33 @@ Chat – Vorlesung {{ class.name }}
 <!-- Navigationsbuttons oben -->
 <div class="btn-group" style="margin-bottom: 20px;">
     {% if user.role == 'student' %}
-<a href="/classes" class="btn btn-secondary">Zur Kursübersicht</a>
-    {% elif user.role == 'admin' %}
-<a href="/professor/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    <a href="/classes" class="btn btn-secondary" title="Zur Kursübersicht">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    {% elif user.role == 'professor' %}
+<a href="/classes" class="btn btn-secondary" title="Zur Vorlesungsübersicht">
+    <i class="fas fa-arrow-left"></i>
+</a>
+{% elif user.role == 'admin' %}
+<a href="/admin/classes" class="btn btn-secondary" title="Zur Vorlesungsübersicht">
+    <i class="fas fa-arrow-left"></i>
+</a>
+
     {% elif user.role == '' %}
-<a href="/admin/classes" class="btn btn-secondary">Zur Kursübersicht</a>
+    <a href="/admin/classes" class="btn btn-secondary" title="Zur Kursübersicht">
+        <i class="fas fa-arrow-left"></i>
+    </a>
     {% endif %}
-<button id="reset-chat" class="btn btn-warning">Reset</button>
-<button id="view-history" class="btn btn-light">Historie</button>
+
+    <button id="reset-chat" class="btn btn-warning" title="Chat zurücksetzen">
+        <i class="fas fa-rotate-left"></i>
+    </button>
+
+    <button id="view-history" class="btn btn-light" title="Verlauf anzeigen">
+        <i class="fas fa-comments"></i>
+    </button>
 </div>
+
  
 <!-- Chat-Fenster -->
 <div id="chat-window" class="chat-window" style="border: 1px solid #ccc; padding: 1rem; height: 300px; overflow-y: auto; background-color: #f9f9f9;">
@@ -31,7 +49,10 @@ Chat – Vorlesung {{ class.name }}
 <!-- Frageformular -->
 <form id="chat-form" class="chat-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
 <input type="text" id="user-input" placeholder="Frage stellen..." required class="form-control" style="flex: 1;">
-<button type="submit" class="btn btn-primary">Senden</button>
+<button type="submit" class="btn btn-primary" title="Frage senden">
+    <i class="fas fa-paper-plane"></i>
+</button>
+
 </form>
 </div>
 {% endblock %}

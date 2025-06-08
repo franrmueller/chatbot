@@ -7,12 +7,12 @@
 
 
      <!-- Navigationsleiste -->
-    <div class="btn-group-nav mb-4">
-        <a href="/admin/dashboard" class="btn btn-secondary">Zurück zum Dashboard</a>
-        <a href="/classes" class="btn btn-outline-primary">Kursübersicht</a>
-        <a href="/admin/students" class="btn btn-outline-primary">Studierende</a>
-        <a href="/admin/chathistory" class="btn btn-outline-primary">Chathistorie</a>
-    </div>
+    <div class="btn-group mb-3">
+  <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+</div>
+
     <!-- Formular: Neuer Kurs -->
     <h2>Neuen Kurs hinzufügen</h2>
     <form method="post" action="/admin/courses/add">
@@ -20,7 +20,12 @@
         <input type="text" name="name" placeholder="Kursbeschreibung (z.B. WWI-BE122 (Wirtschaftsinformatik - Business Engineering))" required class="form-control" />
         <input type="hidden" name="professor" value="{{ user.username }}">
         <br>
-        <button type="submit" class="btn btn-success btn-sm uniform-btn">Hinzufügen</button>
+        <button type="submit" class="btn btn-primary btn-sm uniform-btn" title="Hinzufügen">
+  <i class="fas fa-plus"></i>
+</button>
+
+
+
     </form>
 
     <hr>
@@ -43,17 +48,30 @@
                                style="width: 100%; font-size: 1.1rem; padding: 0.6rem;" required />
                         <!-- <input type="hidden" name="professor" value="{{ user.username }}"> -->
                         <div style="margin-top: 0.5rem;">
-                            <button type="submit" class="btn btn-success btn-sm uniform-btn">Speichern</button>
-                            <a href="/admin/courses" class="btn btn-secondary btn-sm uniform-btn">Abbrechen</a>
+                            <button type="submit" class="btn btn-primary btn-sm uniform-btn" title="Speichern">
+  <i class="fas fa-floppy-disk"></i>
+</button>
+
+
+                            <a href="/admin/courses" class="btn btn-secondary btn-sm uniform-btn" title="Abbrechen">
+  <i class="fas fa-xmark"></i>
+</a>
+
                         </div>
                     </form>
                     {% else %}
                     <!-- Standard Buttons -->
                     <form method="get" action="/admin/courses/edit/{{ course.id }}">
-                        <button type="submit" class="btn btn-warning btn-sm uniform-btn">Bearbeiten</button>
+                        <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
+  <i class="fas fa-pen"></i>
+</button>
+
                     </form>
                     <form method="post" action="/admin/courses/delete/{{ course.id }}">
-                        <button type="submit" class="btn btn-danger btn-sm uniform-btn">Löschen</button>
+                        <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
+  <i class="fas fa-trash"></i>
+</button>
+
                     </form>
                     {% endif %}
                 </div>
