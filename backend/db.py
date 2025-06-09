@@ -888,3 +888,32 @@ def count_prompts_by_user(username):
     return count
 
 
+def delete_current_user(username, role):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    
+    try:
+        if role == "student":
+            cursor.execute("DELETE FROM students WHERE username = %s", (username,))
+        elif role in ["professor", "admin"]:
+            cursor.execute("DELETE FROM professors WHERE username = %s", (username,))
+        else:
+            return False
+
+        connection.commit()
+        return True
+    except Exception as e:
+        logging.error(f"Error deleting user {username}: {str(e)}")
+        return False
+    finally:
+        cursor.close()
+        connection.close()
+
+def count_admins():
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute("SELECT COUNT(*) FROM professors WHERE role = 'admin'")
+    result = cursor.fetchone()[0]
+    cursor.close()
+    connection.close()
+    return result

@@ -3,11 +3,13 @@ from fastapi import (
     Body, Depends, Cookie, Form,
     UploadFile, File
     )
+
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import backend.db as db
 import backend.rag as rag
+
 
 app = FastAPI()
 pwd_context = db.pwd_context
@@ -55,7 +57,11 @@ async def verify_role(request: Request, allowed_roles: list):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "deleted": request.query_params.get("deleted")
+    })
+
 
 # Student login
 @app.get("/login/student", response_class=HTMLResponse)
@@ -655,6 +661,29 @@ async def admin_students_page(request: Request):
         "user": user,
         "students": students
     })
+
+
+
+@app.post("/auth/delete")
+async def delete_user(request: Request):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    if user["role"] == "admin" and db.count_admins() <= 1:
+        # Nicht löschen → Fehler als JSON zurückgeben
+        return JSONResponse({"success": False, "message": "Du bist der letzte Administrator. Mindestens ein Administrator muss erhalten bleiben."}, status_code=400)
+
+    # Erfolgreich löschen
+    success = db.delete_current_user(user["username"], user["role"])
+    if success:
+        response = JSONResponse({"success": True, "message": "Dein Konto wurde erfolgreich gelöscht."})
+        response.delete_cookie("session_token")
+        return response
+    else:
+        return JSONResponse({"success": False, "message": "Fehler beim Löschen deines Kontos."}, status_code=500)
+
+
 
 
 

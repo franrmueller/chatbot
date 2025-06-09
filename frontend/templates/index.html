@@ -23,7 +23,17 @@ Startseite - Vorlesungschatbot
 {% endblock %}
  
 {% block content %}
+
+
+{% if deleted %}
+<div class="alert alert-success text-center mt-4" role="alert">
+    Dein Konto wurde erfolgreich gelöscht.
+</div>
+{% endif %}
+
+
 <div class="hero">
+    
 <h1>Willkommen beim Vorlesungschatbot</h1>
 <p>Lerne, indem du mit deinen Kursdokumenten sprichst. Erreiche deinen persönlichen Dozenten rund um die Uhr :)</p>
  

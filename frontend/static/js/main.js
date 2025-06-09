@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Chatbot application initialized');
     
+
+ 
     // Check authentication status
     function checkAuth() {
         const sessionToken = localStorage.getItem('accessToken');
