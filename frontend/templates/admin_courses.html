@@ -39,6 +39,8 @@
                     <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
                     <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
                     <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
+                    <div class="class-submeta"><strong>Studierende:</strong> {{ student_counts.get(course.id, 0) }}</div>
+
                 </div>
                 <div class="btn-group">
                     {% if edit_course and edit_course.id == course.id %}

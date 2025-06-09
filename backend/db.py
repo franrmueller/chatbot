@@ -917,3 +917,18 @@ def count_admins():
     cursor.close()
     connection.close()
     return result
+
+
+def count_students_per_course():
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)  
+    cursor.execute("""
+        SELECT course, COUNT(*) as count
+        FROM students
+        GROUP BY course
+    """)
+    result = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return {row["course"]: row["count"] for row in result}
+

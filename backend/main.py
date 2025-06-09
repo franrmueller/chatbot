@@ -579,14 +579,16 @@ async def admin_courses(request: Request):
         return user
 
     courses = db.get_all_courses()
-    professors = db.get_all_professors()  # Diese Funktion musst du ggf. in deiner db.py ergänzen
+
+    student_counts = db.count_students_per_course()  
 
     return templates.TemplateResponse("admin_courses.html", {
         "request": request,
         "user": user,
         "courses": courses,
-        "professors": professors
+        "student_counts": student_counts
     })
+
 
 # Kurs hinzufügen
 @app.post("/admin/courses/add")
@@ -666,15 +668,19 @@ async def admin_students_page(request: Request):
 
 @app.post("/auth/delete")
 async def delete_user(request: Request):
-    user = await get_current_user(request)
-    if isinstance(user, RedirectResponse):
-        return user
+    # Cookie direkt auslesen
+    session_token = request.cookies.get("session_token")
+    user = db.get_user_by_session(session_token)
+
+    if not user:
+        return JSONResponse({"success": False, "message": "Du bist nicht eingeloggt."}, status_code=401)
 
     if user["role"] == "admin" and db.count_admins() <= 1:
-        # Nicht löschen → Fehler als JSON zurückgeben
-        return JSONResponse({"success": False, "message": "Du bist der letzte Administrator. Mindestens ein Administrator muss erhalten bleiben."}, status_code=400)
+        return JSONResponse({
+            "success": False,
+            "message": "Du bist der letzte Administrator. Mindestens ein Administrator muss erhalten bleiben."
+        }, status_code=400)
 
-    # Erfolgreich löschen
     success = db.delete_current_user(user["username"], user["role"])
     if success:
         response = JSONResponse({"success": True, "message": "Dein Konto wurde erfolgreich gelöscht."})
@@ -682,6 +688,7 @@ async def delete_user(request: Request):
         return response
     else:
         return JSONResponse({"success": False, "message": "Fehler beim Löschen deines Kontos."}, status_code=500)
+
 
 
 
