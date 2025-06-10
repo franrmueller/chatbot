@@ -23,26 +23,32 @@ Meine Vorlesungen – Vorlesungschatbot
 </div>
 
 
-<form id="add-class-form" class="form-inline mb-4" method="POST" action="/admin/classes">
-    <h2>Neue Vorlesung erstellen</h2>
-    <input type="text" name="name" placeholder="Vorlesungsname" required>
-    <div class="form-group">
-        <label for="course">Kurs (Studiengang) auswählen:</label>
-        <select id="course" name="course" required>
-            <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="taught_by">Dozent:in auswählen:</label>
-        <select id="taught_by" name="taught_by" required>
-            <option value="" disabled selected>Bitte wählen Sie eine:n Dozent:in</option>
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary" title="Vorlesung hinzufügen">
-  <i class="fas fa-plus"></i>
-</button>
+    <form id="add-class-form" method="POST" action="/admin/classes" class="mb-4">
+        <h2 class="mb-3">Neue Vorlesung erstellen</h2>
 
-</form>
+        <div class="form-group">
+            <label for="name">Vorlesungsname</label>
+            <input type="text" name="name" id="name" required class="form-control" placeholder="z. B. Einführung in KI">
+        </div>
+
+        <div class="form-group">
+            <label for="course">Kurs (Studiengang)</label>
+            <select id="course" name="course" class="form-control" required>
+                <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="taught_by">Dozent:in</label>
+            <select id="taught_by" name="taught_by" class="form-control" required>
+                <option value="" disabled selected>Bitte wählen Sie eine:n Dozent:in</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-2" title="Vorlesung hinzufügen">
+            <i class="fas fa-plus"></i>
+        </button>
+    </form>
 
 {% if success %}
 <div class="alert alert-success">{{ success }}</div>

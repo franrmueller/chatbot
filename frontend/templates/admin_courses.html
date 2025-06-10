@@ -14,15 +14,26 @@
 </div>
 
     <!-- Formular: Neuer Kurs -->
-    <h2>Neuen Kurs hinzufügen</h2>
-    <form method="post" action="/admin/courses/add">
-        <input type="text" name="id" placeholder="Kurs-ID (z.B. WWI-BE122)" required class="form-control" />
-        <input type="text" name="name" placeholder="Kursbeschreibung (z.B. WWI-BE122 (Wirtschaftsinformatik - Business Engineering))" required class="form-control" />
+    <h2 class="mb-3">Neuen Kurs hinzufügen</h2>
+    <form method="post" action="/admin/courses/add" class="mb-4">
+
+        <div class="form-group">
+            <label for="id">Kurs-ID</label>
+            <input type="text" name="id" required class="form-control" placeholder="z. B. WWI-BE122">
+        </div>
+
+        <div class="form-group">
+            <label for="name">Kursbeschreibung</label>
+            <input type="text" name="name" required class="form-control" placeholder="z. B. Wirtschaftsinformatik – Business Engineering">
+        </div>
+
         <input type="hidden" name="professor" value="{{ user.username }}">
-        <br>
-        <button type="submit" class="btn btn-primary btn-sm uniform-btn" title="Hinzufügen">
-  <i class="fas fa-plus"></i>
-</button>
+
+        <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
+            <i class="fas fa-plus"></i>
+        </button>
+    </form>
+
 
 
 
