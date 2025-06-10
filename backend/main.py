@@ -302,7 +302,7 @@ async def admin_delete_professor(request: Request, professor_username: int):
 
 # Add edit professor functionality
 @app.get("/admin/professors/edit/{professor_username}", response_class=HTMLResponse)
-async def admin_edit_professor_page(request: Request, professor_username: str):  # ✅ str statt int
+async def admin_edit_professor_page(request: Request, professor_username: str): 
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
@@ -328,6 +328,32 @@ async def admin_edit_professor_page(request: Request, professor_username: str): 
         "professors": db.get_all_professors_with_courses(),
         "edit_professor": professor  # Übergib das zu bearbeitende Objekt
     })
+
+
+@app.post("/admin/professors/edit/{professor_username}")
+async def update_professor(
+    request: Request,
+    professor_username: str,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    role: str = Form(...)
+):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # UPDATE Logik in Datenbank (du kannst sie noch anpassen)
+    connection = db.sql_connect()
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE professors SET first_name=%s, last_name=%s, role=%s WHERE username=%s
+    """, (first_name, last_name, role, professor_username))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    return RedirectResponse(url="/admin/professors", status_code=303)
+
 
 # =========================================
 # API Routes
@@ -590,6 +616,24 @@ async def admin_courses(request: Request):
     })
 
 
+#Fehlermeldung 
+# @app.get("/admin/courses")
+# async def admin_courses(request: Request, success: Optional[str] = None, error: Optional[str] = None):
+#     user = await verify_role(request, ["admin"])
+#     courses = db.get_all_courses()
+#     student_counts = db.get_student_counts_per_course()
+    
+#     return templates.TemplateResponse("admin_courses.html", {
+#         "request": request,
+#         "user": user,
+#         "courses": courses,
+#         "student_counts": student_counts,
+#         "success": "Kurs erfolgreich hinzugefügt." if success else None,
+#         "error": "Fehler beim Hinzufügen des Kurses." if error else None
+#     })
+
+
+
 # Kurs hinzufügen
 @app.post("/admin/courses/add")
 async def admin_add_course(
@@ -606,6 +650,11 @@ async def admin_add_course(
         "professor": professor
     })
     return RedirectResponse(url="/admin/courses", status_code=303)
+
+#Fehlermeldung
+# return RedirectResponse(url="/admin/courses?success=1", status_code=303)
+# return RedirectResponse(url="/admin/courses?error=1", status_code=303)
+
 
 # Kurs löschen
 @app.post("/admin/courses/delete/{course_id}")
