@@ -18,42 +18,47 @@ Professor:innen verwalten – Admin
 
 
     <!-- Neuen Professor hinzufügen -->
-    <form id="add-professor-form" method="POST" class="mb-4">
-        <h2 class="mb-3">Neuen Professor hinzufügen</h2>
+    <div class="card mb-4">
+    <div class="card-header">
+        <h4 class="mb-0">Neuen Professor hinzufügen</h4>
+    </div>
+    <div class="card-body">
+        <form id="add-professor-form" method="POST">
+            <div class="form-group">
+                <label for="first_name">Vorname</label>
+                <input type="text" name="first_name" required class="form-control" placeholder="Max">
+            </div>
 
-        <div class="form-group">
-            <label for="first_name">Vorname</label>
-            <input type="text" name="first_name" required class="form-control" placeholder="Max">
-        </div>
+            <div class="form-group">
+                <label for="last_name">Nachname</label>
+                <input type="text" name="last_name" required class="form-control" placeholder="Mustermann">
+            </div>
 
-        <div class="form-group">
-            <label for="last_name">Nachname</label>
-            <input type="text" name="last_name" required class="form-control" placeholder="Mustermann">
-        </div>
+            <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text" name="username" required class="form-control" placeholder="mmustermann">
+            </div>
 
-        <div class="form-group">
-            <label for="username">Benutzername</label>
-            <input type="text" name="username" required class="form-control" placeholder="mmustermann">
-        </div>
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password" name="password" required class="form-control" placeholder="********">
+            </div>
 
-        <div class="form-group">
-            <label for="password">Passwort</label>
-            <input type="password" name="password" required class="form-control" placeholder="********">
-        </div>
+            <div class="form-group">
+                <label for="role">Rolle</label>
+                <select name="role" class="form-control" required>
+                    <option value="professor" selected>Professor:in</option>
+                    <option value="admin">Administrator:in</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <label for="role">Rolle</label>
-            <select name="role" class="form-control" required>
-                <option value="professor" selected>Professor:in</option>
-                <option value="admin">Administrator:in</option>
-            </select>
-        </div>
+            <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
+                <i class="fas fa-plus"></i>
+            </button>
+        </form>
+    </div>
+</div>
 
-        <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
-  <i class="fas fa-plus"></i>
-</button>
-
-    </form>
 
     {% if success %}
     <div class="alert alert-success">{{ success }}</div>
