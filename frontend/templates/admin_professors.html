@@ -69,40 +69,41 @@ Professor:innen verwalten – Admin
 
     <!-- HIER: Bearbeiten-Formular -->
         
-    {% if edit_professor %}
-    <div class="card mb-4" id="edit-form-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">Professor:in bearbeiten</h2>
-            <a href="/admin/professors" class="btn btn-sm btn-outline-secondary" title="Schließen">
-  <i class="fas fa-xmark"></i>
-</a>
+ {% if edit_professor %}
+<div class="modal-overlay">
+    <div class="modal-content">
+        <form method="POST" action="/admin/professors/edit/{{ edit_professor.username }}">
+            <button type="button" class="modal-close-btn" onclick="window.location.href='/admin/professors'" title="Schließen">
+                <i class="fas fa-xmark"></i>
+            </button>
+            <h3 class="mb-3">Professor:in bearbeiten</h3>
 
-        </div>
-        <div class="card-body">
-            <form method="POST" action="/admin/professors/edit/{{ edit_professor.username }}">
-                <div class="form-group">
-                    <label for="first_name">Vorname</label>
-                    <input type="text" name="first_name" value="{{ edit_professor.first_name }}" required class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="last_name">Nachname</label>
-                    <input type="text" name="last_name" value="{{ edit_professor.last_name }}" required class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="role">Rolle</label>
-                    <select name="role" class="form-control" required>
-                        <option value="professor" {% if edit_professor.role == 'professor' %}selected{% endif %}>Professor:in</option>
-                        <option value="admin" {% if edit_professor.role == 'admin' %}selected{% endif %}>Administrator:in</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary mt-2" title="Speichern">
-  <i class="fas fa-floppy-disk"></i>
-</button>
+            <div class="form-group">
+                <label for="first_name">Vorname</label>
+                <input type="text" name="first_name" value="{{ edit_professor.first_name }}" required class="form-control">
+            </div>
 
-            </form>
-        </div>
+            <div class="form-group">
+                <label for="last_name">Nachname</label>
+                <input type="text" name="last_name" value="{{ edit_professor.last_name }}" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="role">Rolle</label>
+                <select name="role" class="form-control" required>
+                    <option value="professor" {% if edit_professor.role == 'professor' %}selected{% endif %}>Professor:in</option>
+                    <option value="admin" {% if edit_professor.role == 'admin' %}selected{% endif %}>Administrator:in</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3" title="Speichern">
+                <i class="fas fa-floppy-disk"></i>
+            </button>
+        </form>
     </div>
-    {% endif %}
+</div>
+{% endif %}
+
 
 
     <!-- Bestehende Professor:innen -->
