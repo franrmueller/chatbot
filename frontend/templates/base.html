@@ -50,14 +50,15 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
             {% if user %}
                 {% if user.role == 'admin' %}
 <a href="/admin/dashboard">Dashboard</a>
-<a href="/admin/classes">Kurse</a>
+<a href="/admin/classes">Vorlesungen</a>
+<a href="/admin/courses">Kurse</a>
 <a href="/admin/professors">Professor:innen</a>
 <a href="/admin/students">Studierende</a>
 <a href="/admin/chathistory">Chathistorie</a>
                 {% elif user.role == 'professor' %}
-<a href="/professor/classes">Meine Kurse</a>
+<a href="/classes">Meine Kurse</a>
                 {% elif user.role == 'student' %}
-<a href="/student/classes">Meine belegten Kurse</a>
+<a href="/classes">Meine belegten Kurse</a>
                 {% endif %}
 <a href="/auth/logout">Abmelden</a>
 <a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>
