@@ -5,51 +5,57 @@
 <div class="dashboard-container">
     <h1>Kursverwaltung</h1>
 
-
-     <!-- Navigationsleiste -->
+    <!-- Zurück -->
     <div class="btn-group mb-3">
-  <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
-    <i class="fas fa-arrow-left"></i>
-  </a>
-</div>
-
-    <!-- Formular: Neuer Kurs -->
-   <div class="card mb-4">
-    <div class="card-header">
-        <h4 class="mb-0">Neuen Kurs hinzufügen</h4> 
+        <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+            <i class="fas fa-arrow-left"></i>
+        </a>
     </div>
-    <div class="card-body">
-        <form method="post" action="/admin/courses/add">
 
-            <div class="form-group">
-                <label for="id">Kurs-ID</label>
-                <input type="text" name="id" required class="form-control" placeholder="z. B. WWI-BE122">
-            </div>
-
-            <div class="form-group">
-                <label for="name">Kursbeschreibung</label>
-                <input type="text" name="name" required class="form-control" placeholder="z. B. Wirtschaftsinformatik – Business Engineering">
-            </div>
-
-            <input type="hidden" name="professor" value="{{ user.username }}">
-
-            <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
-                <i class="fas fa-plus"></i>
-            </button>
-        </form>
-            <!-- {% if success %}
-            <div class="alert alert-success mt-3">{{ success }}</div>
-            {% endif %}
-            {% if error %}
-            <div class="alert alert-danger mt-3">{{ error }}</div>
-            {% endif %}
-</div> -->
+    <!-- Neuer Kurs -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">Neuen Kurs hinzufügen</h4> 
+        </div>
+        <div class="card-body">
+            <form method="post" action="/admin/courses/add">
+                <div class="form-group">
+                    <label for="id">Kurs-ID</label>
+                    <input type="text" name="id" required class="form-control" placeholder="z. B. WWI-BE122">
+                </div>
+                <div class="form-group">
+                    <label for="name">Kursbeschreibung</label>
+                    <input type="text" name="name" required class="form-control" placeholder="z. B. Wirtschaftsinformatik – Business Engineering">
+                </div>
+                <input type="hidden" name="professor" value="{{ user.username }}">
+                <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </form>
+        </div>
     </div>
-</div>
 
+    <!-- Bearbeiten Modal (wenn gesetzt) -->
+    {% if edit_course %}
+    <div class="modal-overlay">
+        <div class="modal-content">
+            <form method="POST" action="/admin/courses/edit/{{ edit_course.id }}">
+                <button type="button" class="modal-close-btn" onclick="window.location.href='/admin/courses'">&times;</button>
+                <h3>Kurs bearbeiten</h3>
+                <div class="form-group">
+                    <label for="name">Kursbeschreibung</label>
+                    <input type="text" name="name" value="{{ edit_course.name }}" required class="form-control" />
+                </div>
+                <button type="submit" class="btn btn-primary mt-2" title="Speichern">
+                    <i class="fas fa-floppy-disk"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
+    <!-- Vorhandene Kurse -->
     <hr>
-
     <h2>Vorhandene Kurse</h2>
     <div class="class-list">
         {% for course in courses %}
@@ -60,43 +66,22 @@
                     <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
                     <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
                     <div class="class-submeta"><strong>Studierende:</strong> {{ student_counts.get(course.id, 0) }}</div>
-
                 </div>
                 <div class="btn-group">
-                    {% if edit_course and edit_course.id == course.id %}
-                    <!-- Bearbeitungsformular mit größerem Feld -->
-                    <!-- Standard Buttons -->
-                <form method="get" action="/admin/courses/edit/{{ course.id }}">
-                    <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                </form>
-                <form method="post" action="/admin/courses/delete/{{ course.id }}">
-                    <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </form>
-
-                    {% else %}
-                    <!-- Standard Buttons -->
                     <form method="get" action="/admin/courses/edit/{{ course.id }}">
                         <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
-  <i class="fas fa-pen"></i>
-</button>
-
+                            <i class="fas fa-pen"></i>
+                        </button>
                     </form>
                     <form method="post" action="/admin/courses/delete/{{ course.id }}">
                         <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
-  <i class="fas fa-trash"></i>
-</button>
-
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </form>
-                    {% endif %}
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
-    
 </div>
 {% endblock %}

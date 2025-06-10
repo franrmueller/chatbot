@@ -671,13 +671,16 @@ async def admin_edit_course_inline(request: Request, course_id: str):
     courses = db.get_all_courses()
     edit_course = db.get_course_by_id(course_id)
     professors = db.get_all_professors()
+    student_counts = db.count_students_per_course()
     return templates.TemplateResponse("admin_courses.html", {
         "request": request,
         "user": user,
         "courses": courses,
         "edit_course": edit_course,
-        "professors": professors
+        "professors": professors,
+        "student_counts": student_counts
     })
+
 
 
 # Kurs bearbeiten
