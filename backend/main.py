@@ -109,40 +109,21 @@ async def student_dashboard(request: Request):
         return user
     return templates.TemplateResponse("student_dashboard.html", {"request": request, "user": user})
 
-@app.get("/admin/classes", response_class=HTMLResponse)
-async def admin_classes_page(request: Request):
-    user = await verify_role(request, ["admin"])
-    if isinstance(user, RedirectResponse):
-        return user
-
-    classes = db.get_all_classes()
-    professors = db.get_all_professors_with_courses()
-    professors = db.get_all_professors()  # Holt alle Prof-Datenbankeinträge
-
-    return templates.TemplateResponse("classes.html", {
-        "request": request,
-        "user": user,
-        "classes": classes,
-        "professors": professors
-    })
-
-
-
 @app.post("/admin/classes", response_class=HTMLResponse)
 async def admin_add_class(
     request: Request,
     name: str = Form(...),
-    course: str = Form(...),
+    course: list = Form(...),  # This will now be a list
     taught_by: str = Form(...)
 ):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
 
-    # Insert new class into DB
+    # Insert new class into DB with multiple courses
     success, message = db.add_class({
         "name": name,
-        "course_id": course,
+        "course_ids": course,  # Changed from course_id to course_ids
         "taught_by": taught_by
     })
 

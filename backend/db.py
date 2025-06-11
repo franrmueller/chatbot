@@ -68,14 +68,15 @@ def reset_database():
         connection = sql_connect()
         cursor = connection.cursor()
         
-        # Drop tables in reverse order of dependencies
+        # Drop tables in reverse order of dependencies - add the new junction table
+        cursor.execute("DROP TABLE IF EXISTS class_courses")
         cursor.execute("DROP TABLE IF EXISTS documents")
         cursor.execute("DROP TABLE IF EXISTS classes")
         cursor.execute("DROP TABLE IF EXISTS students")
         cursor.execute("DROP TABLE IF EXISTS courses")
         cursor.execute("DROP TABLE IF EXISTS professors")
         
-        # Create proffessors table
+        # Create proffessors table - unchanged
         cursor.execute("""
         CREATE TABLE professors (
             username VARCHAR(50) PRIMARY KEY,
@@ -88,14 +89,14 @@ def reset_database():
         )
         """)
         
-        # Create admin user
+        # Create admin user - unchanged
         hashed_password = pwd_context.hash("aperol77")
         cursor.execute("""
         INSERT INTO professors (username, password, first_name, last_name, role)
         VALUES (%s, %s, %s, %s, %s)
         """, ('kirchberg', hashed_password, 'Paul', 'Kirchberg', 'admin'))
 
-        # Now create courses table
+        # Create courses table - unchanged
         cursor.execute("""
         CREATE TABLE courses (
             id VARCHAR(15) PRIMARY KEY,
@@ -106,13 +107,13 @@ def reset_database():
         )
         """)
         
-        # Create default course
+        # Create default course - unchanged
         cursor.execute("""
         INSERT INTO courses (id, name, created_by)
         VALUES (%s, %s, %s)
         """, ('WWI-BE122', 'Wirtschaftsinformatik - Business Engineering', 'kirchberg'))
         
-        # Create remaining tables
+        # Create students table - unchanged
         cursor.execute("""
         CREATE TABLE students (
             username VARCHAR(50) PRIMARY KEY,
@@ -126,18 +127,29 @@ def reset_database():
         )
         """)
         
+        # Modified classes table - removed course_id field
         cursor.execute("""
         CREATE TABLE classes (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            course_id VARCHAR(15) NOT NULL,
             taught_by VARCHAR(50) NOT NULL,
-            FOREIGN KEY (course_id) REFERENCES courses(id),
             FOREIGN KEY (taught_by) REFERENCES professors(username)
         )
         """)
         
+        # New junction table for many-to-many relationship
+        cursor.execute("""
+        CREATE TABLE class_courses (
+            class_id INT,
+            course_id VARCHAR(15),
+            PRIMARY KEY (class_id, course_id),
+            FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+            FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+        )
+        """)
+        
+        # Documents table - unchanged
         cursor.execute("""
         CREATE TABLE documents (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -153,10 +165,20 @@ def reset_database():
         )
         """)
 
+        # Insert default class without course_id
         cursor.execute("""
-        INSERT INTO classes (name, course_id, taught_by)
-            VALUES (%s, %s, %s)
-            """, ('Datenbanken', 'WWI-BE122', 'kirchberg'))
+        INSERT INTO classes (name, taught_by)
+        VALUES (%s, %s)
+        """, ('Datenbanken', 'kirchberg'))
+        
+        # Get the inserted class ID
+        class_id = cursor.lastrowid
+        
+        # Associate the class with the default course
+        cursor.execute("""
+        INSERT INTO class_courses (class_id, course_id)
+        VALUES (%s, %s)
+        """, (class_id, 'WWI-BE122'))
 
         connection.commit()
         logging.info("Database reset successfully.")
@@ -171,30 +193,6 @@ def reset_database():
             cursor.close()
         if connection:
             connection.close()
-
-# ================================
-# Authentication
-# ================================
-
-# Function to login a student
-def login_student(username, password):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-
-    cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-    user = cursor.fetchone()
-
-    if user and pwd_context.verify(password, user["password"]):
-        session_token = secrets.token_hex(32)
-        cursor.execute("UPDATE students SET session_token = %s WHERE username = %s", (session_token, username))
-        connection.commit()
-        user["session_token"] = session_token
-        user["role"] = "student"
-        return user
-
-    cursor.close()
-    connection.close()
-    return None
 
 # Function to login a professor
 def login_professor(username, password):
@@ -570,45 +568,42 @@ def get_all_classes():
             SELECT 
                 cls.id, 
                 cls.name, 
-                cls.created_at, 
-                cls.course_id as code,
-                c.name as course_name,
-                CONCAT(p.first_name, ' ', p.last_name) as professor_name
+                cls.created_at,
+                CONCAT(p.first_name, ' ', p.last_name) as professor_name,
+                cls.taught_by as professor_username
             FROM classes cls
-            LEFT JOIN courses c ON cls.course_id = c.id
             LEFT JOIN professors p ON cls.taught_by = p.username
             ORDER BY cls.name
         """)
         classes = cursor.fetchall()
+        
+        # For each class, get its associated courses
+        for cls in classes:
+            cursor.execute("""
+                SELECT c.id as code, c.name as course_name 
+                FROM courses c
+                JOIN class_courses cc ON c.id = cc.course_id
+                WHERE cc.class_id = %s
+            """, (cls['id'],))
+            courses = cursor.fetchall()
+            
+            # Add the courses to the class
+            cls['courses'] = courses
+            
+            # Add first course name for backward compatibility
+            if courses:
+                cls['course_name'] = courses[0]['course_name']
+                cls['code'] = courses[0]['code']
+            else:
+                cls['course_name'] = "Kein Kurs zugewiesen"
+                cls['code'] = ""
+                
         return classes
     finally:
         cursor.close()
         connection.close()
-
 def get_class_by_id(class_id):
     """Retrieve a class by its ID."""
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT 
-            cls.id, 
-            cls.name, 
-            cls.created_at, 
-            cls.course_id, 
-            c.name as course_name,
-            CONCAT(p.first_name, ' ', p.last_name) as professor_name
-        FROM classes cls
-        LEFT JOIN courses c ON cls.course_id = c.id
-        LEFT JOIN professors p ON cls.taught_by = p.username
-        WHERE cls.id = %s
-    """, (class_id,))
-    cls = cursor.fetchone()
-    cursor.close()
-    connection.close()
-    return cls
-
-def get_classes_for_student(student_username):
-    """Return all classes for a given student (based on their course)"""
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
     try:
@@ -616,17 +611,67 @@ def get_classes_for_student(student_username):
             SELECT 
                 cls.id, 
                 cls.name, 
-                cls.created_at, 
-                cls.course_id as code,
+                cls.created_at,
+                cls.taught_by,
+                CONCAT(p.first_name, ' ', p.last_name) as professor_name
+            FROM classes cls
+            LEFT JOIN professors p ON cls.taught_by = p.username
+            WHERE cls.id = %s
+        """, (class_id,))
+        cls = cursor.fetchone()
+        
+        if cls:
+            # Get associated courses
+            cursor.execute("""
+                SELECT c.id, c.name as course_name
+                FROM courses c
+                JOIN class_courses cc ON c.id = cc.course_id
+                WHERE cc.class_id = %s
+            """, (class_id,))
+            courses = cursor.fetchall()
+            cls['courses'] = courses
+            
+            # Set first course as primary for backwards compatibility
+            if courses:
+                cls['course_id'] = courses[0]['id']
+                cls['course_name'] = courses[0]['course_name']
+                
+        return cls
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_classes_for_student(student_username):
+    """Return all classes for a given student (based on their course)"""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        # First get the student's course
+        cursor.execute("SELECT course FROM students WHERE username = %s", (student_username,))
+        student = cursor.fetchone()
+        
+        if not student:
+            return []
+            
+        student_course = student['course']
+        
+        # Get classes for this course through junction table
+        cursor.execute("""
+            SELECT 
+                cls.id, 
+                cls.name, 
+                cls.created_at,
+                c.id as code,
                 c.name as course_name,
                 CONCAT(p.first_name, ' ', p.last_name) as professor_name
-            FROM students s
-            JOIN classes cls ON s.course = cls.course_id
-            LEFT JOIN courses c ON cls.course_id = c.id
+            FROM classes cls
+            JOIN class_courses cc ON cls.id = cc.class_id
+            JOIN courses c ON cc.course_id = c.id
             LEFT JOIN professors p ON cls.taught_by = p.username
-            WHERE s.username = %s
+            WHERE cc.course_id = %s
             ORDER BY cls.name
-        """, (student_username,))
+        """, (student_course,))
+        
         classes = cursor.fetchall()
         return classes
     finally:
@@ -642,22 +687,40 @@ def get_classes_for_professor(professor_username):
             SELECT 
                 cls.id, 
                 cls.name, 
-                cls.created_at, 
-                cls.course_id as code,
-                c.name as course_name,
-                CONCAT(p.first_name, ' ', p.last_name) as professor_name
+                cls.created_at
             FROM classes cls
-            LEFT JOIN courses c ON cls.course_id = c.id
-            LEFT JOIN professors p ON cls.taught_by = p.username
             WHERE cls.taught_by = %s
             ORDER BY cls.name
         """, (professor_username,))
+        
         classes = cursor.fetchall()
+        
+        # For each class, get its primary course
+        for cls in classes:
+            cursor.execute("""
+                SELECT c.id as code, c.name as course_name 
+                FROM courses c
+                JOIN class_courses cc ON c.id = cc.course_id
+                WHERE cc.class_id = %s
+                LIMIT 1
+            """, (cls['id'],))
+            
+            course = cursor.fetchone()
+            if course:
+                cls['code'] = course['code']
+                cls['course_name'] = course['course_name']
+            else:
+                cls['code'] = ""
+                cls['course_name'] = "Kein Kurs zugewiesen"
+                
+            # Add professor name
+            cls['professor_name'] = professor_username
+            
         return classes
     finally:
         cursor.close()
         connection.close()
-
+        
 def add_class(class_data):
     """Add a new class (Vorlesung) to the database."""
     connection = None
@@ -665,14 +728,34 @@ def add_class(class_data):
     try:
         connection = sql_connect()
         cursor = connection.cursor()
+        
+        # First, insert into classes table without course_id
         cursor.execute("""
-            INSERT INTO classes (name, course_id, taught_by)
-            VALUES (%s, %s, %s)
+            INSERT INTO classes (name, taught_by)
+            VALUES (%s, %s)
         """, (
             class_data["name"],
-            class_data["course_id"],
             class_data["taught_by"]
         ))
+        
+        # Get the new class ID
+        class_id = cursor.lastrowid
+        
+        # Now add the course association in the junction table
+        # If there's a list of courses, add all of them
+        if "course_ids" in class_data and isinstance(class_data["course_ids"], list):
+            for course_id in class_data["course_ids"]:
+                cursor.execute("""
+                    INSERT INTO class_courses (class_id, course_id)
+                    VALUES (%s, %s)
+                """, (class_id, course_id))
+        # For backward compatibility - if there's a single course_id
+        elif "course_id" in class_data:
+            cursor.execute("""
+                INSERT INTO class_courses (class_id, course_id)
+                VALUES (%s, %s)
+            """, (class_id, class_data["course_id"]))
+            
         connection.commit()
         return True, "Vorlesung erfolgreich hinzugefügt."
     except Exception as e:
