@@ -261,19 +261,24 @@ async def show_classes(request: Request):
     
 @app.get("/admin/professors", response_class=HTMLResponse)
 async def admin_professors_page(request: Request):
-    """Render the professor management page"""
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
-    
-    # Get all professors with their courses
+
     professors = db.get_all_professors_with_courses()
-    
+
+    # Hier wird error/success aus der URL gelesen
+    error = request.query_params.get("error")
+    success = request.query_params.get("success")
+
     return templates.TemplateResponse("admin_professors.html", {
         "request": request, 
         "user": user,
-        "professors": professors
+        "professors": professors,
+        "error": error,
+        "success": success
     })
+
 
 @app.post("/admin/professors", response_class=HTMLResponse)
 async def admin_add_professor(
@@ -307,11 +312,21 @@ async def admin_add_professor(
     })
 
 @app.post("/admin/professors/delete/{professor_username}")
-async def admin_delete_professor(request: Request, professor_username: int):
+async def admin_delete_professor(request: Request, professor_username: str):
     """Delete a professor"""
     user = await verify_role(request, ["admin"])
+    
     if isinstance(user, RedirectResponse):
         return user
+    # Prüfe ob Zielnutzer existiert
+    target = db.get_user_by_username(professor_username)
+    if not target:
+        return RedirectResponse(url="/admin/professors?error=Benutzer nicht gefunden", status_code=303)
+
+    # Admins dürfen keine Admins löschen
+    if target.get("role") == "admin":
+        return RedirectResponse(url="/admin/professors?error=Administratoren können nicht gelöscht werden.", status_code=303)
+
     
     success, message = db.delete_professor(professor_username)
 

@@ -548,7 +548,7 @@ def add_professor(professor_data):
         ))
 
         connection.commit()
-        return True, "Professor erfolgreich hinzugefügt"
+        return True, "Professor erfolgreich hinzugefügt."
     except Exception as e:
         logging.error(f"Error adding professor: {str(e)}")
         return False, f"Fehler beim Hinzufügen: {str(e)}"
@@ -571,16 +571,16 @@ def delete_professor(professor_username):
         cursor.execute("SELECT COUNT(*) FROM classes WHERE taught_by = %s", (professor_username,))
         class_count = cursor.fetchone()[0]
         if class_count > 0:
-            return False, "Professor kann nicht gelöscht werden, da noch Kurse zugeordnet sind"
+            return False, "Professor kann nicht gelöscht werden, da noch Kurse zugeordnet sind."
         
         # Delete the professor (no professor_courses table in schema)
         cursor.execute("DELETE FROM professors WHERE username = %s", (professor_username,))
         
         if cursor.rowcount == 0:
-            return False, "Professor nicht gefunden"
+            return False, "Professor nicht gefunden."
         
         connection.commit()
-        return True, "Professor erfolgreich gelöscht"
+        return True, "Professor erfolgreich gelöscht."
     
     except Exception as e:
         logging.error(f"Error deleting professor: {str(e)}")
@@ -1119,3 +1119,11 @@ def count_students_per_course():
     connection.close()
     return {row["course"]: row["count"] for row in result}
 
+def get_user_by_username(username):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM professors WHERE username = %s", (username,))
+    user = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return user
