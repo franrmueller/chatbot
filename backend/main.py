@@ -138,21 +138,66 @@ async def admin_add_class(
         "success" if success else "error": message
     })
 
-@app.get("/all/professors")
-async def test_professors():
-    return db.get_all_professors()
+# Password Reset
+SECURITY_QUESTIONS = [
+    "Was ist der Name deines ersten Haustiers?",
+    "In welcher Stadt bist du geboren?",
+    "Wie lautet der Mädchenname deiner Mutter?"
+]
+# Add these routes to your existing FastAPI application
+
+# @app.post("/api/password-reset/verify")
+# async def verify_security_answers(request_data: dict):
+#     """Verify a student's security answers before allowing password reset"""
+#     username = request_data.get("username")
+#     answers = request_data.get("answers", [])
+    
+#     if not username or len(answers) != 3:
+#         raise HTTPException(status_code=400, detail="Missing username or answers")
+    
+#     success, message = db.verify_student_security_answers(username, answers)
+    
+#     if not success:
+#         raise HTTPException(status_code=400, detail=message)
+    
+    # # Create temporary token for password reset
+    # reset_token = secrets.token_hex(32)
+    # return {"message": message, "reset_token": reset_token, "username": username}
+
+@app.get("/password-reset", response_class=HTMLResponse)
+async def password_reset_page(request: Request):
+    """Serve the password reset page"""
+    return templates.TemplateResponse("password-reset.html", {"request": request})
+
+@app.post("/api/password-reset")
+async def reset_password(request_data: dict):
+    """Reset a student's password after security answers have been verified"""
+    username = request_data.get("username")
+    new_password = request_data.get("new_password")
+    answers = request_data.get("answers", [])
+    
+    if not username or not new_password or len(answers) != 3:
+        raise HTTPException(status_code=400, detail="Missing required fields")
+    
+    # First verify the security answers
+    success, message = db.verify_student_security_answers(username, answers)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    # If answers are correct, reset the password
+    success, message = db.reset_student_password(username, new_password)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"message": "Password reset successful"}
 
 # ======<===================================
 # Professor Routes
 # =========================================
 
-# @app.get("/professor/dashboard", response_class=HTMLResponse)
-# async def professor_dashboard(request: Request):
-#     user = await verify_role(request, ["admin", "professor"])
-#     if isinstance(user, RedirectResponse):
-#         return user
-#     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
-
+@app.get("/all/professors")
+async def test_professors():
+    return db.get_all_professors()
 
 @app.get("/professor/dashboard", response_class=HTMLResponse)
 async def professor_dashboard(request: Request):

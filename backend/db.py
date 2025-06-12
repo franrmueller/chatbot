@@ -122,6 +122,9 @@ def reset_database():
             last_name VARCHAR(50),
             course VARCHAR(15),
             session_token VARCHAR(64),
+            security_answer1 VARCHAR(255),
+            security_answer2 VARCHAR(255),
+            security_answer3 VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (course) REFERENCES courses(id)
         )
@@ -215,6 +218,7 @@ def login_professor(username, password):
     return None
 
 # Register a new student
+# Register a new student
 def register_student(student_data):
     try:
         required_fields = ["username", "password", "first_name", "last_name"]
@@ -228,6 +232,11 @@ def register_student(student_data):
         last_name = student_data["last_name"]
         course_id = student_data["course_id"]
         created_at = datetime.now()
+        
+        # Get security answers (hash them for security)
+        security_answer1 = pwd_context.hash(student_data.get("security_answer1", "")) if student_data.get("security_answer1") else None
+        security_answer2 = pwd_context.hash(student_data.get("security_answer2", "")) if student_data.get("security_answer2") else None
+        security_answer3 = pwd_context.hash(student_data.get("security_answer3", "")) if student_data.get("security_answer3") else None
 
         connection = sql_connect()
         cursor = connection.cursor(dictionary=True)
@@ -237,12 +246,14 @@ def register_student(student_data):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="Benutzername bereits vergeben.")
 
-        # Insert new student
+        # Insert new student with security answers
         query = """
-            INSERT INTO students (username, password, first_name, last_name, course, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO students (username, password, first_name, last_name, course, created_at,
+                                 security_answer1, security_answer2, security_answer3)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (username, password, first_name, last_name, course_id, created_at))
+        cursor.execute(query, (username, password, first_name, last_name, course_id, created_at,
+                              security_answer1, security_answer2, security_answer3))
         connection.commit()
 
         return {
@@ -255,6 +266,78 @@ def register_student(student_data):
 
     except mysql.connector.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def verify_student_security_answers(username, answers):
+    """Verify a student's security answers"""
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get the student's stored security answers
+        cursor.execute("SELECT security_answer1, security_answer2, security_answer3 FROM students WHERE username = %s", 
+                      (username,))
+        student = cursor.fetchone()
+        
+        if not student:
+            return False, "Student not found"
+        
+        # Check if any answers are missing
+        if not all([student['security_answer1'], student['security_answer2'], student['security_answer3']]):
+            return False, "Security answers not set up for this student"
+        
+        # Verify each answer
+        is_valid = (
+            pwd_context.verify(answers[0], student['security_answer1']) and
+            pwd_context.verify(answers[1], student['security_answer2']) and
+            pwd_context.verify(answers[2], student['security_answer3'])
+        )
+        
+        if is_valid:
+            return True, "Security answers verified"
+        else:
+            return False, "Incorrect security answers"
+            
+    except Exception as e:
+        logging.error(f"Error verifying security answers: {str(e)}")
+        return False, f"Error: {str(e)}"
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def reset_student_password(username, new_password):
+    """Reset a student's password after security verification"""
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
+        
+        # Hash the new password
+        password_hash = pwd_context.hash(new_password)
+        
+        # Update the student's password
+        cursor.execute("UPDATE students SET password = %s WHERE username = %s", 
+                      (password_hash, username))
+        
+        connection.commit()
+        
+        if cursor.rowcount > 0:
+            return True, "Password reset successfully"
+        else:
+            return False, "Student not found"
+            
+    except Exception as e:
+        logging.error(f"Error resetting password: {str(e)}")
+        return False, f"Error: {str(e)}"
     finally:
         if cursor:
             cursor.close()
@@ -296,6 +379,26 @@ def get_user_by_session(session_token):
             cursor.close()
         if connection:
             connection.close()
+
+def login_student(username, password):
+    """Login a student with username and password"""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
+    user = cursor.fetchone()
+
+    if user and pwd_context.verify(password, user["password"]):
+        session_token = secrets.token_hex(32)
+        cursor.execute("UPDATE students SET session_token = %s WHERE username = %s", (session_token, username))
+        connection.commit()
+        user["session_token"] = session_token
+        user["role"] = "student"  # Add role since it's not in students table
+        return user
+
+    cursor.close()
+    connection.close()
+    return None
 
 # Function to check if a professor is assigned to a course
 def is_professor_for_course(professor_username, course_id):
@@ -384,11 +487,12 @@ def get_all_professors_with_courses():
         for professor in professors:
             professor_username = professor['username']
             
-            # Get courses for this professor using the classes table
+            # Get courses for this professor using the junction table
             cursor.execute("""
                 SELECT c.id, c.name 
                 FROM courses c
-                JOIN classes cls ON c.id = cls.course_id
+                JOIN class_courses cc ON c.id = cc.course_id
+                JOIN classes cls ON cc.class_id = cls.id
                 WHERE cls.taught_by = %s
                 GROUP BY c.id, c.name
                 ORDER BY c.name
