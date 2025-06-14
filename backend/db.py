@@ -1143,7 +1143,6 @@ def get_user_by_username(username):
     return user
 
 # Chat History
-# Add these functions to your db.py file
 
 def save_chat_history(user_id, class_id, question, answer):
     """Save a chat interaction to the history and to JSON file"""

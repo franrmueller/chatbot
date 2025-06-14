@@ -627,6 +627,23 @@ async def delete_pdf(request: Request, pdf_id: int):
 # =========================================
 # Chat
 # =========================================
+@app.get("/chat/{class_id}", response_class=HTMLResponse)
+async def chat_page(request: Request, class_id: int):
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Fetch class info from DB (implement db.get_class_by_id if needed)
+    class_info = db.get_class_by_id(class_id)
+    if not class_info:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    return templates.TemplateResponse("chat.html", {
+        "request": request,
+        "user": user,
+        "class": class_info
+    })
+
 @app.post("/chat/{class_id}")
 async def chat_api(class_id: int, body: dict, request: Request):
     user = await get_current_user(request)
@@ -655,6 +672,12 @@ async def chat_api(class_id: int, body: dict):
     if not prompt:
         return JSONResponse({"error": "No prompt provided"}, status_code=400)
     return await rag.chat_with_class(class_id, prompt)
+
+@app.get("/api/admin/chathistory/{course_id}")
+async def api_admin_chathistory(course_id: str):
+    """Return anonymized chat history for a course as JSON"""
+    history = db.get_chat_history_by_course(course_id)
+    return {"history": history}
 
 
 # =========================================	

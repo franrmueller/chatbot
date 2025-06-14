@@ -3,3 +3,4 @@ __pycache__/
 uploads/
 .env
 chatbot1/
+chats/

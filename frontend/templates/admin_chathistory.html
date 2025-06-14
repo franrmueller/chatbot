@@ -1,136 +1,63 @@
-<!--
-
-Requirements for Backend to make this page work (EN):
-
-1. The backend must pass a 'courses' list to the template.
-
-2. Each course object must have:
-
-   - course.id → for selection in the dropdown
-
-   - course.name → course name for display
-
-   - course.code → course code for display
-
-3. If a course is selected (via GET parameter 'course_id'), the backend must also pass:
-
-   - selected_course → the course object corresponding to the selection
-
-   - history → a list of chat entries for the selected course
-
-4. Each history entry must have:
-
-   - entry.question → the asked question
-
-   - entry.answer → the chatbot’s answer
-
-   - entry.timestamp → date/time of the chat
-
-5. If no history exists for a course, a message should be shown.
- 
-Anforderungen an das Backend, damit diese Seite funktioniert (DE):
-
-1. Das Backend muss eine Liste namens 'courses' an das Template übergeben.
-
-2. Jeder Kurs muss enthalten:
-
-   - course.id → für die Auswahl im Dropdown
-
-   - course.name → Name des Kurses (Anzeige)
-
-   - course.code → Kurscode (Anzeige)
-
-3. Wenn ein Kurs ausgewählt ist (über GET-Parameter 'course_id'), muss das Backend zusätzlich übergeben:
-
-   - selected_course → das ausgewählte Kurs-Objekt
-
-   - history → Liste der Chat-Einträge für den Kurs
-
-4. Jeder Chat-Eintrag muss enthalten:
-
-   - entry.question → gestellte Frage
-
-   - entry.answer → Antwort des Chatbots
-
-   - entry.timestamp → Datum/Zeit der Konversation
-
-5. Falls keine Historie für einen Kurs existiert, soll eine entsprechende Nachricht angezeigt werden.
-
--->
- 
 {% extends "base.html" %}
- 
+
 {% block title %}
-
 Chathistorien – Admin
-
 {% endblock %}
- 
+
 {% block content %}
 <div class="dashboard-container">
-<h1>Chathistorien (anonymisiert)</h1>
- 
-<!-- Navigationsbuttons oben -->
-<div class="btn-group mb-3">
-  <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
-    <i class="fas fa-arrow-left"></i>
-  </a>
-</div>
- 
-<!-- Kursauswahl -->
-<form method="GET" action="/admin/chathistory" class="form-inline" style="margin-bottom: 1rem;">
-<label for="course_id">Kurs auswählen:</label>
-<select name="course_id" id="course_id" required>
+  <h1>Chathistorien (anonymisiert)</h1>
 
-    {% for course in courses %}
-<option value="{{ course.id }}" {% if selected_course and course.id == selected_course.id %}selected{% endif %}>
+  <!-- Navigationsbuttons oben -->
+  <div class="btn-group mb-3">
+    <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+      <i class="fas fa-arrow-left"></i>
+    </a>
+  </div>
 
-    {{ course.name }} ({{ course.code }})
-</option>
+  <!-- Kursauswahl -->
+  <form method="GET" action="/admin/chathistory" class="form-inline" style="margin-bottom: 1rem;">
+    <label for="course_id" style="margin-right: 0.5rem;">Kurs auswählen:</label>
+    <select name="course_id" id="course_id" required>
+      <option value="" disabled {% if not selected_course %}selected{% endif %}>Bitte Kurs wählen</option>
+      {% for course in courses %}
+        <option value="{{ course.id }}" {% if selected_course and course.id == selected_course.id %}selected{% endif %}>
+          {{ course.name }} ({{ course.code }})
+        </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary" title="Anzeigen" style="margin-left: 0.5rem;">
+      <i class="fas fa-eye"></i> Anzeigen
+    </button>
+  </form>
 
-    {% endfor %}
-</select>
-<button type="submit" class="btn btn-primary" title="Anzeigen">
-  <i class="fas fa-eye"></i>
-</button>
-
-</form>
- 
-<!-- Historie anzeigen -->
-
-{% if selected_course %}
-<h2>Fragen & Antworten für {{ selected_course.name }}</h2>
- 
+  <!-- Historie anzeigen -->
+  {% if selected_course %}
+    <h2>Fragen & Antworten für {{ selected_course.name }} ({{ selected_course.code }})</h2>
     {% if history %}
-<table class="admin-table">
-<thead>
-<tr>
-<th>Frage</th>
-<th>Antwort</th>
-<th>Datum</th>
-</tr>
-</thead>
-<tbody>
-
-    {% for entry in history %}
-<tr>
-<td>{{ entry.question }}</td>
-<td>{{ entry.answer }}</td>
-<td>{{ entry.timestamp }}</td>
-</tr>
-
-    {% endfor %}
-</tbody>
-</table>
-
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Frage</th>
+            <th>Antwort</th>
+            <th>Datum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in history %}
+            <tr>
+              <td>{{ entry.question }}</td>
+              <td>{{ entry.answer }}</td>
+              <td>{{ entry.timestamp }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% else %}
-<p>Für diesen Kurs wurden noch keine Fragen gestellt.</p>
-
+      <p>Für diesen Kurs wurden noch keine Fragen gestellt.</p>
     {% endif %}
-
-{% endif %}
+  {% else %}
+    <p>Bitte wählen Sie einen Kurs aus, um die Chathistorie anzuzeigen.</p>
+  {% endif %}
 </div>
-
 {% endblock %}
-
- 
