@@ -720,6 +720,22 @@ def get_all_classes():
     finally:
         cursor.close()
         connection.close()
+
+def get_all_classes_with_courses():
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT cls.id, cls.name, c.name as course_name
+        FROM classes cls
+        JOIN class_courses cc ON cls.id = cc.class_id
+        JOIN courses c ON cc.course_id = c.id
+        ORDER BY c.name, cls.name
+    """)
+    result = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return result
+
 def get_class_by_id(class_id):
     """Retrieve a class by its ID."""
     connection = sql_connect()
@@ -1178,37 +1194,65 @@ def save_chat_history(user_id, class_id, question, answer):
             connection.close()
 
 def get_chat_history_by_course(course_id):
-    """Get chat history for a specific course"""
+    """Get chat history for a specific course, grouped by class"""
     connection = None
     cursor = None
     try:
         connection = sql_connect()
         cursor = connection.cursor(dictionary=True)
-        
-        # Get chat history for classes associated with this course
         cursor.execute("""
-        SELECT 
-            ch.user_hash, 
-            ch.question, 
-            ch.answer, 
-            ch.timestamp, 
-            cls.name as class_name
-        FROM chat_history ch
-        JOIN classes cls ON ch.class_id = cls.id
-        JOIN class_courses cc ON cls.id = cc.class_id
-        WHERE cc.course_id = %s
-        ORDER BY ch.timestamp DESC
+            SELECT 
+                ch.user_hash, 
+                ch.question, 
+                ch.answer, 
+                ch.timestamp, 
+                cls.id as class_id,
+                cls.name as class_name
+            FROM chat_history ch
+            JOIN classes cls ON ch.class_id = cls.id
+            JOIN class_courses cc ON cls.id = cc.class_id
+            WHERE cc.course_id = %s
+            ORDER BY cls.name, ch.timestamp DESC
         """, (course_id,))
-        
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+        # Group by class
+        classes = {}
+        for row in rows:
+            cid = row["class_id"]
+            if cid not in classes:
+                classes[cid] = {
+                    "class_name": row["class_name"],
+                    "chats": []
+                }
+            classes[cid]["chats"].append({
+                "user_hash": row["user_hash"],
+                "question": row["question"],
+                "answer": row["answer"],
+                "timestamp": row["timestamp"]
+            })
+        return classes
     except Exception as e:
         logging.error(f"Error retrieving course chat history: {str(e)}")
-        return []
+        return {}
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
+def get_chat_history_by_class(class_id):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT user_hash, question, answer, timestamp
+        FROM chat_history
+        WHERE class_id = %s
+        ORDER BY timestamp DESC
+    """, (class_id,))
+    result = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return result
 
 def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
     """Save a chat interaction to a JSON file in the chats folder"""

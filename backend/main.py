@@ -237,24 +237,22 @@ async def admin_chathistory(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
-    
-    # Get all courses for dropdown
-    courses = db.get_all_courses()
-    
-    # Check if a course is selected
-    selected_course_id = request.query_params.get("course_id")
-    selected_course = None
+
+    # Get all classes with their course names for the dropdown
+    classes = db.get_all_classes_with_courses()
+    selected_class_id = request.query_params.get("class_id")
+    selected_class = None
     history = []
-    
-    if selected_course_id:
-        selected_course = db.get_course_by_id(selected_course_id)
-        history = db.get_chat_history_by_course(selected_course_id)
-    
+
+    if selected_class_id:
+        selected_class = next((c for c in classes if str(c["id"]) == str(selected_class_id)), None)
+        history = db.get_chat_history_by_class(selected_class_id)
+
     return templates.TemplateResponse("admin_chathistory.html", {
         "request": request,
         "user": user,
-        "courses": courses,
-        "selected_course": selected_course,
+        "classes": classes,
+        "selected_class": selected_class,
         "history": history
     })
 

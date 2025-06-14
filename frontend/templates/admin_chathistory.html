@@ -8,56 +8,45 @@ Chathistorien – Admin
 <div class="dashboard-container">
   <h1>Chathistorien (anonymisiert)</h1>
 
-  <!-- Navigationsbuttons oben -->
   <div class="btn-group mb-3">
     <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
       <i class="fas fa-arrow-left"></i>
     </a>
   </div>
 
-  <!-- Kursauswahl -->
   <form method="GET" action="/admin/chathistory" class="form-inline" style="margin-bottom: 1rem;">
-    <label for="course_id" style="margin-right: 0.5rem;">Kurs auswählen:</label>
-    <select name="course_id" id="course_id" required>
-      <option value="" disabled {% if not selected_course %}selected{% endif %}>Bitte Kurs wählen</option>
-      {% for course in courses %}
-        <option value="{{ course.id }}" {% if selected_course and course.id == selected_course.id %}selected{% endif %}>
-          {{ course.name }} ({{ course.code }})
-        </option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="btn btn-primary" title="Anzeigen" style="margin-left: 0.5rem;">
-      <i class="fas fa-eye"></i> Anzeigen
-    </button>
-  </form>
+        <label for="class_id" style="margin-right: 0.5rem;">Vorlesung auswählen:</label>
+        <select name="class_id" id="class_id" required>
+            <option value="" disabled {% if not selected_class %}selected{% endif %}>Bitte Vorlesung wählen</option>
+            {% for class in classes %}
+                <option value="{{ class.id }}" {% if selected_class and class.id == selected_class.id %}selected{% endif %}>
+                {{ class.name }} ({{ class.course_name }})
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary" title="Anzeigen" style="margin-left: 0.5rem;">
+            <i class="fas fa-eye"></i> Anzeigen
+        </button>
+    </form>
 
-  <!-- Historie anzeigen -->
-  {% if selected_course %}
-    <h2>Fragen & Antworten für {{ selected_course.name }} ({{ selected_course.code }})</h2>
-    {% if history %}
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Frage</th>
-            <th>Antwort</th>
-            <th>Datum</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for entry in history %}
-            <tr>
-              <td>{{ entry.question }}</td>
-              <td>{{ entry.answer }}</td>
-              <td>{{ entry.timestamp }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  {% if selected_class %}
+  <h2>Fragen & Antworten für {{ selected_class.name }} ({{ selected_class.course_name }})</h2>
+  {% if history %}
+  <div class="chat-history-list">
+    {% for chat in history %}
+      <div class="chat-history-card" style="border:1px solid #ccc; border-radius:8px; padding:1em; margin-bottom:1em;">
+        <div><strong>User (anonym):</strong> {{ chat.user_hash }}</div>
+        <div><strong>Frage:</strong> {{ chat.question }}</div>
+        <div><strong>Antwort:</strong> {{ chat.answer }}</div>
+        <div><strong>Datum:</strong> {{ chat.timestamp }}</div>
+      </div>
+    {% endfor %}
+        </div>
     {% else %}
-      <p>Für diesen Kurs wurden noch keine Fragen gestellt.</p>
+        <p>Für diese Vorlesung wurden noch keine Fragen gestellt.</p>
     {% endif %}
-  {% else %}
-    <p>Bitte wählen Sie einen Kurs aus, um die Chathistorie anzuzeigen.</p>
-  {% endif %}
+{% else %}
+  <p>Bitte wählen Sie eine Vorlesung aus, um die Chathistorie anzuzeigen.</p>
+{% endif %}
 </div>
 {% endblock %}
