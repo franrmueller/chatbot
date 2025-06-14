@@ -54,6 +54,18 @@
     </div>
     {% endif %}
 
+{% if error %}
+<div class="alert alert-danger text-center" role="alert">
+  {{ error }}
+</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success text-center" role="alert">
+  {{ success }}
+</div>
+{% endif %}
+
+
     <!-- Vorhandene Kurse -->
     <hr>
     <h2>Vorhandene Kurse</h2>

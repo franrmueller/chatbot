@@ -562,7 +562,7 @@ def add_professor(professor_data):
         ))
 
         connection.commit()
-        return True, "Professor erfolgreich hinzugefügt."
+        return True, "Benutzer erfolgreich hinzugefügt."
     except Exception as e:
         logging.error(f"Error adding professor: {str(e)}")
         return False, f"Fehler beim Hinzufügen: {str(e)}"
@@ -594,7 +594,7 @@ def delete_professor(professor_username):
             return False, "Professor nicht gefunden."
         
         connection.commit()
-        return True, "Professor erfolgreich gelöscht."
+        return True, "Benutzer erfolgreich gelöscht."
     
     except Exception as e:
         logging.error(f"Error deleting professor: {str(e)}")
@@ -1306,3 +1306,41 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
     except Exception as e:
         logging.error(f"Error saving chat to JSON: {str(e)}")
         return False
+    
+
+def get_chat_history_filtered(class_id=None, course_id=None, start_date=None, end_date=None):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+
+    query = """
+        SELECT h.*, c.course_id, c.name AS class_name
+        FROM chat_history h
+        JOIN classes c ON h.class_id = c.id
+        JOIN class_courses cc ON c.id = cc.class_id
+        WHERE 1=1
+    """
+    params = []
+
+    if class_id:
+        query += " AND h.class_id = %s"
+        params.append(class_id)
+
+    if course_id:
+        query += " AND cc.course_id = %s"
+        params.append(course_id)
+
+    if start_date:
+        query += " AND h.timestamp >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += " AND h.timestamp <= %s"
+        params.append(end_date)
+
+    query += " ORDER BY h.timestamp DESC"
+
+    cursor.execute(query, params)
+    result = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return result

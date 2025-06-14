@@ -238,20 +238,31 @@ async def admin_chathistory(request: Request):
     if isinstance(user, RedirectResponse):
         return user
 
-    # Get all classes with their course names for the dropdown
     classes = db.get_all_classes_with_courses()
+    courses = db.get_all_courses()
     selected_class_id = request.query_params.get("class_id")
+    selected_course = request.query_params.get("course_id")
+    start_date = request.query_params.get("from")
+    end_date = request.query_params.get("to")
+
+
     selected_class = None
     history = []
 
     if selected_class_id:
         selected_class = next((c for c in classes if str(c["id"]) == str(selected_class_id)), None)
-        history = db.get_chat_history_by_class(selected_class_id)
+        history = db.get_chat_history_filtered(
+            class_id=selected_class_id,
+            course_id=selected_course,
+            start_date=start_date,
+            end_date=end_date
+        )
 
     return templates.TemplateResponse("admin_chathistory.html", {
         "request": request,
         "user": user,
         "classes": classes,
+        "courses": courses,
         "selected_class": selected_class,
         "history": history
     })
@@ -410,7 +421,11 @@ async def update_professor(
     cursor.close()
     connection.close()
 
-    return RedirectResponse(url="/admin/professors", status_code=303)
+    return RedirectResponse(
+        url="/admin/professors?success=Benutzer erfolgreich aktualisiert.",
+        status_code=303
+    )
+
 
 
 # =========================================
@@ -690,15 +705,21 @@ async def admin_courses(request: Request):
         return user
 
     courses = db.get_all_courses()
+    student_counts = db.count_students_per_course()
 
-    student_counts = db.count_students_per_course()  
+    # Neu: Meldungen aus URL-Parametern lesen
+    success = request.query_params.get("success")
+    error = request.query_params.get("error")
 
     return templates.TemplateResponse("admin_courses.html", {
         "request": request,
         "user": user,
         "courses": courses,
-        "student_counts": student_counts
+        "student_counts": student_counts,
+        "success": success,
+        "error": error
     })
+
 
 
 #Fehlermeldung 
@@ -728,13 +749,37 @@ async def admin_add_course(
     professor: str = Form(...)
 ):
     user = await verify_role(request, ["admin"])
+
+    all_courses = db.get_all_courses()
+
+    # Prüfung: ID schon vergeben?
+    if any(c["id"].lower() == id.lower() for c in all_courses):
+        return RedirectResponse(
+            url="/admin/courses?error=Diese Kurs-ID existiert bereits.",
+            status_code=303
+        )
+
+    # Prüfung: Name schon vergeben?
+    if any(c["name"].lower() == name.lower() for c in all_courses):
+        return RedirectResponse(
+            url="/admin/courses?error=Diese Kursbeschreibung existiert bereits.",
+            status_code=303
+        )
+
     db.add_course({
         "id": id,
         "name": name,
         "created_by": user["username"],
         "professor": professor
     })
-    return RedirectResponse(url="/admin/courses", status_code=303)
+
+    return RedirectResponse(
+        url="/admin/courses?success=Kurs erfolgreich hinzugefügt.",
+        status_code=303
+    )
+
+
+
 
 #Fehlermeldung
 # return RedirectResponse(url="/admin/courses?success=1", status_code=303)
@@ -746,7 +791,12 @@ async def admin_add_course(
 async def admin_delete_course(request: Request, course_id: str):
     await verify_role(request, ["admin"])
     db.delete_course(course_id)
-    return RedirectResponse(url="/admin/courses", status_code=303)
+    return RedirectResponse(
+    url="/admin/courses?success=Kurs erfolgreich gelöscht.",
+    status_code=303
+)
+
+
 
 
 # Kurs bearbeiten
@@ -773,11 +823,26 @@ async def admin_edit_course_inline(request: Request, course_id: str):
 async def admin_edit_course(
     request: Request,
     course_id: str,
-    name: str = Form(...),
+    name: str = Form(...)
 ):
     await verify_role(request, ["admin"])
+
+    # Prüfung: Gleiche Beschreibung wie bei anderem Kurs?
+    all_courses = db.get_all_courses()
+    for course in all_courses:
+        if course["id"] != course_id and course["name"].lower() == name.lower():
+            return RedirectResponse(
+                url="/admin/courses?error=Diese Kursbeschreibung wird bereits verwendet.",
+                status_code=303
+            )
+
     db.update_course(course_id, name)
-    return RedirectResponse(url="/admin/courses", status_code=303)
+
+    return RedirectResponse(
+        url="/admin/courses?success=Kurs erfolgreich bearbeitet.",
+        status_code=303
+    )
+
 
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students_page(request: Request):
@@ -825,9 +890,3 @@ async def delete_user(request: Request):
         return response
     else:
         return JSONResponse({"success": False, "message": "Fehler beim Löschen deines Kontos."}, status_code=500)
-
-
-
-
-
-

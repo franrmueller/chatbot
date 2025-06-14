@@ -6,16 +6,6 @@ Professor:innen verwalten – Admin
 
 
 {% block content %}
-{% if error %}
-<div class="alert alert-danger text-center" role="alert">
-  {{ error }}
-</div>
-{% endif %}
-{% if success %}
-<div class="alert alert-success text-center" role="alert">
-  {{ success }}
-</div>
-{% endif %}
 
 <div class="dashboard-container">
     <h1 class="dashboard-title">Professor:innen verwalten</h1>
@@ -70,6 +60,17 @@ Professor:innen verwalten – Admin
         </form>
     </div>
 </div>
+
+{% if error %}
+<div class="alert alert-danger text-center" role="alert">
+  {{ error }}
+</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success text-center" role="alert">
+  {{ success }}
+</div>
+{% endif %}
 
     <!-- HIER: Bearbeiten-Formular -->
         
