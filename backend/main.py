@@ -237,7 +237,26 @@ async def admin_chathistory(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
-    return templates.TemplateResponse("admin_chathistory.html", {"request": request, "user": user})
+    
+    # Get all courses for dropdown
+    courses = db.get_all_courses()
+    
+    # Check if a course is selected
+    selected_course_id = request.query_params.get("course_id")
+    selected_course = None
+    history = []
+    
+    if selected_course_id:
+        selected_course = db.get_course_by_id(selected_course_id)
+        history = db.get_chat_history_by_course(selected_course_id)
+    
+    return templates.TemplateResponse("admin_chathistory.html", {
+        "request": request,
+        "user": user,
+        "courses": courses,
+        "selected_course": selected_course,
+        "history": history
+    })
 
 @app.get("/classes", response_class=HTMLResponse)
 async def show_classes(request: Request):
@@ -608,19 +627,23 @@ async def delete_pdf(request: Request, pdf_id: int):
 # =========================================
 # Chat
 # =========================================
-@app.get("/chat/{class_id}", response_class=HTMLResponse)
-async def chat_page(request: Request, class_id: int):
+@app.post("/chat/{class_id}")
+async def chat_api(class_id: int, body: dict, request: Request):
     user = await get_current_user(request)
     if isinstance(user, RedirectResponse):
-        return user
-    cls = db.get_class_by_id(class_id)
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
+    prompt = body.get("prompt")
+    if not prompt:
+        return JSONResponse({"error": "No prompt provided"}, status_code=400)
     
-    return templates.TemplateResponse("chat.html", {
-        "request": request,
-        "user": user,
-        "class": cls,
-        "class_id": class_id
-    })
+    # Get the answer from RAG system
+    result = await rag.chat_with_class(class_id, prompt)
+    
+    # Save to chat history
+    db.save_chat_history(user["username"], class_id, prompt, result["answer"])
+    
+    return result
 
 @app.post("/api/ingest_pdfs/{class_id}")
 async def ingest_pdfs(class_id: int):

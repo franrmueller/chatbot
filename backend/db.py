@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import hashlib
 import secrets
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -69,6 +70,7 @@ def reset_database():
         cursor = connection.cursor()
         
         # Drop tables in reverse order of dependencies - add the new junction table
+        cursor.execute("DROP TABLE IF EXISTS chat_history")
         cursor.execute("DROP TABLE IF EXISTS class_courses")
         cursor.execute("DROP TABLE IF EXISTS documents")
         cursor.execute("DROP TABLE IF EXISTS classes")
@@ -165,6 +167,18 @@ def reset_database():
             content_extracted BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (class_id) REFERENCES classes(id),
             FOREIGN KEY (created_by) REFERENCES professors(username)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE chat_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_hash VARCHAR(40) NOT NULL,  # Anonymized user identifier
+            class_id INT NOT NULL,
+            question TEXT NOT NULL,
+            answer TEXT NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
         )
         """)
 
@@ -1127,3 +1141,125 @@ def get_user_by_username(username):
     cursor.close()
     connection.close()
     return user
+
+# Chat History
+# Add these functions to your db.py file
+
+def save_chat_history(user_id, class_id, question, answer):
+    """Save a chat interaction to the history and to JSON file"""
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
+        
+        # Anonymize the user_id for database storage
+        user_hash = anonymize_username(user_id)
+        timestamp = datetime.now()
+        
+        # Save to database
+        cursor.execute("""
+        INSERT INTO chat_history (user_hash, class_id, question, answer)
+        VALUES (%s, %s, %s, %s)
+        """, (user_hash, class_id, question, answer))
+        
+        connection.commit()
+        
+        # Also save to JSON file
+        save_chat_to_json(user_id, class_id, question, answer, timestamp.isoformat())
+        
+        return True
+    except Exception as e:
+        logging.error(f"Error saving chat history: {str(e)}")
+        return False
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def get_chat_history_by_course(course_id):
+    """Get chat history for a specific course"""
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get chat history for classes associated with this course
+        cursor.execute("""
+        SELECT 
+            ch.user_hash, 
+            ch.question, 
+            ch.answer, 
+            ch.timestamp, 
+            cls.name as class_name
+        FROM chat_history ch
+        JOIN classes cls ON ch.class_id = cls.id
+        JOIN class_courses cc ON cls.id = cc.class_id
+        WHERE cc.course_id = %s
+        ORDER BY ch.timestamp DESC
+        """, (course_id,))
+        
+        return cursor.fetchall()
+    except Exception as e:
+        logging.error(f"Error retrieving course chat history: {str(e)}")
+        return []
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
+    """Save a chat interaction to a JSON file in the chats folder"""
+    try:
+        # Create chats directory if it doesn't exist
+        chats_dir = os.path.join(os.getcwd(), 'chats')
+        if not os.path.exists(chats_dir):
+            os.makedirs(chats_dir)
+        
+        # Generate timestamp if not provided
+        if not timestamp:
+            timestamp = datetime.now().isoformat()
+            
+        # Create a unique filename based on class and user
+        user_hash = anonymize_username(user_id)
+        class_dir = os.path.join(chats_dir, f"class_{class_id}")
+        if not os.path.exists(class_dir):
+            os.makedirs(class_dir)
+            
+        # Construct the chat message
+        chat_message = {
+            "user_hash": user_hash,
+            "user_id": user_id,  # Store real ID in file for reference
+            "class_id": class_id,
+            "question": question,
+            "answer": answer,
+            "timestamp": timestamp
+        }
+        
+        # Determine the filename - one file per user per class
+        filename = os.path.join(class_dir, f"{user_hash}.json")
+        
+        # Read existing file or create new one
+        if os.path.exists(filename):
+            with open(filename, 'r') as f:
+                try:
+                    chat_data = json.load(f)
+                except json.JSONDecodeError:
+                    chat_data = {"messages": []}
+        else:
+            chat_data = {"messages": []}
+        
+        # Append the new message
+        chat_data["messages"].append(chat_message)
+        
+        # Write the updated data back to the file
+        with open(filename, 'w') as f:
+            json.dump(chat_data, f, indent=2)
+            
+        return True
+    except Exception as e:
+        logging.error(f"Error saving chat to JSON: {str(e)}")
+        return False
