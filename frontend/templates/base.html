@@ -43,13 +43,13 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
     <a href="/">Vorlesungschatbot</a>
 {% endif %}
 </div>
- 
-        <!-- Navigation links depending on user role -->
+
+<!-- Navigation links depending on user role -->
 <div class="nav-links">
             {% if user %}
                 {% if user.role == 'admin' %}
 <a href="/admin/dashboard">Dashboard</a>
-<a href="/admin/classes">Vorlesungen</a>
+<a href="/classes">Vorlesungen</a>
 <a href="/admin/courses">Kurse</a>
 <a href="/admin/professors">Professor:innen</a>
 <a href="/admin/students">Studierende</a>
