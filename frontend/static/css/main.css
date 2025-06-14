@@ -276,7 +276,7 @@ footer {
     background-color: white;
     border: 1px solid #ccc;
     border-radius: 8px;
-    padding: 1.25rem;
+    padding: 1rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease;
 
@@ -286,6 +286,8 @@ footer {
 
     /*min-height: 400px;*/
     width: 100%; /* volle Breite */
+    max-width: 700px;
+    margin: 0 auto;
 
 }
 

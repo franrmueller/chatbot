@@ -71,13 +71,13 @@ Meine Vorlesungen – Vorlesungschatbot
 {% endif %} -->
 
 {% if classes %}
-<div class="class-list row row-cols-1 row-cols-md-2 g-4">
+<div class="class-list ">
     {% for class in classes %}
     <div class="col">
-        <div class="class-card h-100 p-3 border rounded shadow-sm d-flex flex-column justify-content-between">
+        <div class="class-card mb-4 p-3 border rounded shadow-sm">
             <div>
                 <h5 class="mb-2">{{ class.name }}</h5>
-                <p class="mb-1"><strong>Kurse:</strong>
+                <p class-meta mb-1"><strong>Kurse:</strong>
                     {% if class.courses %}
                         {% for course in class.courses %}
                             {{ course.course_name }}{% if not loop.last %}, {% endif %}
@@ -86,12 +86,12 @@ Meine Vorlesungen – Vorlesungschatbot
                         {{ class.course_name }}
                     {% endif %}
                 </p>
-                <p class="mb-1"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
+                <p class-submeta mb-1"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
                 {% if user.role in ['admin', 'professor'] %}
-                <p class="mb-1"><strong>Studierende:</strong> {{ class.student_counts or 0 }}</p>
+                <p class-submeta mb-1"><strong>Studierende:</strong> {{ class.student_counts or 0 }}</p>
                 {% endif %}
                 {% if user.role == 'admin' %}
-                <p class="mb-1"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
+                <p class-submeta mb-1"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
                 {% endif %}
             </div>
 
