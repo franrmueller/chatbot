@@ -58,7 +58,7 @@ Meine Vorlesungen – Vorlesungschatbot
 </div>
 
 
-<!-- {% if success %}
+{% if success %}
 <div class="alert alert-success">{{ success }}</div>
 {% endif %}
 {% if error %}
@@ -68,7 +68,7 @@ Meine Vorlesungen – Vorlesungschatbot
 <h1>Meine betreuten Vorlesungen</h1>
 {% else %}
 <h1>Meine Vorlesungen</h1>
-{% endif %} -->
+{% endif %}
 
 {% if classes %}
 <div class="class-list ">
@@ -127,9 +127,10 @@ Meine Vorlesungen – Vorlesungschatbot
     {% else %}
         <p>Es sind derzeit keine Vorlesungen im System.</p>
     {% endif %}
-{% endif %}
+
 
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
