@@ -14,7 +14,7 @@ Registrieren - Vorlesungschatbot
     <!-- Registrierungsformular -->
     <form id="register-form" class="auth-form">
 
-        <div class="form-group">
+        <!-- <div class="form-group">
             <label for="first-name">Vorname:</label>
             <input type="text" id="first-name" name="first-name" required>
         </div>
@@ -22,7 +22,7 @@ Registrieren - Vorlesungschatbot
         <div class="form-group">
             <label for="last-name">Nachname:</label>
             <input type="text" id="last-name" name="last-name" required>
-        </div>
+        </div> -->
 
         <div class="form-group">
             <label for="username">Benutzername:</label>
@@ -49,23 +49,24 @@ Registrieren - Vorlesungschatbot
         </div>
 
         <!-- Sicherheitsfragen für Passwort-Wiederherstellung -->
-        <h3>Sicherheitsfragen</h3>
-        <p class="form-info">Diese Fragen werden verwendet, um dein Passwort zurückzusetzen, falls du es vergisst.</p>
-        
-        <div class="form-group">
-            <label for="security-answer1">Was ist der Name deines ersten Haustiers?</label>
-            <input type="text" id="security-answer1" name="security-answer1" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="security-answer2">In welcher Stadt bist du geboren?</label>
-            <input type="text" id="security-answer2" name="security-answer2" required>
-        </div>
-        
-        <div class="form-group">
-            <label for="security-answer3">Wie lautet der Mädchenname deiner Mutter?</label>
-            <input type="text" id="security-answer3" name="security-answer3" required>
-        </div>
+        <h3>Sicherheitsfrage</h3>
+    <p class="form-info">Wähle eine Sicherheitsfrage und gib die Antwort ein. Diese wird verwendet, um dein Passwort zurückzusetzen.</p>
+
+    <div class="form-group">
+        <label for="security-question">Frage auswählen:</label>
+        <select id="security-question" name="security-question" class="form-control" required>
+            <option value="" disabled selected>Bitte wähle eine Frage</option>
+            <option value="first_pet">Was ist der Name deines ersten Haustiers?</option>
+            <option value="birth_city">In welcher Stadt bist du geboren?</option>
+            <option value="mother_maiden">Wie lautet der Mädchenname deiner Mutter?</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="security-answer">Deine Antwort:</label>
+        <input type="text" id="security-answer" name="security-answer" class="form-control" required placeholder="Antwort eingeben">
+    </div>
+
 
         <button type="submit" class="btn btn-primary">Registrieren</button>
     </form>
@@ -116,9 +117,9 @@ Registrieren - Vorlesungschatbot
             password: password,
             course_id: document.getElementById('course').value,
             role: "student", // ✅ hinzugefügt, damit Kurs gespeichert wird
-            security_answer1: document.getElementById('security-answer1').value,
-            security_answer2: document.getElementById('security-answer2').value,
-            security_answer3: document.getElementById('security-answer3').value
+            security_question: document.getElementById('security-question').value,
+            security_answer: document.getElementById('security-answer').value
+
         };
 
         try {
