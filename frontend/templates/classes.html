@@ -35,12 +35,28 @@ Meine Vorlesungen – Vorlesungschatbot
                 <input type="text" name="name" id="name" required class="form-control" placeholder="z. B. Einführung in KI">
             </div>
 
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label for="course">Kurs (Studiengang)</label>
                 <select id="course" name="course" class="form-control" required>
                     <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
                 </select>
+            </div> -->
+
+            <div class="form-group">
+                <label for="courses">Kurse (Studiengänge)</label>
+                <div id="course-checkboxes">
+                {% for course in courses %}
+                    <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="course-{{ course.id }}" name="courses" value="{{ course.id }}">
+                    <label class="form-check-label" for="course-{{ course.id }}">
+                        {{ course.code }} ({{ course.name }})
+                    </label>
+                    </div>
+                {% endfor %}
+                </div>
+
             </div>
+
 
 
             <div class="form-group">
@@ -97,17 +113,17 @@ Meine Vorlesungen – Vorlesungschatbot
 
             <div class="d-flex justify-content-end gap-2 mt-3">
                 {% if user.role in ['admin', 'professor'] %}
-                <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary btn-lg" title="PDF-Übersicht">
+                <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary btn-sm" title="PDF-Übersicht">
                     <i class="fas fa-file-alt"></i>
                 </a>
                 {% endif %}
-                <a href="/chat/{{ class.id }}" class="btn btn-primary btn-lg" title="Zum Chat">
+                <a href="/chat/{{ class.id }}" class="btn btn-primary btn-sm" title="Zum Chat">
                     <i class="fas fa-comments"></i>
                 </a>
                 {% if user.role == 'admin' %}
                 <form method="POST" action="/admin/classes/delete/{{ class.id }}" class="d-inline" 
                     onsubmit="return confirm('Diesen Kurs wirklich löschen?');">
-                    <button type="submit" class="btn btn-danger btn-lg" title="Löschen">
+                    <button type="submit" class="btn btn-danger btn-sm" title="Löschen">
                         <i class="fas fa-trash"></i>
                     </button>
                 </form>
@@ -135,40 +151,55 @@ Meine Vorlesungen – Vorlesungschatbot
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', async function () {
-        // Load courses
-        try {
-            const response = await fetch('/api/courses');
-            const data = await response.json();
-            const courseSelect = document.getElementById('course');
-            if (courseSelect && data.courses) {
-                data.courses.forEach(course => {
-                    const option = document.createElement('option');
-                    option.value = course.id;
-                    option.textContent = course.name;
-                    courseSelect.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Fehler beim Laden der Kurse:', error);
-        }
+document.addEventListener('DOMContentLoaded', async function () {
+    // Kurse laden & Checkboxen erzeugen
+    try {
+        const response = await fetch('/api/courses');
+        const data = await response.json();
+        const container = document.getElementById('course-checkboxes');
+        if (container && data.courses) {
+            data.courses.forEach(course => {
+                const wrapper = document.createElement('div');
+                wrapper.classList.add('form-check');
 
-        // Load professors
-        try {
-            const response = await fetch('/api/professors');
-            const data = await response.json();
-            const profSelect = document.getElementById('taught_by');
-            if (profSelect && data.professors) {
-                data.professors.forEach(prof => {
-                    const option = document.createElement('option');
-                    option.value = prof.username;
-                    option.textContent = prof.name;
-                    profSelect.appendChild(option);
-                });
-            }
-        } catch (error) {
-            console.error('Fehler beim Laden der Professoren:', error);
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'form-check-input';
+                checkbox.name = 'courses';  // wichtig: Mehrfachname
+                checkbox.value = course.id;
+                checkbox.id = 'course-' + course.id;
+
+                const label = document.createElement('label');
+                label.className = 'form-check-label';
+                label.setAttribute('for', 'course-' + course.id);
+                label.textContent = course.name;
+
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(label);
+                container.appendChild(wrapper);
+            });
         }
-    });
+    } catch (error) {
+        console.error('Fehler beim Laden der Kurse:', error);
+    }
+
+    // Dozenten laden
+    try {
+        const response = await fetch('/api/professors');
+        const data = await response.json();
+        const profSelect = document.getElementById('taught_by');
+        if (profSelect && data.professors) {
+            data.professors.forEach(prof => {
+                const option = document.createElement('option');
+                option.value = prof.username;
+                option.textContent = prof.name;
+                profSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Professoren:', error);
+    }
+});
 </script>
+
 {% endblock %}
