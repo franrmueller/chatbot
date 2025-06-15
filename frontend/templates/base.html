@@ -103,10 +103,11 @@ function confirmAccountDeletion(event) {
     .then(async (response) => {
         const result = await response.json();
 
-        // Alte Meldung entfernen
+        // Remove old alert if it exists
         const oldAlert = document.getElementById("account-delete-alert");
         if (oldAlert) oldAlert.remove();
 
+        // Create and insert new alert
         const alert = document.createElement("div");
         alert.id = "account-delete-alert";
         alert.className = `alert ${result.success ? "alert-success" : "alert-danger"} text-center`;
@@ -115,10 +116,10 @@ function confirmAccountDeletion(event) {
         const main = document.querySelector("main");
         main.parentNode.insertBefore(alert, main);
 
-        // Wenn erfolgreich gelöscht, leite auf Startseite mit ?deleted=1 weiter
+// Redirect if deletion successful
 
 if (result.success) {
-    // Nur Weiterleitung ohne vorherige Einblendung
+
     window.location.href = "/?deleted=1";
 }
 

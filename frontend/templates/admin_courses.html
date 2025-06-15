@@ -5,14 +5,14 @@
 <div class="dashboard-container">
     <h1>Kursverwaltung</h1>
 
-    <!-- Zurück -->
+    <!-- Back to admin dashboard -->
     <div class="btn-group mb-3">
-        <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
+        <a href="/admin/dashboard" class="btn btn-secondary" title="Back to dashboard">
             <i class="fas fa-arrow-left"></i>
         </a>
     </div>
 
-    <!-- Neuer Kurs -->
+    <!-- Add new course form -->
     <div class="card mb-4">
         <div class="card-header">
             <h4 class="mb-0">Neuen Kurs hinzufügen</h4> 
@@ -21,32 +21,32 @@
             <form method="post" action="/admin/courses/add">
                 <div class="form-group">
                     <label for="id">Kurs-ID</label>
-                    <input type="text" name="id" required class="form-control" placeholder="z. B. WWI-BE122">
+                    <input type="text" name="id" required class="form-control" placeholder="z.B. WWI-BE122">
                 </div>
                 <div class="form-group">
                     <label for="name">Kursbeschreibung</label>
-                    <input type="text" name="name" required class="form-control" placeholder="z. B. WWI-BE122 (Wirtschaftsinformatik – Business Engineering)">
+                    <input type="text" name="name" required class="form-control" placeholder="z.B. WWI-BE122 (Wirtschaftsinformatik – Business Engineering)">
                 </div>
                 <input type="hidden" name="professor" value="{{ user.username }}">
-                <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
+                <button type="submit" class="btn btn-primary mt-2" title="Add">
                     <i class="fas fa-plus"></i>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Bearbeiten Modal (wenn gesetzt) -->
+    <!-- Edit course modal if a course is selected for editing -->
     {% if edit_course %}
     <div class="modal-overlay">
         <div class="modal-content">
             <form method="POST" action="/admin/courses/edit/{{ edit_course.id }}">
                 <button type="button" class="modal-close-btn" onclick="window.location.href='/admin/courses'">&times;</button>
-                <h3>Kurs bearbeiten</h3>
+                <h3>Edit Course</h3>
                 <div class="form-group">
-                    <label for="name">Kursbeschreibung</label>
+                    <label for="name">Course Name</label>
                     <input type="text" name="name" value="{{ edit_course.name }}" required class="form-control" />
                 </div>
-                <button type="submit" class="btn btn-primary mt-2" title="Speichern">
+                <button type="submit" class="btn btn-primary mt-2" title="Save">
                     <i class="fas fa-floppy-disk"></i>
                 </button>
             </form>
@@ -54,39 +54,43 @@
     </div>
     {% endif %}
 
-{% if error %}
-<div class="alert alert-danger text-center" role="alert">
-  {{ error }}
-</div>
-{% endif %}
-{% if success %}
-<div class="alert alert-success text-center" role="alert">
-  {{ success }}
-</div>
-{% endif %}
+    <!-- Error message -->
+    {% if error %}
+    <div class="alert alert-danger text-center" role="alert">
+        {{ error }}
+    </div>
+    {% endif %}
 
+    <!-- Success message -->
+    {% if success %}
+    <div class="alert alert-success text-center" role="alert">
+        {{ success }}
+    </div>
+    {% endif %}
 
-    <!-- Vorhandene Kurse -->
+    <!-- List of existing courses -->
     <hr>
-    <h2>Vorhandene Kurse</h2>
+    <h2>Existing Courses</h2>
     <div class="class-list">
         {% for course in courses %}
         <div class="class-card">
             <div class="class-header">
                 <div>
-                    <div class="class-meta"><strong>Kurs-ID:</strong> {{ course.id }}</div>
+                    <div class="class-meta"><strong>Course ID:</strong> {{ course.id }}</div>
                     <div class="class-submeta"><strong>Name:</strong> {{ course.name }}</div>
-                    <div class="class-teacher"><strong>Erstellt von:</strong> {{ course.created_by }}</div>
-                    <div class="class-submeta"><strong>Studierende:</strong> {{ student_counts.get(course.id, 0) }}</div>
+                    <div class="class-teacher"><strong>Created by:</strong> {{ course.created_by }}</div>
+                    <div class="class-submeta"><strong>Students:</strong> {{ student_counts.get(course.id, 0) }}</div>
                 </div>
                 <div class="btn-group">
+                    <!-- Edit button -->
                     <form method="get" action="/admin/courses/edit/{{ course.id }}">
-                        <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
+                        <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Edit">
                             <i class="fas fa-pen"></i>
                         </button>
                     </form>
+                    <!-- Delete button -->
                     <form method="post" action="/admin/courses/delete/{{ course.id }}">
-                        <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
+                        <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </form>

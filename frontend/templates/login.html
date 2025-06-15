@@ -8,31 +8,31 @@ Anmelden - Vorlesungschatbot
 <div class="auth-container">
 <h1>Anmelden</h1>
  
-    <!-- Fehlermeldung -->
-<div class="error-message" id="error-message" style="display: none;"></div>
+    <!-- Error message -->
+    <div class="error-message" id="error-message" style="display: none;"></div>
  
     {% if request.query_params.get('registered') == 'true' %}
-<div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
+        <div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
     {% endif %}
  
-    <!-- Login-Formular -->
+ <!-- Login-form -->
 <form id="login-form" class="auth-form">
-<div class="form-group">
-<label for="username">Benutzername:</label>
-<input type="username" id="username" name="username" required>
-</div>
- 
-        <div class="form-group">
-<label for="password">Passwort:</label>
-<input type="password" id="password" name="password" required>
-</div>
- 
-        <button type="submit" class="btn btn-primary">Anmelden</button>
-        
-</div>
+    <div class="form-group">
+    <label for="username">Benutzername:</label>
+    <input type="username" id="username" name="username" required>
+    </div>
+    
+    <div class="form-group">
+    <label for="password">Passwort:</label>
+    <input type="password" id="password" name="password" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Anmelden</button>
+            
+    </div>
 </form>
  
-    <!-- Registrierung-Link -->
+<!-- Link to registration page -->
 <div class="auth-links">
 <p>Noch kein Konto? <a href="/register">Registrieren</a></p>
 </div>
@@ -41,6 +41,8 @@ Anmelden - Vorlesungschatbot
  
 {% block extra_js %}
 <script>
+
+    // Handle login form submission
         document.getElementById('login-form').addEventListener('submit', async function(e) {
         e.preventDefault();
  
@@ -64,13 +66,14 @@ Anmelden - Vorlesungschatbot
                 return;
             }
  
-            // Token im localStorage speichern
+            // Store access token in localStorage
             localStorage.setItem('accessToken', data.access_token);
  
-            // Weiterleitung nach erfolgreichem Login
+            // Redirect to course overview on success
             window.location.href = '/classes';
  
         } catch (error) {
+            // General error handling
             errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
             errorMessage.style.display = 'block';
             console.error('Anmeldefehler:', error);

@@ -2,11 +2,14 @@
 {% block title %}Dozenten-Login – Vorlesungschatbot{% endblock %}
 
 {% block content %}
+<!-- Login form for professors -->
 <div class="auth-container">
   <h1>Dozenten-Login</h1>
 
+  <!-- Error message container -->
   <div class="error-message" id="error-message" style="display: none;"></div>
 
+  <!-- Login form -->
   <form id="login-form" class="auth-form">
     <div class="form-group">
       <label for="username">Benutzername:</label>
@@ -18,9 +21,11 @@
       <input type="password" id="password" name="password" required>
     </div>
 
+    <!-- Submit button -->
     <button type="submit" class="btn btn-primary">Anmelden</button>
   </form>
 
+  <!-- Navigation link back to homepage -->
   <div class="auth-links">
     <p>Zurück zur <a href="/">Startseite</a></p>
   </div>
@@ -30,7 +35,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', async function() {
-  // Check if already logged in
+  // Check if user is already authenticated
   try {
     const response = await fetch('/api/auth/check', {
       method: 'GET',
@@ -39,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const data = await response.json();
     
-    // If logged in, redirect immediately to appropriate dashboard
+    // Redirect user immediately if already authenticated
     if (data.authenticated) {
       console.log("User already authenticated, redirecting...");
       
@@ -56,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.error('Auth check error:', error);
   }
 
-  // Form submission handler - only runs if not already authenticated
+  // Handle form submission only if not authenticated
   document.getElementById('login-form').addEventListener('submit', async function (e) {
     e.preventDefault();
 
@@ -73,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       });
 
       if (!response.ok) {
+        // Show error if login credentials are wrong
         errorMessage.textContent = 'Falsche Anmeldedaten. Bitte versuchen Sie es erneut.';
         errorMessage.style.display = 'block';
         return;
@@ -81,10 +87,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       const data = await response.json();
       
       if (data.success) {
-        // Use replace to prevent back button issues
+        // Redirect after successful login
         window.location.replace(data.redirect_url);
       }
     } catch (error) {
+      // General error handling
       errorMessage.textContent = 'Fehler bei der Anmeldung. Bitte erneut versuchen.';
       errorMessage.style.display = 'block';
       console.error('Login error:', error);
@@ -92,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
 });
 
-// Simple back button handler
+// Add browser history entry to catch back-button navigation
 (function() {
   // Create a history entry when page loads
   history.pushState(null, null, window.location.href);

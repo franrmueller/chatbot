@@ -11,7 +11,7 @@ Chat – Vorlesung {{ class.name }}
 <div class="dashboard-container">
 <h1>Chatbot für Vorlesung {{ class.name }}</h1>
  
-<!-- Navigationsbuttons oben -->
+<!-- Top navigation buttons -->
 <div class="btn-group" style="margin-bottom: 20px;">
     {% if user.role == 'student' %}
     <a href="/classes" class="btn btn-secondary" title="Zur Kursübersicht">
@@ -42,12 +42,12 @@ Chat – Vorlesung {{ class.name }}
 </div>
 
  
-<!-- Chat-Fenster -->
+<!-- Chat window where messages are displayed -->
 <div id="chat-window" class="chat-window" style="border: 1px solid #ccc; padding: 1rem; height: 300px; overflow-y: auto; background-color: #f9f9f9;">
-<!-- Nachrichten erscheinen hier -->
+<!-- Messages will be added here dynamically -->
 </div>
  
-<!-- Frageformular -->
+<!-- Question form for sending prompts -->
 <form id="chat-form" class="chat-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
 <input type="text" id="user-input" placeholder="Frage stellen..." required class="form-control" style="flex: 1;">
 <button type="submit" class="btn btn-primary" title="Frage senden">
@@ -65,7 +65,7 @@ Chat – Vorlesung {{ class.name }}
     const userInput = document.getElementById('user-input');
     const resetBtn = document.getElementById('reset-chat');
  
-    // Funktion zum Hinzufügen von Nachrichten ins Fenster
+    // Function to add a message to the chat window
     function appendMessage(sender, text) {
         const msg = document.createElement('div');
         msg.classList.add('chat-message', sender);
@@ -75,7 +75,7 @@ Chat – Vorlesung {{ class.name }}
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
  
-    // Abschicken des Prompts
+    // Handle form submission and send question to server
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         const question = userInput.value.trim();
@@ -99,7 +99,7 @@ Chat – Vorlesung {{ class.name }}
         }
     });
  
-    // Chat zurücksetzen
+    // Reset chat functionality (not implemented yet)
     resetBtn.addEventListener('click', async () => {
     
 });

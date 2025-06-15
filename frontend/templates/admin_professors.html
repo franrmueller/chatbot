@@ -10,7 +10,7 @@ Professor:innen verwalten – Admin
 <div class="dashboard-container">
     <h1 class="dashboard-title">Professor:innen verwalten</h1>
 
-    <!-- Navigationsleiste -->
+     <!-- Navigation button: back to dashboard -->
 <div class="btn-group mb-3">
   <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
     <i class="fas fa-arrow-left"></i>
@@ -19,7 +19,7 @@ Professor:innen verwalten – Admin
 
 
 
-    <!-- Neuen Professor hinzufügen -->
+    <!-- Add new professor form -->
     <div class="card mb-4">
     <div class="card-header">
         <h4 class="mb-0">Neuen Professor hinzufügen</h4>
@@ -61,6 +61,7 @@ Professor:innen verwalten – Admin
     </div>
 </div>
 
+<!-- Display error or success messages -->
 {% if error %}
 <div class="alert alert-danger text-center" role="alert">
   {{ error }}
@@ -72,7 +73,7 @@ Professor:innen verwalten – Admin
 </div>
 {% endif %}
 
-    <!-- HIER: Bearbeiten-Formular -->
+<!-- Edit professor modal (only shown if 'edit_professor' is set) -->
         
  {% if edit_professor %}
 <div class="modal-overlay">
@@ -111,7 +112,7 @@ Professor:innen verwalten – Admin
 
 
 
-    <!-- Bestehende Professor:innen -->
+     <!-- Table of existing professors -->
     <h2 class="mt-4 mb-3">Bestehende Professor:innen</h2>
 
     {% if professors %}
@@ -137,7 +138,7 @@ Professor:innen verwalten – Admin
                     {% endif %}
                 </td>
                 <td class="btn-group">
-                    <!-- Bearbeiten-Formular (GET) -->
+                    <!-- Edit professor -->
                     <form method="get" action="/admin/professors/edit/{{ professor.username }}" style="display:inline;">
                         <button type="submit" class="btn btn-sm btn-warning" title="Bearbeiten">
                             <i class="fas fa-pen"></i>
@@ -145,7 +146,7 @@ Professor:innen verwalten – Admin
 
                     </form>
 
-                    <!-- Löschen-Formular (POST) -->
+                    <!-- Delete professor -->
                     <form method="post" action="/admin/professors/delete/{{ professor.username }}" style="display:inline;" onsubmit="return confirm('Wirklich löschen?');">
                         <button type="submit" class="btn btn-sm btn-danger" title="Löschen">
   <i class="fas fa-trash"></i>
