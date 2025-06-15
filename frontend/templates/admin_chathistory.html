@@ -65,6 +65,11 @@ Chathistorien – Admin
 
   {% if selected_class %}
   <h2>Fragen & Antworten für {{ selected_class.name }} ({{ selected_class.course_name }})</h2>
+  <form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
+    <button type="submit" class="btn btn-danger mb-3">
+    <i class="fas fa-trash"></i> Chatverlauf zurücksetzen
+    </button>
+  </form>
   {% if history %}
   <div class="chat-history-list">
     {% for chat in history %}

@@ -1344,3 +1344,27 @@ def get_chat_history_filtered(class_id=None, course_id=None, start_date=None, en
     cursor.close()
     connection.close()
     return result
+
+def delete_chat_history_for_class(class_id):
+    # Delete from SQL
+    connection = sql_connect()
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM chat_history WHERE class_id = %s", (class_id,))
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+    # Delete JSON files
+    chats_dir = os.path.join(os.getcwd(), 'chats', f'class_{class_id}')
+    if os.path.exists(chats_dir):
+        for filename in os.listdir(chats_dir):
+            file_path = os.path.join(chats_dir, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logging.error(f"Error deleting chat JSON file: {file_path} - {str(e)}")
+        try:
+            os.rmdir(chats_dir)
+        except Exception as e:
+            logging.error(f"Error removing chat directory: {chats_dir} - {str(e)}")

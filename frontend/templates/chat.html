@@ -1,3 +1,4 @@
+<script>const sessionStart = new Date();</script>
 
 {% extends "base.html" %}
  
@@ -99,9 +100,8 @@ Chat – Vorlesung {{ class.name }}
     });
  
     // Chat zurücksetzen
-    resetBtn.addEventListener('click', () => {
-        chatWindow.innerHTML = '';
-        // Optional: Reset-Endpunkt könnte hier aufgerufen werden
-    });
+    resetBtn.addEventListener('click', async () => {
+    
+});
 </script>
 {% endblock %}
