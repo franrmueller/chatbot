@@ -164,32 +164,32 @@ SECURITY_QUESTIONS = [
     # reset_token = secrets.token_hex(32)
     # return {"message": message, "reset_token": reset_token, "username": username}
 
-@app.get("/password-reset", response_class=HTMLResponse)
-async def password_reset_page(request: Request):
-    """Serve the password reset page"""
-    return templates.TemplateResponse("password-reset.html", {"request": request})
+# @app.get("/password-reset", response_class=HTMLResponse)
+# async def password_reset_page(request: Request):
+#     """Serve the password reset page"""
+#     return templates.TemplateResponse("password-reset.html", {"request": request})
 
-@app.post("/api/password-reset")
-async def reset_password(request_data: dict):
-    """Reset a student's password after security answers have been verified"""
-    username = request_data.get("username")
-    new_password = request_data.get("new_password")
-    answers = request_data.get("answers", [])
+# @app.post("/api/password-reset")
+# async def reset_password(request_data: dict):
+#     """Reset a student's password after security answers have been verified"""
+#     username = request_data.get("username")
+#     new_password = request_data.get("new_password")
+#     answers = request_data.get("answers", [])
     
-    if not username or not new_password or len(answers) != 3:
-        raise HTTPException(status_code=400, detail="Missing required fields")
+#     if not username or not new_password or len(answers) != 3:
+#         raise HTTPException(status_code=400, detail="Missing required fields")
     
-    # First verify the security answers
-    success, message = db.verify_student_security_answers(username, answers)
-    if not success:
-        raise HTTPException(status_code=400, detail=message)
+#     # First verify the security answers
+#     success, message = db.verify_student_security_answers(username, answers)
+#     if not success:
+#         raise HTTPException(status_code=400, detail=message)
     
-    # If answers are correct, reset the password
-    success, message = db.reset_student_password(username, new_password)
-    if not success:
-        raise HTTPException(status_code=400, detail=message)
+#     # If answers are correct, reset the password
+#     success, message = db.reset_student_password(username, new_password)
+#     if not success:
+#         raise HTTPException(status_code=400, detail=message)
     
-    return {"message": "Password reset successful"}
+#     return {"message": "Password reset successful"}
 
 # ======<===================================
 # Professor Routes
