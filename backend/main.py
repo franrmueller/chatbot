@@ -692,6 +692,21 @@ async def api_admin_chathistory(course_id: str):
     history = db.get_chat_history_by_course(course_id)
     return {"history": history}
 
+@app.post("/admin/chathistory/reset/{class_id}")
+async def admin_reset_chathistory(request: Request, class_id: int):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Delete from DB and JSON
+    db.delete_chat_history_for_class(class_id)
+
+    # Redirect back to chathistory page for this class
+    return RedirectResponse(
+        url=f"/admin/chathistory?class_id={class_id}",
+        status_code=303
+    )
+
 
 # =========================================	
 # Admin Course Management
