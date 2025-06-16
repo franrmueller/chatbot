@@ -35,7 +35,7 @@ Der Vorlesungschatbot ist eine webbasierte Plattform zur Verwaltung von Universi
 #### Erste Schritte
 1. **Repository klonen:**
    ```sh
-   git clone <your-repo-url>
+   git clone https://github.com/franrmueller/chatbot.git
    cd chatbot
    ```
 
@@ -587,7 +587,7 @@ Vorlesungschatbot is a web-based platform for managing university courses, uploa
 #### Getting Started
 1. **Clone the repository:**
    ```sh
-   git clone <your-repo-url>
+   git clone https://github.com/franrmueller/chatbot.git
    cd chatbot
    ```
 
