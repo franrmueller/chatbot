@@ -108,6 +108,116 @@ CREATE DATABASE chatbot;
 - **Frontend:** HTML (Jinja2 templates), CSS, JavaScript (with Bootstrap and FontAwesome)
 - **Deployment:** Docker, Docker Compose
 
+### Database Schema
+
+The system uses MySQL for relational data storage with the following schema:
+
+#### Tables Structure
+
+**professors**
+```sql
+CREATE TABLE professors (
+    username VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    role VARCHAR(9) DEFAULT 'professor',
+    session_token VARCHAR(64) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+```
+
+**courses**
+```sql
+CREATE TABLE courses (
+    id VARCHAR(15) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(50) NOT NULL,
+    FOREIGN KEY (created_by) REFERENCES professors(username)
+)
+```
+
+**students**
+```sql
+CREATE TABLE students (
+    username VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    course VARCHAR(15),
+    session_token VARCHAR(64),
+    security_answer1 VARCHAR(255),
+    security_answer2 VARCHAR(255),
+    security_answer3 VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course) REFERENCES courses(id)
+)
+```
+
+**classes**
+```sql
+CREATE TABLE classes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    taught_by VARCHAR(50) NOT NULL,
+    FOREIGN KEY (taught_by) REFERENCES professors(username)
+)
+```
+
+**class_courses** (Junction table for many-to-many relationship)
+```sql
+CREATE TABLE class_courses (
+    class_id INT,
+    course_id VARCHAR(15),
+    PRIMARY KEY (class_id, course_id),
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+)
+```
+
+**documents**
+```sql
+CREATE TABLE documents (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(50) NOT NULL,
+    class_id INT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    content_extracted BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (created_by) REFERENCES professors(username)
+)
+```
+
+**chat_history**
+```sql
+CREATE TABLE chat_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_hash VARCHAR(40) NOT NULL,  -- Anonymized user identifier
+    class_id INT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+)
+```
+
+#### Default Data
+- **Admin User:** username: `kirchberg`, password: `aperol77`
+- **Default Course:** `WWI-BE122` - "Wirtschaftsinformatik - Business Engineering"
+- **Default Class:** "Datenbanken" (associated with the default course)
+
+#### Key Relationships
+- Professors can teach multiple classes
+- Classes can be associated with multiple courses (many-to-many via `class_courses`)
+- Students are enrolled in one course but can access multiple classes within that course
+- Documents are uploaded to specific classes
+- Chat history is anonymized and linked to classes for privacy compliance
+
 ## Directory Structure
 
 - [`backend`](backend): FastAPI backend, database operations, RAG logic
