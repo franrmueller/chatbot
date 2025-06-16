@@ -96,3 +96,19 @@ Vorlesungschatbot is a web-based platform for managing university courses, uploa
 - Add new endpoints in [`backend/main.py`](backend/main.py)
 - Add new database operations in [`backend/db.py`](backend/db.py)
 - Update frontend templates in [`frontend/templates`](frontend/templates)
+
+1. Installation
+  1. End-user instructions
+  2. how to set up llamafile / chatgpt-api
+  3. how to use containers / host services in server (neo4j and mysql)
+  4. how to set up his own environment files
+  5. DB-Schema SQL (Egzona)
+    1. default user is kirchberg password: aperol77
+  6. how to prompt engineering
+2. Specifications
+  1. system infrastructure
+  (what we already have)
+  2. api documentation
+3. (FAQs)
+4. (Troubleshooting)
+5. Backup
