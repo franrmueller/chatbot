@@ -1,6 +1,6 @@
 :root {
     --primary-color: #2c3e50;
-    --secondary-color: #2e95db;
+    --secondary-color: #3498db;
     --accent-color: #e74c3c;
     --bg-color: #ecf0f1;
     --text-color: #333;
@@ -454,18 +454,3 @@ footer {
     font-weight: 400;
     margin: 0;
 }
-
- .spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid var(--secondary-color);  /*oder #3498db */
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-} 

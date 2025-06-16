@@ -16,33 +16,41 @@ Chathistorien – Admin
 
   <form method="GET" action="/admin/chathistory" class="form-inline mb-4">
 
-  <!-- Vorlesung Dropdown -->
-  <div class="form-group mb-2">
-    <label for="class_id" class="form-label">Vorlesung:</label>
-    <select name="class_id" id="class_id" class="form-control" required>
-        <option value="" disabled {% if not selected_class %}selected{% endif %}>Bitte Vorlesung wählen</option>
-        {% for class in classes %}
-        <option value="{{ class.id }}" {% if selected_class and class.id == selected_class.id %}selected{% endif %}>
-            {{ class.name }} ({{ class.course_name }})
-        </option>
-        {% endfor %}
-    </select>
-  </div>
-
-  <!-- Kurs Dropdown -->
-  <div class="form-group mb-2 mt-2">
-    <label for="course_id" class="form-label">Kurs:</label>
-    <select name="course_id" id="course_id" class="form-control">
-      <option value="">Alle Kurse</option>
+  <!-- Kurse Checkboxen -->
+  <div class="form-group mb-3">
+    <label class="form-label d-block">Kurse:</label>
+    <div id="course-checkboxes">
       {% for course in courses %}
-        <option value="{{ course.id }}" {% if request.query_params.course_id == course.id %}selected{% endif %}>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="course_id" value="{{ course.id }}"
+        {% if course.id in request.query_params.getlist('course_id') %}checked{% endif %}>
+        <label class="form-check-label" for="course-{{ course.id }}">
           {{ course.name }} ({{ course.id }})
-        </option>
+        </label>
+      </div>
       {% endfor %}
-    </select>
+    </div>
   </div>
 
-  <!-- Datumsfilter -->
+      <!-- Vorlesungen Checkboxen -->
+  <div class="form-group mb-3 mt-2">
+    <label class="form-label d-block">Vorlesungen:</label>
+    <div id="class-checkboxes">
+      {% for class in classes %}
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="class_id" value="{{ class.id }}" id="class-{{ class.id }}"
+          {% if class.id|string in request.query_params.getlist('class_id') %}checked{% endif %}>
+        <label class="form-check-label" for="class-{{ class.id }}">
+          {{ class.name }} ({{ class.course_name }})
+        </label>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+
+
+  <!-- Datum -->
   <div class="form-group mb-2 mt-2">
     <label for="from" class="form-label">Von:</label>
     <input type="date" name="from" class="form-control" value="{{ request.query_params.from or '' }}">
@@ -53,13 +61,14 @@ Chathistorien – Admin
     <input type="date" name="to" class="form-control" value="{{ request.query_params.to or '' }}">
   </div>
 
-  <!-- Filter-Button -->
+  <!-- Filtern Button -->
   <div class="form-group mt-3">
     <button type="submit" class="btn btn-primary" title="Filtern">
       <i class="fas fa-filter"></i> Filtern
     </button>
   </div>
 </form>
+
 
 
 

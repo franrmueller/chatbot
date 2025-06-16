@@ -240,23 +240,38 @@ async def admin_chathistory(request: Request):
 
     classes = db.get_all_classes_with_courses()
     courses = db.get_all_courses()
-    selected_class_id = request.query_params.get("class_id")
-    selected_course = request.query_params.get("course_id")
+
+    # Sichere Umwandlung der Query-Parameter
+    selected_class_ids = [
+        int(cid) for cid in request.query_params.getlist("class_id") if cid.isdigit()
+    ]
+    selected_course_ids = request.query_params.getlist("course_id")
     start_date = request.query_params.get("from")
     end_date = request.query_params.get("to")
-
 
     selected_class = None
     history = []
 
-    if selected_class_id:
-        selected_class = next((c for c in classes if str(c["id"]) == str(selected_class_id)), None)
-        history = db.get_chat_history_filtered(
-            class_id=selected_class_id,
-            course_id=selected_course,
-            start_date=start_date,
-            end_date=end_date
-        )
+    # Wenn Filter aktiv → Chat-Historie laden
+    if selected_class_ids or selected_course_ids or start_date or end_date:
+        try:
+            history = db.get_chat_history_filtered(
+                class_ids=selected_class_ids if selected_class_ids else None,
+                course_ids=selected_course_ids if selected_course_ids else None,
+                start_date=start_date,
+                end_date=end_date
+            )
+        except Exception as e:
+            print(f"[ERROR] Fehler beim Laden der Chat-Historie: {e}")
+            history = []
+
+        # Erste ausgewählte Klasse anzeigen
+        if selected_class_ids:
+            try:
+                selected_class = db.get_class_by_id(selected_class_ids[0])
+            except Exception as e:
+                print(f"[ERROR] Fehler bei selected_class: {e}")
+                selected_class = None
 
     return templates.TemplateResponse("admin_chathistory.html", {
         "request": request,

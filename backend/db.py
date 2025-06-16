@@ -707,6 +707,26 @@ def get_all_classes():
             
             # Add the courses to the class
             cls['courses'] = courses
+
+            
+
+            total_students = 0
+            cursor.execute("""
+                SELECT c.id 
+                FROM courses c
+                JOIN class_courses cc ON c.id = cc.course_id
+                WHERE cc.class_id = %s
+            """, (cls['id'],))
+            linked_courses = cursor.fetchall()
+
+            for course in linked_courses:
+                cursor.execute("SELECT COUNT(*) as count FROM students WHERE course = %s", (course['id'],))
+                result = cursor.fetchone()
+                total_students += result['count']
+
+            cls['student_counts'] = total_students
+
+
             
             # Add first course name for backward compatibility
             if courses:
@@ -828,33 +848,41 @@ def get_classes_for_professor(professor_username):
         """, (professor_username,))
         
         classes = cursor.fetchall()
-        
-        # For each class, get its primary course
+
         for cls in classes:
+            # Kurse zur Klasse
             cursor.execute("""
                 SELECT c.id as code, c.name as course_name 
                 FROM courses c
                 JOIN class_courses cc ON c.id = cc.course_id
                 WHERE cc.class_id = %s
-                LIMIT 1
             """, (cls['id'],))
-            
-            course = cursor.fetchone()
-            if course:
-                cls['code'] = course['code']
-                cls['course_name'] = course['course_name']
+            courses = cursor.fetchall()
+
+            cls['courses'] = courses
+            cls['professor_name'] = professor_username
+
+            # Studentenzahl berechnen
+            total_students = 0
+            for course in courses:
+                cursor.execute("SELECT COUNT(*) as count FROM students WHERE course = %s", (course['code'],))
+                result = cursor.fetchone()
+                total_students += result['count']
+            cls['student_counts'] = total_students
+
+            # Backward compatibility
+            if courses:
+                cls['code'] = courses[0]['code']
+                cls['course_name'] = courses[0]['course_name']
             else:
                 cls['code'] = ""
                 cls['course_name'] = "Kein Kurs zugewiesen"
-                
-            # Add professor name
-            cls['professor_name'] = professor_username
-            
+        
         return classes
     finally:
         cursor.close()
         connection.close()
-        
+
 def add_class(class_data):
     """Add a new class (Vorlesung) to the database."""
     connection = None
@@ -1308,26 +1336,29 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
         return False
     
 
-def get_chat_history_filtered(class_id=None, course_id=None, start_date=None, end_date=None):
+def get_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
 
     query = """
-        SELECT h.*, c.course_id, c.name AS class_name
+        SELECT h.*, cls.name AS class_name, c.id AS course_id
         FROM chat_history h
-        JOIN classes c ON h.class_id = c.id
-        JOIN class_courses cc ON c.id = cc.class_id
+        JOIN classes cls ON h.class_id = cls.id
+        JOIN class_courses cc ON cls.id = cc.class_id
+        JOIN courses c ON cc.course_id = c.id
         WHERE 1=1
     """
     params = []
 
-    if class_id:
-        query += " AND h.class_id = %s"
-        params.append(class_id)
+    if class_ids:
+        placeholders = ','.join(['%s'] * len(class_ids))
+        query += f" AND h.class_id IN ({placeholders})"
+        params.extend(class_ids)
 
-    if course_id:
-        query += " AND cc.course_id = %s"
-        params.append(course_id)
+    if course_ids:
+        placeholders = ','.join(['%s'] * len(course_ids))
+        query += f" AND c.id IN ({placeholders})"
+        params.extend(course_ids)
 
     if start_date:
         query += " AND h.timestamp >= %s"
@@ -1339,11 +1370,17 @@ def get_chat_history_filtered(class_id=None, course_id=None, start_date=None, en
 
     query += " ORDER BY h.timestamp DESC"
 
-    cursor.execute(query, params)
-    result = cursor.fetchall()
+    try:
+        cursor.execute(query, params)
+        result = cursor.fetchall()
+    except Exception as e:
+        print(f"[DB ERROR] Chat-History Filter Error: {e}")
+        result = []
+
     cursor.close()
     connection.close()
     return result
+
 
 def delete_chat_history_for_class(class_id):
     # Delete from SQL
