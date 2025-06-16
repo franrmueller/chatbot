@@ -45,6 +45,10 @@ Der Vorlesungschatbot ist eine webbasierte Plattform zur Verwaltung von Universi
    ```
 
 3. **Bearbeiten Sie die `.env`-Datei** mit Ihrer spezifischen Konfiguration (siehe Abschnitte unten)
+   - **LLM-Konfiguration:** Wählen Sie zwischen OpenAI GPT-4 oder lokalem Ollama
+   - **OpenAI API:** Fügen Sie Ihren API-Schlüssel hinzu, wenn Sie GPT-4 verwenden
+   - **Neo4j:** Konfigurieren Sie Ihre Neo4j-Cloud-Instanz (erforderlich)
+   - **MySQL:** Setzen Sie Ihre Datenbankverbindungsdetails
 
 #### MySQL-Datenbank-Setup
 Das System unterstützt zwei MySQL-Konfigurationsoptionen:
@@ -72,17 +76,6 @@ MYSQL_DATABASE=chatbot
 CREATE DATABASE chatbot;
 ```
 *Hinweis: Das Datenbankschema (Tabellen, Beziehungen usw.) wird beim Anwendungsstart automatisch für sowohl containerisierte als auch externe MySQL-Setups initialisiert.*
-
-#### Einrichten der Umgebungsvariablen
-1. Kopieren Sie die Beispiel-Umgebungsdatei:
-   ```sh
-   cp .env.example .env
-   ```
-2. Bearbeiten Sie die `.env`-Datei mit Ihrer spezifischen Konfiguration:
-   - **LLM-Konfiguration:** Wählen Sie zwischen OpenAI GPT-4 oder lokalem Ollama
-   - **OpenAI API:** Fügen Sie Ihren API-Schlüssel hinzu, wenn Sie GPT-4 verwenden
-   - **Neo4j:** Konfigurieren Sie Ihre Neo4j-Cloud-Instanz (erforderlich)
-   - **MySQL:** Setzen Sie Ihre Datenbankverbindungsdetails
 
 #### Neo4j-Datenbank-Konfiguration (Cloud-basiert)
 **Wichtig:** Diese Anwendung benötigt eine Neo4j-Cloud-Datenbank für die Vektorspeicherung und Dokumentenabfrage. Sie müssen eine Neo4j AuraDB-Instanz einrichten und die Verbindungsdetails konfigurieren:
