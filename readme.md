@@ -1,4 +1,538 @@
-# Technical Documentation – Vorlesungschatbot
+# Technische Dokumentation – Vorlesungschatbot DE
+
+## Überblick
+
+Der Vorlesungschatbot ist eine webbasierte Plattform zur Verwaltung von Universitätskursen, zum Hochladen von Kursmaterialien (PDFs) und zur Bereitstellung einer Chatbot-Schnittstelle für Studierende, um Fragen zu ihren Kursinhalten zu stellen. Das System unterstützt drei Benutzerrollen: **Administrator**, **Professor** und **Student**.
+
+## Installation
+
+### Voraussetzungen
+- [Docker](https://www.docker.com/products/docker-desktop/) und [Docker Compose](https://docs.docker.com/compose/) auf Ihrem System installiert
+- (Optional) [Git](https://git-scm.com/) zum Klonen des Repositories
+
+### Umgebungskonfiguration
+
+#### Erste Schritte
+1. **Repository klonen:**
+   ```sh
+   git clone <your-repo-url>
+   cd chatbot
+   ```
+
+2. **Beispiel-Umgebungsdatei kopieren:**
+   ```sh
+   cp .env.example .env
+   ```
+
+3. **Bearbeiten Sie die `.env`-Datei** mit Ihrer spezifischen Konfiguration (siehe Abschnitte unten)
+
+#### MySQL-Datenbank-Setup
+Das System unterstützt zwei MySQL-Konfigurationsoptionen:
+
+**Option 1: Docker Compose MySQL Container verwenden (Empfohlen für Entwicklung)**
+```properties
+MYSQL_HOST=mysql
+MYSQL_PORT=3306
+MYSQL_ROOT_PASSWORD=root
+MYSQL_DATABASE=chatbot
+```
+*Hinweis: Bei Verwendung des Docker Compose-Setups werden die MySQL-Datenbank und alle erforderlichen Tabellen automatisch erstellt und initialisiert. Es ist keine manuelle Datenbankeinrichtung erforderlich.*
+
+**Option 2: Externen MySQL-Server verwenden**
+Wenn Sie Ihren eigenen MySQL-Server haben, aktualisieren Sie die `.env`-Datei mit Ihren Serverdetails:
+```properties
+MYSQL_HOST=your-mysql-server.example.com
+MYSQL_PORT=3306
+MYSQL_ROOT_PASSWORD=your-root-password
+MYSQL_DATABASE=chatbot
+```
+
+**Wichtig:** Der Datenbankname muss `chatbot` sein. Stellen Sie sicher, dass Sie diese Datenbank auf Ihrem MySQL-Server erstellen, bevor Sie die Anwendung ausführen:
+```sql
+CREATE DATABASE chatbot;
+```
+*Hinweis: Das Datenbankschema (Tabellen, Beziehungen usw.) wird beim Anwendungsstart automatisch für sowohl containerisierte als auch externe MySQL-Setups initialisiert.*
+
+#### Einrichten der Umgebungsvariablen
+1. Kopieren Sie die Beispiel-Umgebungsdatei:
+   ```sh
+   cp .env.example .env
+   ```
+2. Bearbeiten Sie die `.env`-Datei mit Ihrer spezifischen Konfiguration:
+   - **LLM-Konfiguration:** Wählen Sie zwischen OpenAI GPT-4 oder lokalem Ollama
+   - **OpenAI API:** Fügen Sie Ihren API-Schlüssel hinzu, wenn Sie GPT-4 verwenden
+   - **Neo4j:** Konfigurieren Sie Ihre Neo4j-Cloud-Instanz (erforderlich)
+   - **MySQL:** Setzen Sie Ihre Datenbankverbindungsdetails
+
+#### Neo4j-Datenbank-Konfiguration (Cloud-basiert)
+**Wichtig:** Diese Anwendung benötigt eine Neo4j-Cloud-Datenbank für die Vektorspeicherung und Dokumentenabfrage. Sie müssen eine Neo4j AuraDB-Instanz einrichten und die Verbindungsdetails konfigurieren:
+
+1. **Neo4j AuraDB-Instanz erstellen:**
+   - Gehen Sie zu [Neo4j AuraDB](https://neo4j.com/cloud/aura/)
+   - Erstellen Sie eine kostenlose oder kostenpflichtige Instanz
+   - Notieren Sie sich Ihre Verbindungs-URI, Benutzername und Passwort
+
+2. **Neo4j in `.env` konfigurieren:**
+   ```properties
+   NEO4J_URI=neo4j+s://your-instance-id.databases.neo4j.io
+   NEO4J_USERNAME=neo4j
+   NEO4J_PASSWORD=your-generated-password
+   ```
+
+3. **Datenbankinitialisierung:**
+   - Das Neo4j-Datenbankschema und die Vektorindizes werden beim ersten Anwendungsstart automatisch erstellt
+   - PDF-Dokumente werden verarbeitet und als Vektoreinbettungen in Neo4j gespeichert
+
+4. **Anwendung starten:**
+   
+   **Für Docker Compose mit integriertem MySQL:**
+   ```sh
+   docker-compose up --build
+   ```
+   
+   **Für externen MySQL-Server:**
+   - Stellen Sie sicher, dass Ihr MySQL-Server läuft und erreichbar ist
+   - Erstellen Sie die `chatbot`-Datenbank
+   - Führen Sie aus: `docker-compose up --build`
+
+4. **Auf die Anwendung zugreifen:**
+   - Öffnen Sie Ihren Browser und gehen Sie zu `http://localhost:8000`
+
+    #### Standard-Admin-Anmeldeinformationen
+    - **Benutzername:** kirchberg
+    - **Passwort:** aperol77
+
+## Architektur
+
+- **Backend:** FastAPI (Python), MySQL, Neo4j (für Vektorspeicherung), LangChain für RAG (Retrieval-Augmented Generation)
+- **Frontend:** HTML (Jinja2-Vorlagen), CSS, JavaScript (mit Bootstrap und FontAwesome)
+- **Bereitstellung:** Docker, Docker Compose
+
+### Datenbankschema
+
+Das System verwendet MySQL zur Speicherung relationaler Daten mit folgendem Schema:
+
+#### Tabellenstruktur
+
+**professors**
+```sql
+CREATE TABLE professors (
+    username VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    role VARCHAR(9) DEFAULT 'professor',
+    session_token VARCHAR(64) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+```
+
+**courses**
+```sql
+CREATE TABLE courses (
+    id VARCHAR(15) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(50) NOT NULL,
+    FOREIGN KEY (created_by) REFERENCES professors(username)
+)
+```
+
+**students**
+```sql
+CREATE TABLE students (
+    username VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    course VARCHAR(15),
+    session_token VARCHAR(64),
+    security_answer1 VARCHAR(255),
+    security_answer2 VARCHAR(255),
+    security_answer3 VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course) REFERENCES courses(id)
+)
+```
+
+**classes**
+```sql
+CREATE TABLE classes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    taught_by VARCHAR(50) NOT NULL,
+    FOREIGN KEY (taught_by) REFERENCES professors(username)
+)
+```
+
+**class_courses** (Verknüpfungstabelle für viele-zu-viele Beziehung)
+```sql
+CREATE TABLE class_courses (
+    class_id INT,
+    course_id VARCHAR(15),
+    PRIMARY KEY (class_id, course_id),
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+)
+```
+
+**documents**
+```sql
+CREATE TABLE documents (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by VARCHAR(50) NOT NULL,
+    class_id INT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    content_extracted BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (created_by) REFERENCES professors(username)
+)
+```
+
+**chat_history**
+```sql
+CREATE TABLE chat_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_hash VARCHAR(40) NOT NULL,  -- Anonymisierte Benutzerkennung
+    class_id INT NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+)
+```
+
+#### Standarddaten
+- **Admin-Benutzer:** Benutzername: `kirchberg`, Passwort: `aperol77`
+- **Standardkurs:** `WWI-BE122` - "Wirtschaftsinformatik - Business Engineering"
+- **Standardklasse:** "Datenbanken" (assoziiert mit dem Standardkurs)
+
+#### Wichtige Beziehungen
+- Professoren können mehrere Klassen unterrichten
+- Klassen können mit mehreren Kursen verknüpft sein (viele-zu-viele über `class_courses`)
+- Studenten sind in einen Kurs eingeschrieben, können aber auf mehrere Klassen innerhalb dieses Kurses zugreifen
+- Dokumente werden bestimmten Klassen zugeordnet
+- Der Chatverlauf ist anonymisiert und mit Klassen verknüpft, um die Datenschutzbestimmungen einzuhalten
+
+## Verzeichnisstruktur
+
+- [`backend`](backend): FastAPI-Backend, Datenbankoperationen, RAG-Logik
+- [`frontend`](frontend): Statische Dateien und Jinja2-Vorlagen für die Web-Benutzeroberfläche
+- [`uploads`](uploads): Hochgeladene PDF-Dateien
+- [`chats`](chats): JSON-Dateien, die Chatverläufe speichern (anonymisiert)
+- [`compose.yaml`](compose.yaml), [`Dockerfile`](Dockerfile): Bereitstellungskonfiguration
+
+## Hauptmerkmale
+
+- **Authentifizierung:** Rollenbasierte Anmeldung für Administratoren, Professoren und Studenten
+- **Kursverwaltung:** Administratoren können Kurse erstellen, bearbeiten und löschen sowie Professoren zuweisen
+- **PDF-Verwaltung:** Professoren und Administratoren können Kurs-PDFs hochladen, aktualisieren und löschen
+- **Chatbot:** Studenten können Fragen zu Kursmaterialien stellen; die Antworten werden mithilfe von RAG mit Dokumentenabfrage aus Neo4j generiert
+- **Chatverlauf:** Administratoren können anonymisierte Chatverläufe pro Kurs/Klasse einsehen
+
+## Backend
+
+### Hauptkomponenten
+
+- [`backend/main.py`](backend/main.py): FastAPI-App, Routen-Definitionen, Authentifizierung und Vorlagen-Rendering
+- [`backend/db.py`](backend/db.py): Datenbankoperationen (MySQL), Benutzerverwaltung, Kurs- und PDF-CRUD, Speicherung des Chatverlaufs
+- [`backend/rag.py`](backend/rag.py): PDF-Import, Vektorspeicherung in Neo4j, RAG-basiertes Fragen und Antworten
+
+### Bemerkenswerte Endpunkte
+
+- `/login`, `/register`: Benutzer-Authentifizierung und -Registrierung
+- `/admin/dashboard`: Admin-Dashboard
+- `/admin/courses`: Kursverwaltung (CRUD)
+- `/admin/professors`: Professorenverwaltung (CRUD)
+- `/classes`: Kursübersicht für Studenten und Professoren
+- `/pdf`: PDF-Hochladung und -Verwaltung
+- `/chat/{class_id}`: Chatbot-Schnittstelle für eine bestimmte Klasse
+
+### Datenspeicherung
+
+- **MySQL:** Benutzer, Kurse, Klassen, Dokumentenmetadaten
+- **Neo4j:** Vektorspeicherung für Dokumentenstücke (verwendet von RAG)
+- **Dateisystem:** Hochgeladene PDFs ([`uploads`](uploads)), Chatverläufe ([`chats`](chats))
+
+## Frontend
+
+- Verwendet Jinja2-Vorlagen für die dynamische HTML-Generierung
+- CSS-Styles in [`frontend/static/css/main.css`](frontend/static/css/main.css)
+- JavaScript für Formularverarbeitung und dynamische UI-Aktualisierungen
+
+## Beispielbenutzerflüsse
+
+### Student
+
+1. Registriert sich und meldet sich an
+2. Sieht sich die eingeschriebenen Kurse an
+3. Lädt Sicherheitsantworten für die Passwortzurücksetzung hoch
+4. Chattet mit dem Bot über Kursmaterialien
+
+### Professor
+
+1. Meldet sich an über `/login/professor`
+2. Sieht und verwaltet zugewiesene Kurse
+3. Lädt PDFs für Kurse hoch
+
+### Admin
+
+1. Meldet sich an über `/login`
+2. Verwaltet Kurse, Professoren und Studenten
+3. Sieht anonymisierte Chatverläufe
+
+## Sicherheit
+
+- Passwörter und Sicherheitsantworten werden mit Passlib gehasht
+- Rollenbasierte Zugriffskontrolle für alle Endpunkte
+- Chatverläufe werden vor der Speicherung anonymisiert
+
+## API-Dokumentation
+
+### 1. Überblick
+Die Vorlesungschatbot-API bietet Endpunkte für die Benutzer-Authentifizierung, Kursverwaltung, Dokumentenverwaltung und Chat-Funktionalität. Die API ist mit FastAPI erstellt und unterstützt die rollenbasierte Zugriffskontrolle.
+
+### 2. Datenbankstruktur
+Das System verwendet MySQL für relationale Daten und Neo4j für die Vektorspeicherung von Dokumenteneinbettungen.
+
+### 3. Allgemeine Informationen
+
+#### 3.1 Basis-URL
+```
+http://localhost:8000
+```
+
+#### 3.2 Unterstützte HTTP-Methoden
+- `GET` - Daten abrufen
+- `POST` - Neue Ressourcen erstellen
+- `PUT` - Vorhandene Ressourcen aktualisieren
+- `DELETE` - Ressourcen entfernen
+
+#### 3.3 Antwortformate
+Alle API-Antworten liegen im JSON-Format vor, sofern nicht anders angegeben.
+
+#### 3.4 Statuscodes und Standardverhalten
+- `200` - Erfolg
+- `201` - Erstellt
+- `400` - Ungültige Anfrage
+- `401` - Nicht autorisiert
+- `403` - Verboten
+- `404` - Nicht gefunden
+- `500` - Interner Serverfehler
+
+#### 3.5 Beispiel-Fehlermeldungen
+```json
+{
+  "error": "Invalid credentials",
+  "status_code": 401
+}
+```
+
+#### 3.6 API-Versionierung
+Derzeit wird Version 1.0 verwendet (keine Versionierung in URLs)
+
+### 4. Authentifizierung und Benutzerverwaltung
+
+#### Studenten-Authentifizierung
+- `login_student(username, password)` - Authentifiziert Studentenbenutzer
+- `register_student(student_data)` - Registriert neuen Studenten
+- `reset_student_password(username, new_password)` - Setzt das Studentenpasswort zurück
+
+#### Professoren-Authentifizierung  
+- `login_professor(username, password)` - Authentifiziert Professorenbenutzer
+
+#### Sitzungsverwaltung
+- `get_user_by_session(session_token)` - Ruft Benutzer anhand des Sitzungstokens ab
+
+#### Benutzerverwaltung
+- `delete_current_user(username, role)` - Löscht Benutzerkonto
+
+### 5. Professorenverwaltung
+
+#### Professoren-Operationen
+- `get_all_professors()` - Ruft alle Professoren ab
+- `get_all_professors_with_courses()` - Holt Professoren mit ihren zugewiesenen Kursen
+- `add_professor(professor_data)` - Fügt neuen Professor hinzu
+- `delete_professor(professor_username)` - Entfernt Professor
+
+### 6. Kursverwaltung
+
+#### Kurs-Operationen
+- `get_all_courses()` - Ruft alle Kurse ab
+- `add_course(course_data)` - Erstellt neuen Kurs
+- `update_course(course_id, name)` - Aktualisiert Kursinformationen
+- `delete_course(course_id)` - Entfernt Kurs
+- `get_course_by_id(course_id)` - Holt spezifische Kursdetails
+- `get_courses_for_user(user)` - Holt Kurse für spezifischen Benutzer
+
+### 7. Klassenverwaltung
+
+#### Klassen-Operationen
+- `get_all_classes()` - Ruft alle Klassen ab
+- `get_class_by_id(class_id)` - Holt spezifische Klassendetails
+- `get_classes_for_student(username)` - Holt Klassen für Studenten
+- `get_classes_for_professor(username)` - Holt Klassen für Professoren
+- `add_class(class_data)` - Erstellt neue Klasse
+- `delete_class(class_id)` - Entfernt Klasse
+
+### 8. Dokumentenverwaltung (PDFs)
+
+#### PDF-Operationen
+- `get_pdfs_for_class(class_id)` - Holt alle PDFs für eine Klasse
+- `get_document_by_id(pdf_id)` - Holt spezifische Dokumentdetails
+- `add_document(document_data, file_content)` - Lädt neues PDF-Dokument hoch
+- `delete_pdf(pdf_id)` - Entfernt PDF-Dokument
+
+### 9. Verwaltung des Chatverlaufs
+
+#### Chat-Operationen
+- `save_chat_history(user_id, class_id, question, answer)` - Speichert Chat-Interaktion
+- `get_chat_history_by_course(course_id)` - Holt Chatverlauf für Kurs
+- `get_chat_history_by_class(class_id)` - Holt Chatverlauf für Klasse
+- `get_chat_history_filtered(...)` - Holt gefilterten Chatverlauf
+- `delete_chat_history_for_class(class_id)` - Entfernt Chatverlauf für Klasse
+
+### 10. Systemfunktionen und Analysen
+
+#### Systemoperationen
+- `sql_connect()` - Stellt Datenbankverbindung her
+- `initialize_database()` - Initialisiert das Datenbankschema
+- `reset_database()` - Setzt die Datenbank auf den ursprünglichen Zustand zurück
+
+#### Hilfsfunktionen
+- `anonymize_username(username)` - Anonymisiert Benutzerkennungen für datenschutzkonforme Verarbeitung
+- `count_students_per_course()` - Holt Studentenstatistiken pro Kurs
+- `count_admins()` - Zählt die Gesamtzahl der Administratoren
+
+### 11. Konfiguration
+
+#### Umgebungsvariablen (.env-Datei)
+Das System erfordert die Konfiguration der folgenden Umgebungsvariablen:
+
+**Datenbankkonfiguration:**
+```properties
+MYSQL_HOST=mysql
+MYSQL_PORT=3306
+MYSQL_ROOT_PASSWORD=root
+MYSQL_DATABASE=chatbot
+```
+
+**LLM-Konfiguration:**
+```properties
+LLM=gpt-4                               # LLM-Auswahl: GPT-4 oder LLaMA2
+EMBEDDING_MODEL=sentence_transformer
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OPENAI_API_KEY=<your-openai-api-key>
+```
+
+**Neo4j Graphdatenbank:**
+```properties
+NEO4J_URI=neo4j+s://your-instance.databases.neo4j.io
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=<your-neo4j-password>
+```
+
+### 12. Authentifizierung
+
+Die API verwendet ein einfaches authentifizierungsbasiertes Sitzungsmodell. Nach erfolgreicher Anmeldung erhalten Benutzer ein eindeutiges Sitzungstoken, das für alle geschützten Anfragen erforderlich ist.
+
+#### Anmeldeprozess
+
+**Studenten:**
+```python
+login_student(username, password)
+```
+
+**Professoren/Administratoren:**
+```python
+login_professor(username, password)
+```
+
+Beide Funktionen überprüfen die Benutzername/Passwort-Kombination. Nach erfolgreicher Authentifizierung wird ein zufälliges alphanumerisches Token erstellt und gespeichert.
+
+#### Sitzungsvalidierung
+Das Token wird mit jeder geschützten Anfrage (z. B. in Headern) übertragen und gegen die Datenbank validiert:
+```python
+get_user_by_session(session_token)
+```
+
+#### Passwortzurücksetzung
+Benutzer können ihr Passwort über Sicherheitsfragen zurücksetzen:
+1. `verify_student_security_answers` - Überprüfen der Sicherheitsantworten
+2. `reset_student_password` - Zurücksetzen des Passworts nach der Überprüfung
+
+#### Benutzerverwaltung
+Benutzerkonten können mit `delete_current_user` gelöscht werden, wobei rollenbasierte Abhängigkeitprüfungen (z. B. verknüpfte Klassen für Professoren) durchgeführt werden.
+
+**Hinweis:** Für Produktionsumgebungen wird empfohlen, ein verbessertes Authentifizierungssystem (z. B. OAuth2, JWT) zu implementieren.
+
+## FAQ
+
+### Häufige Fragen
+
+**F: Wie setze ich die Datenbank zurück?**
+A: Verwenden Sie die Funktion `reset_database()` oder starten Sie die Docker-Container mit neuen Volumes neu.
+
+**F: Kann ich eine lokale Neo4j-Instanz anstelle der Cloud verwenden?**
+A: Ja, aktualisieren Sie die `NEO4J_URI`, um auf Ihre lokale Instanz zu verweisen (z. B. `bolt://localhost:7687`)
+
+**F: Wie füge ich neue Benutzerrollen hinzu?**
+A: Ändern Sie die Authentifizierungslogik in `backend/main.py` und aktualisieren Sie das Datenbankschema entsprechend.
+
+**F: Was sind die Standard-Anmeldeinformationen?**
+A: Admin - Benutzername: `kirchberg`, Passwort: `aperol77`
+
+## Fehlerbehebung
+
+### Häufige Probleme
+
+**Docker-Container starten nicht:**
+- Stellen Sie sicher, dass Docker läuft
+- Überprüfen Sie die Umgebungsvariablen in der `.env`-Datei
+- Stellen Sie sicher, dass die Ports 8000, 3306 und 7687 verfügbar sind
+
+**Datenbankverbindungsfehler:**
+- Überprüfen Sie die MySQL-Anmeldeinformationen in der `.env`
+- Überprüfen Sie, ob der MySQL-Container läuft: `docker-compose ps`
+- Stellen Sie sicher, dass die Datenbank `chatbot` existiert
+
+**Neo4j-Verbindungsprobleme:**
+- Überprüfen Sie die Neo4j-Anmeldeinformationen und die URI
+- Überprüfen Sie die Firewall-Einstellungen für Cloud-Neo4j-Instanzen
+- Stellen Sie sicher, dass der Neo4j-Dienst läuft
+
+**Chat-Antworten funktionieren nicht:**
+- Überprüfen Sie die Gültigkeit des OpenAI-API-Schlüssels
+- Stellen Sie sicher, dass Ollama läuft (wenn lokales LLM verwendet wird)
+- Stellen Sie sicher, dass PDFs ordnungsgemäß hochgeladen und verarbeitet werden
+
+## Backup
+
+### Datenbank-Backup
+```bash
+# MySQL-Backup
+docker exec mysql_container mysqldump -u root -p chatbot > backup.sql
+
+# MySQL-Backup wiederherstellen
+docker exec -i mysql_container mysql -u root -p chatbot < backup.sql
+```
+
+### Datei-Backup
+```bash
+# Sichern Sie hochgeladene Dateien und Chatverläufe
+tar -czf backup_files.tar.gz uploads/ chats/
+```
+
+### Neo4j-Backup
+Bitte beachten Sie die Dokumentation zu Neo4j AuraDB für Cloud-Backup-Verfahren oder verwenden Sie die Neo4j-Dump-Dienstprogramme für lokale Instanzen.
+
+---
+
+# Technical Documentation – Vorlesungschatbot EN
 
 ## Overview
 
