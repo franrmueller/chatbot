@@ -8,92 +8,84 @@ Chathistorien – Admin
 <div class="dashboard-container">
   <h1>Chathistorien (anonymisiert)</h1>
 
-  <!-- Back to admin dashboard -->
   <div class="btn-group mb-3">
-    <a href="/admin/dashboard" class="btn btn-secondary" title="Back to dashboard">
+    <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
       <i class="fas fa-arrow-left"></i>
     </a>
   </div>
 
-  <!-- Filter form for chat history -->
   <form method="GET" action="/admin/chathistory" class="form-inline mb-4">
 
-    <!-- Lecture selection dropdown -->
-    <div class="form-group mb-2">
-      <label for="class_id" class="form-label">Vorlesung:</label>
-      <select name="class_id" id="class_id" class="form-control" required>
+  <!-- Vorlesung Dropdown -->
+  <div class="form-group mb-2">
+    <label for="class_id" class="form-label">Vorlesung:</label>
+    <select name="class_id" id="class_id" class="form-control" required>
         <option value="" disabled {% if not selected_class %}selected{% endif %}>Bitte Vorlesung wählen</option>
         {% for class in classes %}
-          <option value="{{ class.id }}" {% if selected_class and class.id == selected_class.id %}selected{% endif %}>
+        <option value="{{ class.id }}" {% if selected_class and class.id == selected_class.id %}selected{% endif %}>
             {{ class.name }} ({{ class.course_name }})
-          </option>
+        </option>
         {% endfor %}
-      </select>
-    </div>
+    </select>
+  </div>
 
-    <!-- Course selection dropdown (optional) -->
-    <div class="form-group mb-2 mt-2">
-      <label for="course_id" class="form-label">Kurs:</label>
-      <select name="course_id" id="course_id" class="form-control">
-        <option value="">Alle Kurse</option>
-        {% for course in courses %}
-          <option value="{{ course.id }}" {% if request.query_params.course_id == course.id %}selected{% endif %}>
-            {{ course.name }} ({{ course.id }})
-          </option>
-        {% endfor %}
-      </select>
-    </div>
+  <!-- Kurs Dropdown -->
+  <div class="form-group mb-2 mt-2">
+    <label for="course_id" class="form-label">Kurs:</label>
+    <select name="course_id" id="course_id" class="form-control">
+      <option value="">Alle Kurse</option>
+      {% for course in courses %}
+        <option value="{{ course.id }}" {% if request.query_params.course_id == course.id %}selected{% endif %}>
+          {{ course.name }} ({{ course.id }})
+        </option>
+      {% endfor %}
+    </select>
+  </div>
 
-    <!-- Date filter: from -->
-    <div class="form-group mb-2 mt-2">
-      <label for="from" class="form-label">Von:</label>
-      <input type="date" name="from" class="form-control" value="{{ request.query_params.from or '' }}">
-    </div>
+  <!-- Datumsfilter -->
+  <div class="form-group mb-2 mt-2">
+    <label for="from" class="form-label">Von:</label>
+    <input type="date" name="from" class="form-control" value="{{ request.query_params.from or '' }}">
+  </div>
 
-    <!-- Date filter: to -->
-    <div class="form-group mb-2">
-      <label for="to" class="form-label">Bis:</label>
-      <input type="date" name="to" class="form-control" value="{{ request.query_params.to or '' }}">
-    </div>
+  <div class="form-group mb-2">
+    <label for="to" class="form-label">Bis:</label>
+    <input type="date" name="to" class="form-control" value="{{ request.query_params.to or '' }}">
+  </div>
 
-    <!-- Submit button for filtering -->
-    <div class="form-group mt-3">
-      <button type="submit" class="btn btn-primary" title="Filter">
-        <i class="fas fa-filter"></i> Filtern
-      </button>
-    </div>
-  </form>
+  <!-- Filter-Button -->
+  <div class="form-group mt-3">
+    <button type="submit" class="btn btn-primary" title="Filtern">
+      <i class="fas fa-filter"></i> Filtern
+    </button>
+  </div>
+</form>
+
+
 
   {% if selected_class %}
-    <!-- Display selected class name -->
-    <h2>Fragen & Antworten für {{ selected_class.name }} ({{ selected_class.course_name }})</h2>
-
-    <!-- Button to reset chat history for this class -->
-    <form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
-      <button type="submit" class="btn btn-danger mb-3">
-        <i class="fas fa-trash"></i> Chatverlauf zurücksetzen
-      </button>
-    </form>
-
-    {% if history %}
-      <!-- Display chat history -->
-      <div class="chat-history-list">
-        {% for chat in history %}
-          <div class="chat-history-card" style="border:1px solid #ccc; border-radius:8px; padding:1em; margin-bottom:1em;">
-            <div><strong>User (anonymous):</strong> {{ chat.user_hash }}</div>
-            <div><strong>Frage:</strong> {{ chat.question }}</div>
-            <div><strong>Antwort:</strong> {{ chat.answer }}</div>
-            <div><strong>Datum:</strong> {{ chat.timestamp }}</div>
-          </div>
-        {% endfor %}
+  <h2>Fragen & Antworten für {{ selected_class.name }} ({{ selected_class.course_name }})</h2>
+  <form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
+    <button type="submit" class="btn btn-danger mb-3">
+    <i class="fas fa-trash"></i> Chatverlauf zurücksetzen
+    </button>
+  </form>
+  {% if history %}
+  <div class="chat-history-list">
+    {% for chat in history %}
+      <div class="chat-history-card" style="border:1px solid #ccc; border-radius:8px; padding:1em; margin-bottom:1em;">
+        <div><strong>User (anonym):</strong> {{ chat.user_hash }}</div>
+        <div><strong>Frage:</strong> {{ chat.question }}</div>
+        <div><strong>Antwort:</strong> {{ chat.answer }}</div>
+        <div><strong>Datum:</strong> {{ chat.timestamp }}</div>
       </div>
+    {% endfor %}
+        </div>
     {% else %}
-      <!-- If no chat history found -->
-      <p>Für diese Vorlesung wurden noch keine Fragen gestellt.</p>
+        <p>Für diese Vorlesung wurden noch keine Fragen gestellt.</p>
     {% endif %}
-  {% else %}
-    <!-- Prompt to select a lecture -->
-    <p>Bitte wählen Sie eine Vorlesung aus, um die Chathistorie anzuzeigen.</p>
-  {% endif %}
+{% else %}
+  <p>Bitte wählen Sie eine Vorlesung aus, um die Chathistorie anzuzeigen.</p>
+{% endif %}
 </div>
 {% endblock %}

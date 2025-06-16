@@ -16,7 +16,6 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if user.role == 'admin' %}
 <h1>Vorlesungen verwalten</h1>
 
-<!-- Back to Admin Dashboard -->
 <div class="btn-group mb-3">
   <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
     <i class="fas fa-arrow-left"></i>
@@ -24,7 +23,7 @@ Meine Vorlesungen – Vorlesungschatbot
 </div>
 
 
-<!-- Add new lecture (visible only to admin) -->
+<!-- neue Vorlesung hinzufügen --> 
     <div class="card mb-4">
     <div class="card-header">
         <h4 class="mb-0">Neue Vorlesung erstellen</h4>
@@ -43,7 +42,6 @@ Meine Vorlesungen – Vorlesungschatbot
                 </select>
             </div> -->
 
-             <!-- Course selection as checkboxes -->
             <div class="form-group">
                 <label for="courses">Kurse (Studiengänge)</label>
                 <div id="course-checkboxes">
@@ -60,7 +58,7 @@ Meine Vorlesungen – Vorlesungschatbot
             </div>
 
 
-            <!-- Assign a professor -->
+
             <div class="form-group">
                 <label for="taught_by">Dozent:in</label>
                 <select id="taught_by" name="taught_by" class="form-control" required>
@@ -75,20 +73,19 @@ Meine Vorlesungen – Vorlesungschatbot
     </div>
 </div>
 
-<!-- Success or error message after submission -->
+
 {% if success %}
 <div class="alert alert-success">{{ success }}</div>
 {% endif %}
 {% if error %}
 <div class="alert alert-danger">{{ error }}</div>
 {% endif %}
-
 {% elif user.role == 'professor' %}
 <h1>Meine betreuten Vorlesungen</h1>
 {% else %}
 <h1>Meine Vorlesungen</h1>
 {% endif %}
-<!-- Display existing lectures -->
+
 {% if classes %}
 <div class="class-list ">
     {% for class in classes %}
@@ -114,7 +111,6 @@ Meine Vorlesungen – Vorlesungschatbot
                 {% endif %}
             </div>
 
-             <!-- Action buttons (PDF, Chat, Delete) -->
             <div class="d-flex justify-content-end gap-2 mt-3">
                 {% if user.role in ['admin', 'professor'] %}
                 <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary btn-sm" title="PDF-Übersicht">
@@ -138,7 +134,6 @@ Meine Vorlesungen – Vorlesungschatbot
     {% endfor %}
 </div>
 {% else %}
-<!-- Fallback messages depending on user role -->
     {% if user.role == 'student' %}
         <p>Du bist aktuell in keiner Vorlesung eingeschrieben.</p>
         <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
@@ -156,10 +151,8 @@ Meine Vorlesungen – Vorlesungschatbot
 
 {% block extra_js %}
 <script>
-    // Wait for DOM to fully load before running logic
 document.addEventListener('DOMContentLoaded', async function () {
-    
-    // Load courses from API and populate checkboxes
+    // Kurse laden & Checkboxen erzeugen
     try {
         const response = await fetch('/api/courses');
         const data = await response.json();
@@ -190,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Fehler beim Laden der Kurse:', error);
     }
 
-    // Load professors from API and populate dropdown
+    // Dozenten laden
     try {
         const response = await fetch('/api/professors');
         const data = await response.json();

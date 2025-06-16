@@ -8,31 +8,31 @@ Anmelden - Vorlesungschatbot
 <div class="auth-container">
 <h1>Anmelden</h1>
  
-    <!-- Error message -->
-    <div class="error-message" id="error-message" style="display: none;"></div>
+    <!-- Fehlermeldung -->
+<div class="error-message" id="error-message" style="display: none;"></div>
  
     {% if request.query_params.get('registered') == 'true' %}
-        <div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
+<div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
     {% endif %}
  
- <!-- Login-form -->
+    <!-- Login-Formular -->
 <form id="login-form" class="auth-form">
-    <div class="form-group">
-    <label for="username">Benutzername:</label>
-    <input type="username" id="username" name="username" required>
-    </div>
-    
-    <div class="form-group">
-    <label for="password">Passwort:</label>
-    <input type="password" id="password" name="password" required>
-    </div>
-    
-    <button type="submit" class="btn btn-primary">Anmelden</button>
-            
-    </div>
+<div class="form-group">
+<label for="username">Benutzername:</label>
+<input type="username" id="username" name="username" required>
+</div>
+ 
+        <div class="form-group">
+<label for="password">Passwort:</label>
+<input type="password" id="password" name="password" required>
+</div>
+ 
+        <button type="submit" class="btn btn-primary">Anmelden</button>
+        
+</div>
 </form>
  
-<!-- Link to registration page -->
+    <!-- Registrierung-Link -->
 <div class="auth-links">
 <p>Noch kein Konto? <a href="/register">Registrieren</a></p>
 </div>
@@ -41,8 +41,6 @@ Anmelden - Vorlesungschatbot
  
 {% block extra_js %}
 <script>
-
-    // Handle login form submission
         document.getElementById('login-form').addEventListener('submit', async function(e) {
         e.preventDefault();
  
@@ -66,14 +64,13 @@ Anmelden - Vorlesungschatbot
                 return;
             }
  
-            // Store access token in localStorage
+            // Token im localStorage speichern
             localStorage.setItem('accessToken', data.access_token);
  
-            // Redirect to course overview on success
+            // Weiterleitung nach erfolgreichem Login
             window.location.href = '/classes';
  
         } catch (error) {
-            // General error handling
             errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
             errorMessage.style.display = 'block';
             console.error('Anmeldefehler:', error);

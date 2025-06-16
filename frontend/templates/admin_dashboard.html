@@ -5,17 +5,17 @@ Admin-Dashboard – Vorlesungschatbot
 {% endblock %}
 
 {% block content %}
-<!-- Container for the entire dashboard -->
+<!-- Container für das gesamte Dashboard -->
 <div class="dashboard-container">
     
-    <!-- Dashboard heading -->
+    <!-- Überschrift des Dashboards -->
     <h1 class="dashboard-title">Administrator-Dashboard</h1>
     <p class="dashboard-subtitle">Wählen Sie einen Bereich, den Sie verwalten möchten:</p>
 
-    <!-- Grid layout for management cards -->
+    <!-- Grid-Layout für die Verwaltungskarten -->
     <div class="admin-grid">
     
-    <!-- Card: Professors -->
+    <!-- Karte: Professor:innen -->
     <div class="admin-card">
         <h2>Professor:innen</h2>
         <p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
@@ -24,7 +24,7 @@ Admin-Dashboard – Vorlesungschatbot
         </a>
     </div>
 
-    <!-- Card: Lectures -->
+    <!-- Karte: Vorlesungen -->
     <div class="admin-card">
         <h2>Vorlesungen</h2>
         <p>Alle Vorlesungen im System. Erstellen, zuordnen oder entfernen.</p>
@@ -34,7 +34,7 @@ Admin-Dashboard – Vorlesungschatbot
     </div>
 
 
-    <!-- Card: Course Management -->
+    <!-- Karte: Studiengangverwaltung -->
     <div class="admin-card">
         <h2>Kursverwaltung</h2>
         <p>Alle Kurse im System. Erstellen, zuordnen oder entfernen.</p>
@@ -43,7 +43,7 @@ Admin-Dashboard – Vorlesungschatbot
         </a>
     </div>
 
-    <!-- Card: Chat Histories -->
+    <!-- Karte: Chathistorien -->
     <div class="admin-card">
         <h2>Chathistorien</h2>
         <p>Alle gestellten Fragen pro Kurs anonymisiert einsehen.</p>
@@ -56,24 +56,20 @@ Admin-Dashboard – Vorlesungschatbot
 
 </div>
 
-<!-- Optional script to protect the back button behavior -->
+<!-- Optionales Skript zur Absicherung des Zurück-Buttons -->
 <script>
 (function() {
     const referrer = document.referrer;
     const isFromLogin = referrer.includes('/login/');
 
-
-    // Prevent back navigation immediately after login
     if (isFromLogin) {
         window.history.replaceState({ page: 'dashboard' }, '', window.location.href);
     }
 
-    // Push state to manage navigation flow
     setTimeout(function() {
         window.history.pushState({ page: 'dashboard' }, '', window.location.href);
     }, 100);
 
-     // Handle browser back button
     window.addEventListener('popstate', function(e) {
         const wantsToLeave = confirm('Möchten Sie sich abmelden? Wenn Sie auf "Abbrechen" klicken, bleiben Sie angemeldet.');
         if (wantsToLeave) {
