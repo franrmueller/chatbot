@@ -83,6 +83,8 @@ async def student_register_page(request: Request):
 async def legacy_login_redirect(request: Request):
     return RedirectResponse(url="/login/student", status_code=302)
 
+
+
 @app.get("/login_professors", response_class=HTMLResponse)
 async def legacy_professor_login_redirect(request: Request):
     return RedirectResponse(url="/login/professor", status_code=302)
@@ -113,7 +115,7 @@ async def student_dashboard(request: Request):
 async def admin_add_class(
     request: Request,
     name: str = Form(...),
-    course: list = Form(...),  # This will now be a list
+    courses: list[str] = Form(...),  # This will now be a list
     taught_by: str = Form(...)
 ):
     user = await verify_role(request, ["admin"])
@@ -123,7 +125,7 @@ async def admin_add_class(
     # Insert new class into DB with multiple courses
     success, message = db.add_class({
         "name": name,
-        "course_ids": course,  # Changed from course_id to course_ids
+        "course_ids": courses,  # Changed from course_id to course_ids
         "taught_by": taught_by
     })
 
@@ -138,12 +140,12 @@ async def admin_add_class(
         "success" if success else "error": message
     })
 
-# Password Reset
-SECURITY_QUESTIONS = [
-    "Was ist der Name deines ersten Haustiers?",
-    "In welcher Stadt bist du geboren?",
-    "Wie lautet der Mädchenname deiner Mutter?"
-]
+# # Password Reset
+# SECURITY_QUESTIONS = [
+#     "Was ist der Name deines ersten Haustiers?",
+#     "In welcher Stadt bist du geboren?",
+#     "Wie lautet der Mädchenname deiner Mutter?"
+# ]
 # Add these routes to your existing FastAPI application
 
 # @app.post("/api/password-reset/verify")

@@ -232,25 +232,20 @@ def login_professor(username, password):
     return None
 
 # Register a new student
-# Register a new student
+
 def register_student(student_data):
     try:
-        required_fields = ["username", "password", "first_name", "last_name"]
+        required_fields = ["username", "password"]
         for field in required_fields:
             if field not in student_data or not student_data[field]:
                 raise HTTPException(status_code=400, detail=f"Pflichtfeld fehlt: {field}")
         
         username = student_data["username"]
         password = pwd_context.hash(student_data["password"])
-        first_name = student_data["first_name"]
-        last_name = student_data["last_name"]
         course_id = student_data["course_id"]
         created_at = datetime.now()
         
-        # Get security answers (hash them for security)
-        security_answer1 = pwd_context.hash(student_data.get("security_answer1", "")) if student_data.get("security_answer1") else None
-        security_answer2 = pwd_context.hash(student_data.get("security_answer2", "")) if student_data.get("security_answer2") else None
-        security_answer3 = pwd_context.hash(student_data.get("security_answer3", "")) if student_data.get("security_answer3") else None
+    
 
         connection = sql_connect()
         cursor = connection.cursor(dictionary=True)
@@ -262,19 +257,15 @@ def register_student(student_data):
 
         # Insert new student with security answers
         query = """
-            INSERT INTO students (username, password, first_name, last_name, course, created_at,
-                                 security_answer1, security_answer2, security_answer3)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO students (username, password, course, created_at)
+            VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (username, password, first_name, last_name, course_id, created_at,
-                              security_answer1, security_answer2, security_answer3))
+        cursor.execute(query, (username, password, course_id, created_at))
         connection.commit()
 
         return {
             "id": cursor.lastrowid,
             "username": username,
-            "first_name": first_name,
-            "last_name": last_name,
             "role": "student"
         }
 
@@ -286,77 +277,77 @@ def register_student(student_data):
         if connection:
             connection.close()
 
-def verify_student_security_answers(username, answers):
-    """Verify a student's security answers"""
-    connection = None
-    cursor = None
-    try:
-        connection = sql_connect()
-        cursor = connection.cursor(dictionary=True)
+# def verify_student_security_answers(username, answers):
+#     """Verify a student's security answers"""
+#     connection = None
+#     cursor = None
+#     try:
+#         connection = sql_connect()
+#         cursor = connection.cursor(dictionary=True)
         
-        # Get the student's stored security answers
-        cursor.execute("SELECT security_answer1, security_answer2, security_answer3 FROM students WHERE username = %s", 
-                      (username,))
-        student = cursor.fetchone()
+#         # Get the student's stored security answers
+#         cursor.execute("SELECT security_answer1, security_answer2, security_answer3 FROM students WHERE username = %s", 
+#                       (username,))
+#         student = cursor.fetchone()
         
-        if not student:
-            return False, "Student not found"
+#         if not student:
+#             return False, "Student not found"
         
-        # Check if any answers are missing
-        if not all([student['security_answer1'], student['security_answer2'], student['security_answer3']]):
-            return False, "Security answers not set up for this student"
+#         # Check if any answers are missing
+#         if not all([student['security_answer1'], student['security_answer2'], student['security_answer3']]):
+#             return False, "Security answers not set up for this student"
         
-        # Verify each answer
-        is_valid = (
-            pwd_context.verify(answers[0], student['security_answer1']) and
-            pwd_context.verify(answers[1], student['security_answer2']) and
-            pwd_context.verify(answers[2], student['security_answer3'])
-        )
+#         # Verify each answer
+#         is_valid = (
+#             pwd_context.verify(answers[0], student['security_answer1']) and
+#             pwd_context.verify(answers[1], student['security_answer2']) and
+#             pwd_context.verify(answers[2], student['security_answer3'])
+#         )
         
-        if is_valid:
-            return True, "Security answers verified"
-        else:
-            return False, "Incorrect security answers"
+#         if is_valid:
+#             return True, "Security answers verified"
+#         else:
+#             return False, "Incorrect security answers"
             
-    except Exception as e:
-        logging.error(f"Error verifying security answers: {str(e)}")
-        return False, f"Error: {str(e)}"
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+#     except Exception as e:
+#         logging.error(f"Error verifying security answers: {str(e)}")
+#         return False, f"Error: {str(e)}"
+#     finally:
+#         if cursor:
+#             cursor.close()
+#         if connection:
+#             connection.close()
 
-def reset_student_password(username, new_password):
-    """Reset a student's password after security verification"""
-    connection = None
-    cursor = None
-    try:
-        connection = sql_connect()
-        cursor = connection.cursor()
+# def reset_student_password(username, new_password):
+#     """Reset a student's password after security verification"""
+#     connection = None
+#     cursor = None
+#     try:
+#         connection = sql_connect()
+#         cursor = connection.cursor()
         
-        # Hash the new password
-        password_hash = pwd_context.hash(new_password)
+#         # Hash the new password
+#         password_hash = pwd_context.hash(new_password)
         
-        # Update the student's password
-        cursor.execute("UPDATE students SET password = %s WHERE username = %s", 
-                      (password_hash, username))
+#         # Update the student's password
+#         cursor.execute("UPDATE students SET password = %s WHERE username = %s", 
+#                       (password_hash, username))
         
-        connection.commit()
+#         connection.commit()
         
-        if cursor.rowcount > 0:
-            return True, "Password reset successfully"
-        else:
-            return False, "Student not found"
+#         if cursor.rowcount > 0:
+#             return True, "Password reset successfully"
+#         else:
+#             return False, "Student not found"
             
-    except Exception as e:
-        logging.error(f"Error resetting password: {str(e)}")
-        return False, f"Error: {str(e)}"
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
+#     except Exception as e:
+#         logging.error(f"Error resetting password: {str(e)}")
+#         return False, f"Error: {str(e)}"
+#     finally:
+#         if cursor:
+#             cursor.close()
+#         if connection:
+#             connection.close()
 
             
 # Authentication function to get user by session token

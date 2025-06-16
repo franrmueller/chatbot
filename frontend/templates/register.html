@@ -48,11 +48,11 @@ Registrieren - Vorlesungschatbot
             <input type="password" id="confirm-password" name="confirm-password" required minlength="8">
         </div>
 
-        <!-- Sicherheitsfragen für Passwort-Wiederherstellung -->
+        <!-- Sicherheitsfragen für Passwort-Wiederherstellung
         <h3>Sicherheitsfrage</h3>
-    <p class="form-info">Wähle eine Sicherheitsfrage und gib die Antwort ein. Diese wird verwendet, um dein Passwort zurückzusetzen.</p>
+    <p class="form-info">Wähle eine Sicherheitsfrage und gib die Antwort ein. Diese wird verwendet, um dein Passwort zurückzusetzen.</p> -->
 
-    <div class="form-group">
+    <!-- <div class="form-group">
         <label for="security-question">Frage auswählen:</label>
         <select id="security-question" name="security-question" class="form-control" required>
             <option value="" disabled selected>Bitte wähle eine Frage</option>
@@ -65,7 +65,7 @@ Registrieren - Vorlesungschatbot
     <div class="form-group">
         <label for="security-answer">Deine Antwort:</label>
         <input type="text" id="security-answer" name="security-answer" class="form-control" required placeholder="Antwort eingeben">
-    </div>
+    </div> -->
 
 
         <button type="submit" class="btn btn-primary">Registrieren</button>
@@ -111,14 +111,11 @@ Registrieren - Vorlesungschatbot
         }
 
         const userData = {
-            first_name: document.getElementById('first-name').value,
-            last_name: document.getElementById('last-name').value,
             username: document.getElementById('username').value,
             password: password,
             course_id: document.getElementById('course').value,
-            role: "student", // ✅ hinzugefügt, damit Kurs gespeichert wird
-            security_question: document.getElementById('security-question').value,
-            security_answer: document.getElementById('security-answer').value
+            role: "student" // ✅ hinzugefügt, damit Kurs gespeichert wird
+            
 
         };
 
