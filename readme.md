@@ -1,5 +1,7 @@
 # Technische Dokumentation – Vorlesungschatbot DE
 
+**🇬🇧 [Jump to English Version](#technical-documentation--vorlesungschatbot-en)**
+
 ## Inhaltsverzeichnis
 
 1. [Überblick](#überblick)
