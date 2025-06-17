@@ -96,7 +96,7 @@ Meine Vorlesungen – Vorlesungschatbot
                 <p class-meta mb-1"><strong>Studiengänge:</strong>
                     {% if class.courses %}
                         {% for course in class.courses %}
-                            {{ course.course }}{% if not loop.last %}, {% endif %}
+                            {{ course.course_name }}{% if not loop.last %}, {% endif %}
                         {% endfor %}
                     {% else %}
                         {{ class.course_name }}
