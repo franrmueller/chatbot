@@ -1,28 +1,15 @@
-<!--
-# Base Template (Layout for all pages)
- 
-This template defines the common structure used by all other pages.
-Includes header navigation, main content area, and footer.
-Provides blocks for page-specific content, title, extra CSS, and extra JavaScript.
--->
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Set the page title dynamically -->
 <title>{% block title %}Vorlesungschatbot{% endblock %}</title>
  
-    <!-- Link to main CSS file -->
 <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-
-
- 
-    <!-- Placeholder for extra CSS that individual pages can inject -->
-    {% block extra_css %}{% endblock %}
+{% block extra_css %}{% endblock %}
 </head>
  
 <body>
@@ -33,7 +20,7 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
     {% if user.role == 'admin' %}
         <a href="/admin/dashboard">Vorlesungschatbot</a>
     {% elif user.role == 'professor' %}
-        <a href="/professor/dashboard">Vorlesungschatbot</a>
+        <a href="/classes">Vorlesungschatbot</a>
     {% elif user.role == 'student' %}
         <a href="/classes">Vorlesungschatbot</a>
     {% else %}
@@ -44,62 +31,49 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
 {% endif %}
 </div>
 
-<!-- Navigation links depending on user role -->
 <div class="nav-links">
-            {% if user %}
-                {% if user.role == 'admin' %}
-<a href="/admin/dashboard">Dashboard</a>
-<a href="/classes">Vorlesungen</a>
-<a href="/admin/courses">Kurse</a>
-<a href="/admin/professors">Professor:innen</a>
-<a href="/admin/students">Studierende</a>
-<a href="/admin/chathistory">Chathistorie</a>
-                {% elif user.role == 'professor' %}
-<a href="/classes">Meine Kurse</a>
-                {% elif user.role == 'student' %}
-<a href="/classes">Meine belegten Kurse</a>
-                {% endif %}
-<a href="/change/password">Passwort ändern</a>
-<a href="/auth/logout">Abmelden</a>
-<a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>
-
-            {% else %}
-<a href="/login">Anmelden</a>
-
-<a href="/classes">Meine belegten Kurse</a>                {% endif %}
-<a href="/auth/logout" onclick="confirmLogout(event)">Abmelden</a>
-<a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>            {% else %}
-<a href="/login/student">Anmelden (Student)</a>
-<a href="/login/professor">Anmelden (Professor)</a>
-<a href="/register">Registrieren</a>
-            {% endif %}
+    {% if user %}
+        {% if user.role == 'admin' %}
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/classes">Vorlesungen</a>
+            <a href="/admin/courses">Kurse</a>
+            <a href="/admin/professors">Professor:innen</a>
+            <a href="/admin/students">Studierende</a>
+            <a href="/admin/chathistory">Chathistorie</a>
+        {% elif user.role == 'professor' %}
+            <a href="/classes">Meine Kurse</a>
+        {% elif user.role == 'student' %}
+            <a href="/classes">Meine belegten Kurse</a>
+        {% endif %}
+        <a href="/change/password">Passwort ändern</a>
+        <a href="/auth/logout" onclick="confirmLogout(event)">Abmelden</a>
+        <a href="#" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>
+    {% else %}
+        <a href="/login/student" onclick="checkLoginRedirect(event, this)">Anmelden (Student)</a>
+        <a href="/login/professor" onclick="checkLoginRedirect(event, this)">Anmelden (Professor)</a>
+        <a href="/register/student" onclick="checkLoginRedirect(event, this)">Registrieren</a>
+    {% endif %}
 </div>
 </nav>
 </header>
  
-<!-- Main page content will be inserted here -->
 <main>
     {% block content %}{% endblock %}
 </main>
  
 <footer>
-<!-- Static footer text -->
 <p>&copy; 2025 Vorlesungschatbot</p>
 </footer>
  
-<!-- Link to main JavaScript file -->
 <script src="{{ url_for('static', path='js/main.js') }}"></script>
  
-<!-- Placeholder for extra JavaScript that individual pages can inject -->
 {% block extra_js %}{% endblock %}
-
 
 <script>
 function confirmLogout(event) {
     event.preventDefault();
     
     if (confirm("Möchten Sie sich wirklich abmelden?")) {
-        // If confirmed, proceed with logout
         window.location.href = "/auth/logout";
     }
 }
@@ -118,7 +92,6 @@ function confirmAccountDeletion(event) {
     .then(async (response) => {
         const result = await response.json();
 
-        // Alte Meldung entfernen
         const oldAlert = document.getElementById("account-delete-alert");
         if (oldAlert) oldAlert.remove();
 
@@ -130,49 +103,41 @@ function confirmAccountDeletion(event) {
         const main = document.querySelector("main");
         main.parentNode.insertBefore(alert, main);
 
-        // Wenn erfolgreich gelöscht, leite auf Startseite mit ?deleted=1 weiter
-
-if (result.success) {
-    // Nur Weiterleitung ohne vorherige Einblendung
-    window.location.href = "/?deleted=1";
-}
-
-
+        if (result.success) {
+            window.location.href = "/?deleted=1";
+        }
     })
     .catch(() => {
         alert("Ein Fehler ist aufgetreten.");
     });
 }
 
-// Add event listeners when page loads
+function checkLoginRedirect(event, element) {
+    {% if user %}
+    event.preventDefault();
+    if (confirm("Sie sind bereits angemeldet. Möchten Sie sich abmelden und zur Anmeldeseite zurückkehren?")) {
+        fetch("/auth/logout", {
+            method: "GET",
+            credentials: "same-origin"
+        })
+        .then(() => {
+            window.location.href = element.href;
+        })
+        .catch(() => {
+            window.location.href = element.href;
+        });
+    }
+    {% endif %}
+}
+
+// Auto-redirect logged-in users from login pages
 document.addEventListener('DOMContentLoaded', function() {
     {% if user %}
-    // If user is logged in, add confirmation to login links
-    const loginLinks = document.querySelectorAll('a[href^="/login"]');
-    loginLinks.forEach(link => {
-        link.addEventListener('click', function(event) {
-            event.preventDefault();
-            if (confirm("Sie sind bereits angemeldet. Möchten Sie sich abmelden und zur Anmeldeseite zurückkehren?")) {
-                // First logout, then redirect to login page
-                fetch("/auth/logout", {
-                    method: "GET",
-                    credentials: "same-origin"
-                })
-                .then(() => {
-                    window.location.href = this.href;
-                })
-                .catch(() => {
-                    window.location.href = this.href;
-                });
-            }
-        });
-    });
-    
-    // Prevent back navigation to login pages for logged-in users
     const currentPath = window.location.pathname;
-    if (currentPath.startsWith('/login')) {
-        // If a logged-in user somehow reaches a login page, redirect them
-        let redirectUrl = '/classes'; // default
+    const loginPaths = ['/login', '/login/student', '/login/professor', '/register', '/register/student'];
+    
+    if (loginPaths.includes(currentPath)) {
+        let redirectUrl = '/classes';
         {% if user.role == 'admin' %}
         redirectUrl = '/admin/dashboard';
         {% elif user.role == 'professor' %}
@@ -181,29 +146,8 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.replace(redirectUrl);
     }
     {% endif %}
-    
-    // General back button handling for protected pages
-    {% if user %}
-    // Add history manipulation to prevent accidental back navigation to login
-    const protectedPages = ['/classes', '/admin/dashboard', '/chat/', '/pdf'];
-    const isProtectedPage = protectedPages.some(page => window.location.pathname.startsWith(page));
-    
-    if (isProtectedPage) {
-        // Check if we came from a login page
-        const referrer = document.referrer;
-        const isFromLogin = referrer.includes('/login') || referrer.includes('/register');
-        
-        if (isFromLogin) {
-            // Replace the history entry to prevent back navigation to login
-            history.replaceState({preventBack: true}, null, window.location.href);
-        }
-    }
-    {% endif %}
 });
-
 </script>
-
-
 
 </body>
 </html>
