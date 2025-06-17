@@ -923,13 +923,16 @@ async def delete_user(request: Request):
     else:
         return JSONResponse({"success": False, "message": "Fehler beim Löschen deines Kontos."}, status_code=500)
     
+# =========================================
+# Change Password
+# =========================================
 
-
-
-@app.get("/change- password", response_class=HTMLResponse)
+@app.get("/change/password", response_class=HTMLResponse)
 async def change_password_page(request: Request):
-    return templates.TemplateResponse("change_password.html", {"request": request})
-
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return templates.TemplateResponse("change_password.html", {"request": request, "user": user})
 
 @app.post("/change/password", response_class=HTMLResponse)
 async def change_password_action(
@@ -939,37 +942,46 @@ async def change_password_action(
     new_password: str = Form(...),
     confirm_password: str = Form(...)
 ):
-    user = db.get_user_by_username(username)
-    if not user:
+    # Get the current user for template context
+    user = await get_current_user(request)
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Get the user by username for password verification
+    target_user = db.get_user_by_username(username)
+    if not target_user:
         return templates.TemplateResponse("change_password.html", {
             "request": request,
+            "user": user,
             "error": "Benutzer nicht gefunden."
         })
 
-    if not db.pwd_context.verify(old_password, user["password"]):
+    if not db.pwd_context.verify(old_password, target_user["password"]):
         return templates.TemplateResponse("change_password.html", {
             "request": request,
+            "user": user,
             "error": "Aktuelles Passwort ist falsch."
         })
 
     if new_password != confirm_password:
         return templates.TemplateResponse("change_password.html", {
             "request": request,
+            "user": user,
             "error": "Neue Passwörter stimmen nicht überein."
         })
 
     if new_password == old_password:
         return templates.TemplateResponse("change_password.html", {
             "request": request,
+            "user": user,
             "error": "Neues Passwort darf nicht dem alten Passwort entsprechen."
         })
-
-    # Hier kannst du weitere Prüfungen einfügen, z. B. Mindestlänge, Sonderzeichen etc.
 
     hashed_new_password = db.pwd_context.hash(new_password)
     db.update_user_password(username, hashed_new_password)
 
     return templates.TemplateResponse("change_password.html", {
         "request": request,
+        "user": user,
         "success": "Passwort erfolgreich geändert."
     })

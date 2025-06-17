@@ -1164,16 +1164,37 @@ def count_students_per_course():
     return {row["course"]: row["count"] for row in result}
 
 def get_user_by_username(username):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM professors WHERE username = %s", (username,))
-    user = cursor.fetchone()
-    cursor.close()
-    connection.close()
-    return user
+    """Get user from either students or professors table"""
+    connection = None
+    cursor = None
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor(dictionary=True)
+        
+        # First check professors table (includes admin and professor roles)
+        cursor.execute("SELECT username, password, role FROM professors WHERE username = %s", (username,))
+        user = cursor.fetchone()
+        
+        if user:
+            return user
+            
+        # If not found in professors, check students table
+        cursor.execute("SELECT username, password, 'student' as role FROM students WHERE username = %s", (username,))
+        user = cursor.fetchone()
+        
+        return user
+        
+    except Exception as e:
+        logging.error(f"Error getting user by username: {str(e)}")
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 
 # Chat History
-
 def save_chat_history(user_id, class_id, question, answer):
     """Save a chat interaction to the history and to JSON file"""
     connection = None
