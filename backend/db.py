@@ -1396,3 +1396,13 @@ def delete_chat_history_for_class(class_id):
             os.rmdir(chats_dir)
         except Exception as e:
             logging.error(f"Error removing chat directory: {chats_dir} - {str(e)}")
+
+
+
+def update_user_password(username, hashed_password):
+    conn = sql_connect()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET password=%s WHERE username=%s", (hashed_password, username))
+    conn.commit()
+    cursor.close()
+    conn.close()
