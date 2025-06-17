@@ -253,7 +253,7 @@ def register_student(student_data):
         # Insert new student with security answers
         query = """
             INSERT INTO students (username, password, course, created_at)
-            VALUES (%s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s)
         """
         cursor.execute(query, (username, password, course_id, created_at))
         connection.commit()
