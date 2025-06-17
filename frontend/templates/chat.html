@@ -89,6 +89,7 @@ Chat – Vorlesung {{ class.name }}
 
     const viewHistoryBtn = document.getElementById('view-history');
     const classId = "{{ class.id }}";
+    
  
     // Funktion zum Hinzufügen von Nachrichten ins Fenster
     function appendMessage(sender, text) {
@@ -111,6 +112,8 @@ Chat – Vorlesung {{ class.name }}
     function loadSessionChat() {
         const key = `chat-history-${classId}`;
         const history = JSON.parse(sessionStorage.getItem(key) || '[]');
+        const sessionChatHistory = [];  // ← Speichert Verlauf für die aktuelle Session & Vorlesung
+
         history.forEach(entry => {
             appendMessage(entry.sender, entry.text);
         });
@@ -148,7 +151,6 @@ Chat – Vorlesung {{ class.name }}
     }
 
     
-
     // Abschicken des Prompts
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -156,6 +158,8 @@ Chat – Vorlesung {{ class.name }}
         if (!question) return;
  
         appendMessage('user', question);
+        // sessionChatHistory.push({ role: 'user', text: question });
+
         userInput.value = '';
  
         try {
@@ -167,8 +171,11 @@ Chat – Vorlesung {{ class.name }}
  
             const data = await response.json();
             appendMessage('Vorlesungschatbot', data.answer);
+           // sessionChatHistory.push({ role: 'bot', text: data.answer });
+
         } catch (error) {
             appendMessage('Vorlesungschatbot', 'Fehler beim Abrufen der Antwort.');
+           // sessionChatHistory.push({ role: 'bot', text: 'Fehler beim Abrufen der Antwort.' });
             console.error(error);
         }
     });
