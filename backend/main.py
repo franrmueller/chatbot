@@ -58,8 +58,7 @@ async def verify_role(request: Request, allowed_roles: list):
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {
-        "request": request,
-        "deleted": request.query_params.get("deleted")
+        "request": request
     })
 
 
@@ -362,29 +361,20 @@ async def admin_delete_professor(request: Request, professor_username: str):
     user = await verify_role(request, ["admin"])
     
     if isinstance(user, RedirectResponse):
-        return user
-    # Prüfe ob Zielnutzer existiert
+        return user    # Prüfe ob Zielnutzer existiert
     target = db.get_user_by_username(professor_username)
     if not target:
-        return RedirectResponse(url="/admin/professors?error=Benutzer nicht gefunden", status_code=303)
+        return RedirectResponse(url="/admin/professors", status_code=303)
 
     # Admins dürfen keine Admins löschen
     if target.get("role") == "admin":
-        return RedirectResponse(url="/admin/professors?error=Administratoren können nicht gelöscht werden.", status_code=303)
+        return RedirectResponse(url="/admin/professors", status_code=303)
 
     
     success, message = db.delete_professor(professor_username)
 
-    if success:
-        return RedirectResponse(
-            url=f"/admin/professors?success={message}",
-            status_code=303
-        )
-    else:
-        return RedirectResponse(
-            url=f"/admin/professors?error={message}",
-            status_code=303
-        )
+    # Clean redirect without exposing action details
+    return RedirectResponse(url="/admin/professors", status_code=303)
 
 # Add edit professor functionality
 @app.get("/admin/professors/edit/{professor_username}", response_class=HTMLResponse)
@@ -438,10 +428,7 @@ async def update_professor(
     cursor.close()
     connection.close()
 
-    return RedirectResponse(
-        url="/admin/professors?success=Benutzer erfolgreich aktualisiert.",
-        status_code=303
-    )
+    return RedirectResponse(url="/admin/professors", status_code=303)
 
 
 
@@ -561,14 +548,8 @@ async def admin_delete_class(request: Request, class_id: int):
     # Use the db function for deletion
     success, message = db.delete_class(class_id)
 
-    # Reload classes for display
-    classes = db.get_all_classes()
-    return templates.TemplateResponse("classes.html", {
-        "request": request,
-        "user": user,
-        "classes": classes,
-        "success" if success else "error": message
-    })
+    # Clean redirect without exposing action details
+    return RedirectResponse(url="/classes", status_code=303)
 
 # =========================================
 # PDFs
@@ -642,16 +623,7 @@ async def delete_pdf(request: Request, pdf_id: int):
     class_id = db.get_class_id_by_pdf(pdf_id)
     rag.delete_vectors_for_pdf(pdf_id)
     db.delete_pdf(pdf_id)
-    pdfs = db.get_pdfs_for_class(class_id)
-    cls = db.get_class_by_id(class_id)
-    return templates.TemplateResponse("pdf.html", {
-        "request": request,
-        "user": user,
-        "pdfs": pdfs,
-        "class_id": class_id,
-        "course": cls,
-        "success": "PDF erfolgreich gelöscht."
-    })
+    return RedirectResponse(url="/pdf", status_code=303)
 
 
 # =========================================
@@ -713,16 +685,11 @@ async def api_admin_chathistory(course_id: str):
 async def admin_reset_chathistory(request: Request, class_id: int):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
-        return user
-
-    # Delete from DB and JSON
+        return user    # Delete from DB and JSON
     db.delete_chat_history_for_class(class_id)
 
-    # Redirect back to chathistory page for this class
-    return RedirectResponse(
-        url=f"/admin/chathistory?class_id={class_id}",
-        status_code=303
-    )
+    # Clean redirect back to chathistory page
+    return RedirectResponse(url="/admin/chathistory", status_code=303)
 
 
 # =========================================	
@@ -782,21 +749,13 @@ async def admin_add_course(
 ):
     user = await verify_role(request, ["admin"])
 
-    all_courses = db.get_all_courses()
-
-    # Prüfung: ID schon vergeben?
+    all_courses = db.get_all_courses()    # Prüfung: ID schon vergeben?
     if any(c["id"].lower() == id.lower() for c in all_courses):
-        return RedirectResponse(
-            url="/admin/courses?error=Diese Kurs-ID existiert bereits.",
-            status_code=303
-        )
+        return RedirectResponse(url="/admin/courses", status_code=303)
 
     # Prüfung: Name schon vergeben?
     if any(c["name"].lower() == name.lower() for c in all_courses):
-        return RedirectResponse(
-            url="/admin/courses?error=Diese Kursbeschreibung existiert bereits.",
-            status_code=303
-        )
+        return RedirectResponse(url="/admin/courses", status_code=303)
 
     db.add_course({
         "id": id,
@@ -805,10 +764,7 @@ async def admin_add_course(
         "professor": professor
     })
 
-    return RedirectResponse(
-        url="/admin/courses?success=Kurs erfolgreich hinzugefügt.",
-        status_code=303
-    )
+    return RedirectResponse(url="/admin/courses", status_code=303)
 
 
 
@@ -823,10 +779,7 @@ async def admin_add_course(
 async def admin_delete_course(request: Request, course_id: str):
     await verify_role(request, ["admin"])
     db.delete_course(course_id)
-    return RedirectResponse(
-    url="/admin/courses?success=Kurs erfolgreich gelöscht.",
-    status_code=303
-)
+    return RedirectResponse(url="/admin/courses", status_code=303)
 
 
 
@@ -857,23 +810,15 @@ async def admin_edit_course(
     course_id: str,
     name: str = Form(...)
 ):
-    await verify_role(request, ["admin"])
-
-    # Prüfung: Gleiche Beschreibung wie bei anderem Kurs?
+    await verify_role(request, ["admin"])    # Prüfung: Gleiche Beschreibung wie bei anderem Kurs?
     all_courses = db.get_all_courses()
     for course in all_courses:
         if course["id"] != course_id and course["name"].lower() == name.lower():
-            return RedirectResponse(
-                url="/admin/courses?error=Diese Kursbeschreibung wird bereits verwendet.",
-                status_code=303
-            )
+            return RedirectResponse(url="/admin/courses", status_code=303)
 
     db.update_course(course_id, name)
 
-    return RedirectResponse(
-        url="/admin/courses?success=Kurs erfolgreich bearbeitet.",
-        status_code=303
-    )
+    return RedirectResponse(url="/admin/courses", status_code=303)
 
 
 @app.get("/admin/students", response_class=HTMLResponse)
