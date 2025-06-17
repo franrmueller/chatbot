@@ -961,3 +961,55 @@ async def delete_user(request: Request):
         return response
     else:
         return JSONResponse({"success": False, "message": "Fehler beim Löschen deines Kontos."}, status_code=500)
+    
+
+
+
+@app.get("/change/password", response_class=HTMLResponse)
+async def show_change_password_form(request: Request):
+    return templates.TemplateResponse("change_password.html", {"request": request})
+
+
+
+@app.post("/change/password", response_class=HTMLResponse)
+async def change_password_action(
+    request: Request,
+    username: str = Form(...),
+    old_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...)
+):
+    user = db.get_user_by_username(username)
+    if not user:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "Benutzer nicht gefunden."
+        })
+
+    if not db.pwd_context.verify(old_password, user["password"]):
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "Aktuelles Passwort ist falsch."
+        })
+
+    if new_password != confirm_password:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "Neue Passwörter stimmen nicht überein."
+        })
+
+    if new_password == old_password:
+        return templates.TemplateResponse("change_password.html", {
+            "request": request,
+            "error": "Neues Passwort darf nicht dem alten Passwort entsprechen."
+        })
+
+    # Hier kannst du weitere Prüfungen einfügen, z. B. Mindestlänge, Sonderzeichen etc.
+
+    hashed_new_password = db.pwd_context.hash(new_password)
+    db.update_user_password(username, hashed_new_password)
+
+    return templates.TemplateResponse("change_password.html", {
+        "request": request,
+        "success": "Passwort erfolgreich geändert."
+    })

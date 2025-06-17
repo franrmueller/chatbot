@@ -57,6 +57,15 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
                 {% elif user.role == 'professor' %}
 <a href="/classes">Meine Kurse</a>
                 {% elif user.role == 'student' %}
+<a href="/classes">Meine belegten Kurse</a>
+                {% endif %}
+<a href="/change/password">Passwort ändern</a>
+<a href="/auth/logout">Abmelden</a>
+<a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>
+
+            {% else %}
+<a href="/login">Anmelden</a>
+
 <a href="/classes">Meine belegten Kurse</a>                {% endif %}
 <a href="/auth/logout" onclick="confirmLogout(event)">Abmelden</a>
 <a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>            {% else %}
