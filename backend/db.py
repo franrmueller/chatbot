@@ -1395,9 +1395,35 @@ def delete_chat_history_for_class(class_id):
 
 
 def update_user_password(username, hashed_password):
-    conn = sql_connect()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET password=%s WHERE username=%s", (hashed_password, username))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    """
+    Reset a user's password. Takes already hashed password.
+    """
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
+
+        # Update password in students
+        cursor.execute("UPDATE students SET password = %s WHERE username = %s", (hashed_password, username))
+        updated = cursor.rowcount
+
+        # Falls kein Treffer: versuche professors
+        if updated == 0:
+            cursor.execute("UPDATE professors SET password = %s WHERE username = %s", (hashed_password, username))
+            updated = cursor.rowcount
+
+        connection.commit()
+
+        if updated > 0:
+            return True, "Passwort erfolgreich geändert."
+        else:
+            return False, "Benutzer nicht gefunden."
+
+    except Exception as e:
+        logging.error(f"Fehler beim Zurücksetzen des Passworts: {str(e)}")
+        return False, f"Fehler: {str(e)}"
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
