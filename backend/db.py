@@ -918,15 +918,49 @@ def add_class(class_data):
 def delete_class(class_id):
     """Delete a class (Vorlesung) and its documents from the database."""
     connection = sql_connect()
-    cursor = connection.cursor()
+    cursor = connection.cursor(dictionary=True)
     try:
-        # Optionally delete documents first if ON DELETE CASCADE is not set
+        # First, get all documents for this class to clean up files and vectors
+        cursor.execute("SELECT id, file_path FROM documents WHERE class_id = %s", (class_id,))
+        documents = cursor.fetchall()
+        
+        # Delete vectors from Neo4j and physical files for each document
+        for doc in documents:
+            try:
+                # Import rag module to delete vectors
+                import backend.rag as rag
+                rag.delete_vectors_for_pdf(doc['id'])
+                
+                # Delete physical file if it exists
+                if doc['file_path'] and os.path.exists(doc['file_path']):
+                    os.remove(doc['file_path'])
+                    logging.info(f"Deleted file: {doc['file_path']}")
+            except Exception as e:
+                logging.error(f"Error cleaning up document {doc['id']}: {str(e)}")
+        
+        # Delete documents from database
         cursor.execute("DELETE FROM documents WHERE class_id = %s", (class_id,))
+          # Delete chat history for this class
+        cursor.execute("DELETE FROM chat_history WHERE class_id = %s", (class_id,))
+        
+        # Delete JSON chat files for this class
+        chats_dir = os.path.join(os.getcwd(), 'chats', f'class_{class_id}')
+        if os.path.exists(chats_dir):
+            import shutil
+            shutil.rmtree(chats_dir)
+            logging.info(f"Deleted chat directory: {chats_dir}")
+        
+        # Delete class-course relationships
+        cursor.execute("DELETE FROM class_courses WHERE class_id = %s", (class_id,))
+        
+        # Finally delete the class itself
         cursor.execute("DELETE FROM classes WHERE id = %s", (class_id,))
+        
         connection.commit()
         return True, "Vorlesung erfolgreich gelöscht."
     except Exception as e:
         logging.error(f"Error deleting class: {str(e)}")
+        connection.rollback()
         return False, f"Fehler beim Löschen: {str(e)}"
     finally:
         cursor.close()
