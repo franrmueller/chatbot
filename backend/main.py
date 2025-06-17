@@ -66,55 +66,16 @@ async def index(request: Request):
 # Student login
 @app.get("/login/student", response_class=HTMLResponse)
 async def student_login_page(request: Request):
-    # Check if user is already logged in
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        user = db.get_user_by_session(session_token)
-        if user:
-            # User is already logged in, redirect based on role
-            if user.get("role") == "admin":
-                return RedirectResponse(url="/admin/dashboard", status_code=302)
-            elif user.get("role") == "professor":
-                return RedirectResponse(url="/classes", status_code=302)
-            else:  # student
-                return RedirectResponse(url="/classes", status_code=302)
-    
     return templates.TemplateResponse("login.html", {"request": request})
 
 # Professor login
 @app.get("/login/professor", response_class=HTMLResponse)
 async def professor_login_page(request: Request):
-    # Check if user is already logged in
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        user = db.get_user_by_session(session_token)
-        if user:
-            # User is already logged in, redirect based on role
-            if user.get("role") == "admin":
-                return RedirectResponse(url="/admin/dashboard", status_code=302)
-            elif user.get("role") == "professor":
-                return RedirectResponse(url="/classes", status_code=302)
-            else:  # student
-                return RedirectResponse(url="/classes", status_code=302)
-    
     return templates.TemplateResponse("login_professors.html", {"request": request})
 
 # Student registration
 @app.get("/register/student", response_class=HTMLResponse)
 async def student_register_page(request: Request):
-    # Check if user is already logged in
-    session_token = request.cookies.get("session_token")
-    if session_token:
-        user = db.get_user_by_session(session_token)
-        if user:
-            # User is already logged in, redirect based on role
-            if user.get("role") == "admin":
-                return RedirectResponse(url="/admin/dashboard", status_code=302)
-            elif user.get("role") == "professor":
-                return RedirectResponse(url="/classes", status_code=302)
-            else:  # student
-                return RedirectResponse(url="/classes", status_code=302)
-    
     return templates.TemplateResponse("register.html", {"request": request})
 
 # Legacy routes for backward compatibility
@@ -965,10 +926,9 @@ async def delete_user(request: Request):
 
 
 
-@app.get("/change/password", response_class=HTMLResponse)
-async def show_change_password_form(request: Request):
+@app.get("/change- password", response_class=HTMLResponse)
+async def change_password_page(request: Request):
     return templates.TemplateResponse("change_password.html", {"request": request})
-
 
 
 @app.post("/change/password", response_class=HTMLResponse)
