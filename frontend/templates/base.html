@@ -57,14 +57,11 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
                 {% elif user.role == 'professor' %}
 <a href="/classes">Meine Kurse</a>
                 {% elif user.role == 'student' %}
-<a href="/classes">Meine belegten Kurse</a>
-                {% endif %}
-<a href="/auth/logout">Abmelden</a>
-<a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>
-
-            {% else %}
-<a href="/login">Anmelden</a>
-
+<a href="/classes">Meine belegten Kurse</a>                {% endif %}
+<a href="/auth/logout" onclick="confirmLogout(event)">Abmelden</a>
+<a href="/" onclick="confirmAccountDeletion(event)" class="text-danger">Konto löschen</a>            {% else %}
+<a href="/login/student">Anmelden (Student)</a>
+<a href="/login/professor">Anmelden (Professor)</a>
 <a href="/register">Registrieren</a>
             {% endif %}
 </div>
@@ -89,6 +86,15 @@ Provides blocks for page-specific content, title, extra CSS, and extra JavaScrip
 
 
 <script>
+function confirmLogout(event) {
+    event.preventDefault();
+    
+    if (confirm("Möchten Sie sich wirklich abmelden?")) {
+        // If confirmed, proceed with logout
+        window.location.href = "/auth/logout";
+    }
+}
+
 function confirmAccountDeletion(event) {
     event.preventDefault();
 
@@ -128,6 +134,63 @@ if (result.success) {
         alert("Ein Fehler ist aufgetreten.");
     });
 }
+
+// Add event listeners when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    {% if user %}
+    // If user is logged in, add confirmation to login links
+    const loginLinks = document.querySelectorAll('a[href^="/login"]');
+    loginLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            if (confirm("Sie sind bereits angemeldet. Möchten Sie sich abmelden und zur Anmeldeseite zurückkehren?")) {
+                // First logout, then redirect to login page
+                fetch("/auth/logout", {
+                    method: "GET",
+                    credentials: "same-origin"
+                })
+                .then(() => {
+                    window.location.href = this.href;
+                })
+                .catch(() => {
+                    window.location.href = this.href;
+                });
+            }
+        });
+    });
+    
+    // Prevent back navigation to login pages for logged-in users
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/login')) {
+        // If a logged-in user somehow reaches a login page, redirect them
+        let redirectUrl = '/classes'; // default
+        {% if user.role == 'admin' %}
+        redirectUrl = '/admin/dashboard';
+        {% elif user.role == 'professor' %}
+        redirectUrl = '/classes';
+        {% endif %}
+        window.location.replace(redirectUrl);
+    }
+    {% endif %}
+    
+    // General back button handling for protected pages
+    {% if user %}
+    // Add history manipulation to prevent accidental back navigation to login
+    const protectedPages = ['/classes', '/admin/dashboard', '/chat/', '/pdf'];
+    const isProtectedPage = protectedPages.some(page => window.location.pathname.startsWith(page));
+    
+    if (isProtectedPage) {
+        // Check if we came from a login page
+        const referrer = document.referrer;
+        const isFromLogin = referrer.includes('/login') || referrer.includes('/register');
+        
+        if (isFromLogin) {
+            // Replace the history entry to prevent back navigation to login
+            history.replaceState({preventBack: true}, null, window.location.href);
+        }
+    }
+    {% endif %}
+});
 
 </script>
 

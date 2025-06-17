@@ -41,7 +41,35 @@ Anmelden - Vorlesungschatbot
  
 {% block extra_js %}
 <script>
-        document.getElementById('login-form').addEventListener('submit', async function(e) {
+    // Check if user is already logged in when page loads
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            const response = await fetch('/api/auth/check', {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.authenticated) {
+                    // User is already logged in, redirect based on role
+                    let redirectUrl = '/classes'; // default for students
+                    if (data.role === 'admin') {
+                        redirectUrl = '/admin/dashboard';
+                    } else if (data.role === 'professor') {
+                        redirectUrl = '/classes';
+                    }
+                    window.location.replace(redirectUrl); // Use replace to prevent back button issues
+                    return;
+                }
+            }
+        } catch (error) {
+            console.log('Auth check failed:', error);
+            // Continue with normal login page display
+        }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
         e.preventDefault();
  
         const formData = new FormData();
@@ -62,19 +90,33 @@ Anmelden - Vorlesungschatbot
                 errorMessage.textContent = 'Ungültige Benutzername oder Passwort.';
                 errorMessage.style.display = 'block';
                 return;
-            }
- 
-            // Token im localStorage speichern
+            }            // Token im localStorage speichern
             localStorage.setItem('accessToken', data.access_token);
  
-            // Weiterleitung nach erfolgreichem Login
-            window.location.href = '/classes';
- 
-        } catch (error) {
+            // Weiterleitung nach erfolgreichem Login - use replace to prevent back button issues
+            window.location.replace('/classes');        } catch (error) {
             errorMessage.textContent = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.';
             errorMessage.style.display = 'block';
             console.error('Anmeldefehler:', error);
         }
     });
+
+    // Simple back button handler
+    (function() {
+        // Create a history entry when page loads
+        history.pushState(null, null, window.location.href);
+        
+        // Listen for back button
+        window.addEventListener('popstate', function(event) {
+            // Show confirmation dialog
+            if (confirm('Möchten Sie sich abmelden? Wenn Sie auf "Abbrechen" klicken, bleiben Sie angemeldet.')) {
+                // If confirmed, redirect to logout
+                window.location.href = '/auth/logout';
+            } else {
+                // If canceled, stay on page by adding a new history entry
+                history.pushState(null, null, window.location.href);
+            }
+        });
+    })();
 </script>
 {% endblock %}

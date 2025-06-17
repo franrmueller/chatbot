@@ -196,10 +196,37 @@ document.addEventListener('DOMContentLoaded', async function () {
                 profSelect.appendChild(option);
             });
         }
-    } catch (error) {
-        console.error('Fehler beim Laden der Professoren:', error);
+    } catch (error) {        console.error('Fehler beim Laden der Professoren:', error);
     }
 });
+
+// Back button handler to prevent accidental logout
+(function() {
+    // Check if we came from a login page
+    const referrer = document.referrer;
+    const isFromLogin = referrer.includes('/login');
+    
+    if (isFromLogin) {
+        // If we came from login, replace the history entry to prevent back navigation to login
+        history.replaceState(null, null, window.location.href);
+    }
+    
+    // Listen for back button presses
+    window.addEventListener('popstate', function(event) {
+        // If user tries to go back and we detect they might be going to a login page
+        const currentPath = window.location.pathname;
+        if (currentPath === '/classes') {
+            // Show confirmation dialog
+            if (confirm('Möchten Sie sich wirklich abmelden?')) {
+                // If confirmed, redirect to logout
+                window.location.href = '/auth/logout';
+            } else {
+                // If canceled, stay on page by adding a new history entry
+                history.pushState(null, null, window.location.href);
+            }
+        }
+    });
+})();
 </script>
 
 {% endblock %}
