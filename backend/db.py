@@ -120,13 +120,8 @@ def reset_database():
         CREATE TABLE students (
             username VARCHAR(50) PRIMARY KEY,
             password VARCHAR(255) NOT NULL,
-            first_name VARCHAR(50),
-            last_name VARCHAR(50),
             course VARCHAR(15),
             session_token VARCHAR(64),
-            security_answer1 VARCHAR(255),
-            security_answer2 VARCHAR(255),
-            security_answer3 VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (course) REFERENCES courses(id)
         )
