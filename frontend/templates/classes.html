@@ -113,7 +113,7 @@ Meine Vorlesungen – Vorlesungschatbot
 
             <div class="d-flex justify-content-end gap-2 mt-3">
 
-                {% if user.role in ['admin', 'professor'] %}
+                {% if user.role in ['admin'] %}
                 <!-- Bearbeiten-Button -->
                     <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal-{{ class.id }}">
                     <i class="fas fa-pen"></i>
@@ -147,7 +147,7 @@ Meine Vorlesungen – Vorlesungschatbot
                                 <label class="form-label">Zugeordnete Kurse</label>
                                 {% for course in courses %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="courses" value="{{ course.id }}"
+                                    <input class="form-check-input" type="checkbox" name="courses" value=" {{ course.id }}"
                                     id="edit-course-{{ class.id }}-{{ course.id }}"
                                     {% if course.id in class.course_ids %}checked{% endif %}>
                                     <label class="form-check-label" for="edit-course-{{ class.id }}-{{ course.id }}">
