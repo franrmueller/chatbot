@@ -430,6 +430,8 @@ footer {
 }
 
 
+/* Checkbox Styles */
+
 #course-checkboxes .form-check {
     display: flex;
     align-items: center;
@@ -454,3 +456,28 @@ footer {
     font-weight: 400;
     margin: 0;
 }
+
+
+#class-checkboxes .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+#class-checkboxes .form-check-input {
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 0.5rem;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid #333;
+    border-radius: 2px;
+}
+
+#class-checkboxes .form-check-label {
+    font-size: 1rem;
+    font-weight: 400;
+    margin: 0;
+}
+
