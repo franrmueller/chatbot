@@ -1,3 +1,4 @@
+from typing import Optional, List
 from fastapi import (
     FastAPI, Request, HTTPException,
     Body, Depends, Cookie, Form,
@@ -934,3 +935,39 @@ async def change_password_action(
         "user": user,
         "success": "Passwort erfolgreich geändert."
     })
+
+
+@app.get("/admin/classes/edit/{class_id}", response_class=HTMLResponse)
+async def edit_class_form(request: Request, class_id: int):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    class_data = db.get_class_by_id(class_id)
+    if not class_data:
+        return RedirectResponse(url="/admin/classes?error=Vorlesung nicht gefunden", status_code=303)
+
+    all_courses = db.get_all_courses()
+
+    return templates.TemplateResponse("edit_class_modal.html", {
+        "request": request,
+        "user": user,
+        "edit_class": class_data,
+        "courses": all_courses
+    })
+
+
+@app.post("/admin/classes/edit/{class_id}")
+async def update_class_courses(
+    request: Request,
+    class_id: int,
+    courses: Optional[List[int]] = Form(None)
+):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    # Kurse aktualisieren (z. B. Join-Tabelle neu schreiben)
+    db.update_class_courses(class_id, courses or [])
+
+    return RedirectResponse(url="/admin/classes", status_code=303)

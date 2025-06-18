@@ -1,4 +1,5 @@
 import logging
+from typing import List
 import mysql.connector
 from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
@@ -1486,3 +1487,21 @@ def update_user_password(username, hashed_password):
             cursor.close()
         if connection:
             connection.close()
+
+
+
+def update_class_courses(class_id: int, course_ids: List[int]):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    try:
+        # Zuerst alte Verknüpfungen löschen
+        cursor.execute("DELETE FROM class_courses WHERE class_id = %s", (class_id,))
+        
+        # Neue Verknüpfungen einfügen
+        for course_id in course_ids:
+            cursor.execute("INSERT INTO class_courses (class_id, course_id) VALUES (%s, %s)", (class_id, course_id))
+        
+        connection.commit()
+    finally:
+        cursor.close()
+        connection.close()
