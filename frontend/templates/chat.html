@@ -158,7 +158,8 @@ Chat – Vorlesung {{ class.name }}
         if (!question) return;
  
         appendMessage('user', question);
-        // sessionChatHistory.push({ role: 'user', text: question });
+        sessionChatHistory.push({ role: 'user', text: question });
+        saveToSession('user', question);
 
         userInput.value = '';
  
@@ -171,11 +172,13 @@ Chat – Vorlesung {{ class.name }}
  
             const data = await response.json();
             appendMessage('Vorlesungschatbot', data.answer);
-           // sessionChatHistory.push({ role: 'bot', text: data.answer });
+            sessionChatHistory.push({ role: 'bot', text: data.answer });
+            saveToSession('bot', botResponse);
 
         } catch (error) {
             appendMessage('Vorlesungschatbot', 'Fehler beim Abrufen der Antwort.');
-           // sessionChatHistory.push({ role: 'bot', text: 'Fehler beim Abrufen der Antwort.' });
+            sessionChatHistory.push({ role: 'bot', text: 'Fehler beim Abrufen der Antwort.' });
+            saveToSession('bot', errorMsg);
             console.error(error);
         }
     });
