@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Logging out...</title>
+</head>
+<body>
+    <p>Logging out...</p>
+    <script>
+        // Clear all chat histories on logout
+        const keys = Object.keys(sessionStorage);
+        keys.forEach(key => {
+            if (key.startsWith('chat-history-') || key.startsWith('visible-chat-')) {
+                sessionStorage.removeItem(key);
+            }
+        });
+        
+        // Redirect to home page after clearing storage
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 100);
+    </script>
+</body>
+</html>

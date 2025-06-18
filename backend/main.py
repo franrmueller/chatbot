@@ -94,9 +94,13 @@ async def legacy_register_redirect(request: Request):
 
 @app.get("/auth/logout")
 async def logout():
-    response = RedirectResponse(url="/", status_code=302)
+    response = RedirectResponse(url="/logout-page", status_code=302)  # Redirect to a logout page first
     response.delete_cookie(key="session_token", path="/", domain=None, secure=False, httponly=True)
     return response
+
+@app.get("/logout-page", response_class=HTMLResponse)
+async def logout_page(request: Request):
+    return templates.TemplateResponse("logout.html", {"request": request})
 
 
 # =========================================

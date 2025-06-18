@@ -86,16 +86,13 @@ Chat – Vorlesung {{ class.name }}
     const chatWindow = document.getElementById('chat-window');
     const userInput = document.getElementById('user-input');
     const resetBtn = document.getElementById('reset-chat');
-
     const viewHistoryBtn = document.getElementById('view-history');
     const classId = "{{ class.id }}";
-
     const historyModal = document.getElementById('history-modal');
-    const closeModalBtn = document.getElementById('close-history-modal');
-    const historyList = document.getElementById('history-list');
-    const storageKey = `chat-history-${classId}`; 
     
- 
+    const storageKey = `chat-history-${classId}`; 
+    const visibleChatKey = `visible-chat-${classId}`; // New key for visible chat
+    
     // Funktion zum Hinzufügen von Nachrichten ins Fenster
     function appendMessage(sender, text) {
         const msg = document.createElement('div');
@@ -106,26 +103,23 @@ Chat – Vorlesung {{ class.name }}
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-      function saveToHistory(question, answer) {
-        let history = JSON.parse(sessionStorage.getItem(storageKey)) || [];
-        history.push({ question, answer });
-        sessionStorage.setItem(storageKey, JSON.stringify(history));
-    }
- 
-    // Funktion zum Anzeigen der Chat-Historie
+    // Save to both session history (permanent until logout) and visible chat
     function saveToSession(sender, text) {
-        const key = `chat-history-${classId}`;
-        const history = JSON.parse(sessionStorage.getItem(key) || '[]');
-        history.push({ sender, text });
-        sessionStorage.setItem(key, JSON.stringify(history));
+        // Save to permanent session history
+        const sessionHistory = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+        sessionHistory.push({ sender, text });
+        sessionStorage.setItem(storageKey, JSON.stringify(sessionHistory));
+        
+        // Save to visible chat history
+        const visibleHistory = JSON.parse(sessionStorage.getItem(visibleChatKey) || '[]');
+        visibleHistory.push({ sender, text });
+        sessionStorage.setItem(visibleChatKey, JSON.stringify(visibleHistory));
     }
 
+    // Load only visible chat (not reset messages)
     function loadSessionChat() {
-        const key = `chat-history-${classId}`;
-        const history = JSON.parse(sessionStorage.getItem(key) || '[]');
-        const sessionChatHistory = [];  // ← Speichert Verlauf für die aktuelle Session & Vorlesung
-
-        history.forEach(entry => {
+        const visibleHistory = JSON.parse(sessionStorage.getItem(visibleChatKey) || '[]');
+        visibleHistory.forEach(entry => {
             appendMessage(entry.sender, entry.text);
         });
     }
@@ -133,42 +127,18 @@ Chat – Vorlesung {{ class.name }}
     // Initial Chatverlauf laden
     loadSessionChat();
 
-    function renderHistory() {
-        historyList.innerHTML = '';
-        const history = JSON.parse(sessionStorage.getItem(storageKey)) || [];
-        if (history.length === 0) {
-            historyList.innerHTML = '<p>Keine Fragen in dieser Sitzung.</p>';
-            return;
-        }
-
-        history.forEach(entry => {
-            const wrapper = document.createElement('div');
-            wrapper.classList.add('chat-history-entry');
-            wrapper.style.border = "1px solid #ccc";
-            wrapper.style.borderRadius = "8px";
-            wrapper.style.padding = "1rem";
-            wrapper.style.marginBottom = "1rem";
-            wrapper.innerHTML = `
-                <div><strong>Du:</strong> ${entry.question}</div>
-                <div><strong>Vorlesungschatbot:</strong> ${entry.answer}</div>
-            `;
-            historyList.appendChild(wrapper);
-        });
-    }
-
-      // Verlauf anzeigen (Modal öffnen)
+    // View History shows ALL messages from session (including reset ones)
     viewHistoryBtn.addEventListener('click', () => {
         const modal = document.getElementById('history-modal');
         const modalContent = document.getElementById('modal-history-content');
-        const key = `chat-history-${classId}`;
-        const history = JSON.parse(sessionStorage.getItem(key) || '[]');
+        const fullHistory = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
 
         modalContent.innerHTML = '';
 
-        if (history.length === 0) {
+        if (fullHistory.length === 0) {
             modalContent.innerHTML = '<p>Kein Verlauf für diese Sitzung vorhanden.</p>';
         } else {
-            history.forEach(entry => {
+            fullHistory.forEach(entry => {
                 const msg = document.createElement('div');
                 msg.style.marginBottom = '0.5rem';
                 msg.innerHTML = `<strong>${entry.sender === 'user' ? 'Du' : 'Vorlesungschatbot'}:</strong> ${entry.text}`;
@@ -179,22 +149,23 @@ Chat – Vorlesung {{ class.name }}
         modal.style.display = 'flex';
     });
 
-     // Modal schließen
+    // Modal schließen
     function closeHistoryModal() {
         document.getElementById('history-modal').style.display = 'none';
     }
 
+    // Reset button only clears visible chat, keeps session history intact
     resetBtn.addEventListener('click', () => {
-    // Verlauf in sessionStorage für diese Vorlesung löschen
-    // sessionStorage.removeItem(storageKey);
-    
-    // Nur das sichtbare Chatfenster leeren, Historie bleibt erhalten
-    chatWindow.innerHTML = `
-        <div class="chat-message bot" style="margin: 0.5rem 0;">
-            <strong>Vorlesungschatbot:</strong> Willkommen im Chat für die Vorlesung {{ class.name }}! Stelle deine Fragen.
-        </div>
-    `;
-});
+        // Clear only visible chat storage
+        sessionStorage.removeItem(visibleChatKey);
+        
+        // Clear visible chat window
+        chatWindow.innerHTML = `
+            <div class="chat-message bot" style="margin: 0.5rem 0;">
+                <strong>Vorlesungschatbot:</strong> Willkommen im Chat für die Vorlesung {{ class.name }}! Stelle deine Fragen.
+            </div>
+        `;
+    });
     
     // Abschicken des Prompts
     form.addEventListener('submit', async function (e) {
@@ -204,7 +175,6 @@ Chat – Vorlesung {{ class.name }}
  
         appendMessage('user', question);
         saveToSession('user', question);
-
         userInput.value = '';
  
         try {
@@ -215,16 +185,15 @@ Chat – Vorlesung {{ class.name }}
             });
  
             const data = await response.json();
-            appendMessage('Vorlesungschatbot', data.answer);
+            appendMessage('bot', data.answer);
             saveToSession('bot', data.answer);
 
         } catch (error) {
-            appendMessage('Vorlesungschatbot', 'Fehler beim Abrufen der Antwort.');
+            const errorMsg = 'Fehler beim Abrufen der Antwort.';
+            appendMessage('bot', errorMsg);
             saveToSession('bot', errorMsg);
             console.error(error);
         }
     });
- 
-
 </script>
 {% endblock %}
