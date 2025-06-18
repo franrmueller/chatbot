@@ -920,7 +920,7 @@ def delete_class(class_id):
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
     try:
-        # First, get all documents for this class to clean up files and vectors
+        # Get all documents for this class to clean up files and vectors
         cursor.execute("SELECT id, file_path FROM documents WHERE class_id = %s", (class_id,))
         documents = cursor.fetchall()
         
@@ -931,16 +931,20 @@ def delete_class(class_id):
                 import backend.rag as rag
                 rag.delete_vectors_for_pdf(doc['id'])
                 
-                # Delete physical file if it exists
-                if doc['file_path'] and os.path.exists(doc['file_path']):
-                    os.remove(doc['file_path'])
-                    logging.info(f"Deleted file: {doc['file_path']}")
+                # Delete physical file from uploads folder
+                file_path = os.path.join(os.getcwd(), 'uploads', doc['file_path'])
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    logging.info(f"Deleted file: {file_path}")
+                else:
+                    logging.warning(f"File not found: {file_path}")
             except Exception as e:
                 logging.error(f"Error cleaning up document {doc['id']}: {str(e)}")
         
-        # Delete documents from database
+        # Delete documents from database (this will cascade)
         cursor.execute("DELETE FROM documents WHERE class_id = %s", (class_id,))
-          # Delete chat history for this class
+        
+        # Delete chat history for this class
         cursor.execute("DELETE FROM chat_history WHERE class_id = %s", (class_id,))
         
         # Delete JSON chat files for this class
@@ -953,7 +957,7 @@ def delete_class(class_id):
         # Delete class-course relationships
         cursor.execute("DELETE FROM class_courses WHERE class_id = %s", (class_id,))
         
-        # Finally delete the class itself
+        # Delete the class
         cursor.execute("DELETE FROM classes WHERE id = %s", (class_id,))
         
         connection.commit()

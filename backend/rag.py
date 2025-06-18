@@ -241,24 +241,40 @@ async def chat_with_class(class_id: int, prompt: str):
     }
 
 def delete_vectors_for_pdf(pdf_id: int):
-    doc = db.get_document_by_id(pdf_id)
-    if not doc:
-        logger.warning(f"No document found with id: {pdf_id}")
-        return
-    file_name = doc.get("name", "")
-    file_path = os.path.join(os.getcwd(), 'uploads', file_name)
-    # Connect to Neo4j and delete all nodes with this source
-    vectorstore = get_vectorstore()
-    driver = vectorstore._driver
-    with driver.session() as session:
-        session.run(
-            """
-            MATCH (n:PdfBotChunk {source: $source})
-            DETACH DELETE n
-            """,
-            source=file_path
-        )
-    logger.info(f"Deleted vectors for PDF: {file_path}")
+    """Delete all vectors/embeddings for a specific PDF from Neo4j"""
+    try:
+        doc = db.get_document_by_id(pdf_id)
+        if not doc:
+            logger.warning(f"No document found with id: {pdf_id}")
+            return False
+        
+        file_name = doc.get("name", "")
+        file_path = os.path.join(os.getcwd(), 'uploads', file_name)
+        
+        # Connect to Neo4j and delete all nodes with this source
+        vectorstore = get_vectorstore()
+        driver = vectorstore._driver
+        
+        with driver.session() as session:
+            result = session.run(
+                """
+                MATCH (n:PdfBotChunk {source: $source})
+                DETACH DELETE n
+                """,
+                source=file_path
+            )
+            
+            # Get the count of deleted nodes
+            summary = result.consume()
+            deleted_count = summary.counters.nodes_deleted
+            
+            logger.info(f"Deleted {deleted_count} vector nodes for PDF: {file_path}")
+            
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error deleting vectors for PDF {pdf_id}: {str(e)}")
+        return False
 
 # ========== GENERATE TICKET ==========
 
