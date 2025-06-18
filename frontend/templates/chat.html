@@ -91,7 +91,7 @@ Chat – Vorlesung {{ class.name }}
     const historyModal = document.getElementById('history-modal');
     
     const storageKey = `chat-history-${classId}`; 
-    const visibleChatKey = `visible-chat-${classId}`; // New key for visible chat
+    const visibleChatKey = `visible-chat-${classId}`;
     
     // Funktion zum Hinzufügen von Nachrichten ins Fenster
     function appendMessage(sender, text) {
@@ -124,7 +124,7 @@ Chat – Vorlesung {{ class.name }}
         });
     }
 
-    // Initial Chatverlauf laden
+    // Load chat history when page loads
     loadSessionChat();
 
     // View History shows ALL messages from session (including reset ones)
@@ -166,8 +166,8 @@ Chat – Vorlesung {{ class.name }}
             </div>
         `;
     });
-    
-    // Abschicken des Prompts
+
+    // Chat form submission - specific to this page
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
         const question = userInput.value.trim();
