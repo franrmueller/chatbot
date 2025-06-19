@@ -81,7 +81,12 @@ async def student_register_page(request: Request):
 # Legacy routes for backward compatibility
 @app.get("/login", response_class=HTMLResponse)
 async def legacy_login_redirect(request: Request):
-    return RedirectResponse(url="/login/student", status_code=302)
+    registered = request.query_params.get("registered")
+    url = "/login/student"
+    if registered:
+        url += f"?registered={registered}"
+    return RedirectResponse(url=url, status_code=302)
+
 
 
 
@@ -153,13 +158,17 @@ async def admin_classes_page(request: Request):
     classes = db.get_all_classes()
     professors = db.get_all_professors()
     courses = db.get_all_courses()
+    success = request.query_params.get("success")
+    error = request.query_params.get("error")
 
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
         "classes": classes,
         "professors": professors,
-        "courses": courses
+        "courses": courses,
+        "success": success,
+        "error": error
     })
 
 
@@ -398,7 +407,8 @@ async def admin_delete_professor(request: Request, professor_username: str):
     success, message = db.delete_professor(professor_username)
 
     # Clean redirect without exposing action details
-    return RedirectResponse(url="/admin/professors", status_code=303)
+    return RedirectResponse(url="/admin/professors?success=Benutzer erfolgreich gelöscht.", status_code=303)
+
 
 # Add edit professor functionality
 @app.get("/admin/professors/edit/{professor_username}", response_class=HTMLResponse)
@@ -452,7 +462,8 @@ async def update_professor(
     cursor.close()
     connection.close()
 
-    return RedirectResponse(url="/admin/professors", status_code=303)
+    return RedirectResponse(url="/admin/professors?success=Benutzer erfolgreich aktualisiert.", status_code=303)
+
 
 
 
@@ -573,7 +584,8 @@ async def admin_delete_class(request: Request, class_id: int):
     success, message = db.delete_class(class_id)
 
     # Clean redirect without exposing action details
-    return RedirectResponse(url="/classes", status_code=303)
+    return RedirectResponse(url="/admin/classes?success=Vorlesung erfolgreich gelöscht.", status_code=303)
+
 
 # =========================================
 # PDFs
@@ -788,7 +800,8 @@ async def admin_add_course(
         "professor": professor
     })
 
-    return RedirectResponse(url="/admin/courses", status_code=303)
+    return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich hinzugefügt.", status_code=303)
+
 
 
 
@@ -803,7 +816,8 @@ async def admin_add_course(
 async def admin_delete_course(request: Request, course_id: str):
     await verify_role(request, ["admin"])
     db.delete_course(course_id)
-    return RedirectResponse(url="/admin/courses", status_code=303)
+    return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich gelöscht.", status_code=303)
+
 
 
 
@@ -842,7 +856,8 @@ async def admin_edit_course(
 
     db.update_course(course_id, name)
 
-    return RedirectResponse(url="/admin/courses", status_code=303)
+    return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich bearbeitet.", status_code=303)
+
 
 
 @app.get("/admin/students", response_class=HTMLResponse)
@@ -989,4 +1004,5 @@ async def update_class_courses(
     # Kurse aktualisieren (z. B. Join-Tabelle neu schreiben)
     db.update_class_courses(class_id, courses or [])
 
-    return RedirectResponse(url="/admin/classes", status_code=303)
+    return RedirectResponse(url="/admin/classes?success=Vorlesung erfolgreich aktualisiert.", status_code=303)
+
