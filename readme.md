@@ -156,13 +156,8 @@ CREATE TABLE courses (
 CREATE TABLE students (
     username VARCHAR(50) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
     course VARCHAR(15),
     session_token VARCHAR(64),
-    security_answer1 VARCHAR(255),
-    security_answer2 VARCHAR(255),
-    security_answer3 VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (course) REFERENCES courses(id)
 )
@@ -246,6 +241,29 @@ CREATE TABLE chat_history (
 - **PDF-Verwaltung:** Professoren und Administratoren können Kurs-PDFs hochladen, aktualisieren und löschen
 - **Chatbot:** Studenten können Fragen zu Kursmaterialien stellen; die Antworten werden mithilfe von RAG mit Dokumentenabfrage aus Neo4j generiert
 - **Chatverlauf:** Administratoren können anonymisierte Chatverläufe pro Kurs/Klasse einsehen
+
+## Empfehlungen für Dokumenten-Upload
+
+Für eine optimale Leistung des Chatbots und zur effizienten Nutzung der Vektordatenbank sollten Sie folgende Richtlinien beim Hochladen von Dokumenten beachten:
+
+### Bevorzugte Dokumenttypen
+- **Lehrbücher und Fachbücher:** PDF-Versionen der Bücher, auf denen die Vorlesung basiert
+- **Fachspezifische Literatur:** Relevante wissenschaftliche Artikel und Fachpublikationen
+- **Umfassende Lernmaterialien:** Detaillierte Studienunterlagen mit ausführlichen Erklärungen
+
+### Zu vermeidende Dokumenttypen
+- **Vorlesungsfolien:** Standard-PowerPoint-Folien enthalten meist nur Stichpunkte und wenig Kontext
+- **Kurze Zusammenfassungen:** Oberflächliche Materialien ohne tiefgreifende Erklärungen
+- **Präsentationen:** Folien-basierte Dokumente mit geringem Textinhalt
+
+### Best Practices
+- **Selektiver Upload:** Laden Sie nur die Kapitel/Abschnitte der Bücher hoch, die in der Vorlesung behandelt werden
+- **Platzoptimierung:** Dies spart Speicherplatz in der Vektordatenbank und verbessert die Antwortqualität
+- **Qualität vor Quantität:** Wenige, aber inhaltlich reiche Dokumente sind besser als viele oberflächliche Materialien
+- **Zusammenhängende Inhalte:** Stellen Sie sicher, dass die hochgeladenen Abschnitte thematisch zusammenhängen
+
+### Warum diese Empfehlungen?
+Der Chatbot funktioniert am besten mit detaillierten, erklärenden Texten, die Konzepte vollständig beschreiben. Lehrbücher bieten diesen Kontext, während Vorlesungsfolien oft nur Schlagworte enthalten, die für den Chatbot schwer zu verarbeiten sind.
 
 ## Backend
 
@@ -708,13 +726,8 @@ CREATE TABLE courses (
 CREATE TABLE students (
     username VARCHAR(50) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
     course VARCHAR(15),
     session_token VARCHAR(64),
-    security_answer1 VARCHAR(255),
-    security_answer2 VARCHAR(255),
-    security_answer3 VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (course) REFERENCES courses(id)
 )
@@ -798,6 +811,29 @@ CREATE TABLE chat_history (
 - **PDF Management:** Professors and admins can upload, update, and delete course PDFs
 - **Chatbot:** Students can ask questions about course materials; answers are generated using RAG with document retrieval from Neo4j
 - **Chathistory:** Admins can view anonymized chat histories per course/class
+
+## Document Upload Recommendations
+
+For optimal chatbot performance and efficient use of the vector database, please follow these guidelines when uploading documents:
+
+### Preferred Document Types
+- **Textbooks and Academic Books:** PDF versions of books on which the class is based
+- **Specialized Literature:** Relevant academic articles and professional publications
+- **Comprehensive Learning Materials:** Detailed study materials with thorough explanations
+
+### Document Types to Avoid
+- **Lecture Slides:** Standard PowerPoint slides usually contain only bullet points with little context
+- **Brief Summaries:** Superficial materials without in-depth explanations
+- **Presentations:** Slide-based documents with minimal text content
+
+### Best Practices
+- **Selective Upload:** Only upload the chapters/sections of books that are covered in the class
+- **Space Optimization:** This saves space in the vector database and improves answer quality
+- **Quality over Quantity:** Few but content-rich documents are better than many superficial materials
+- **Coherent Content:** Ensure that uploaded sections are thematically connected
+
+### Why These Recommendations?
+The chatbot works best with detailed, explanatory texts that fully describe concepts. Textbooks provide this context, while lecture slides often contain only keywords that are difficult for the chatbot to process effectively.
 
 ## Backend
 
