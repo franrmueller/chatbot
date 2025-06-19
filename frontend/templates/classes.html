@@ -93,7 +93,7 @@ Meine Vorlesungen – Vorlesungschatbot
         <div class="class-card mb-4 p-3 border rounded shadow-sm">
             <div>
                 <h5 class="mb-2">{{ class.name }}</h5>
-                <p class-meta mb-1"><strong>Studiengänge:</strong>
+                <p class-meta mb-1"><strong>Kurse:</strong>
                     {% if class.courses %}
                         {% for course in class.courses %}
                             {{ course.course_name }}{% if not loop.last %}, {% endif %}
