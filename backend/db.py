@@ -921,19 +921,19 @@ def delete_class(class_id):
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
     try:
-        # First, get all documents for this class to clean up files and vectors
-        cursor.execute("SELECT id, name FROM documents WHERE class_id = %s", (class_id,))
+        # Get all documents for this class to clean up files and vectors
+        cursor.execute("SELECT id, file_path FROM documents WHERE class_id = %s", (class_id,))
         documents = cursor.fetchall()
         
         # Delete vectors from Neo4j and physical files for each document
         for doc in documents:
             try:
-                # Delete vectors from Neo4j
+                # Import rag module to delete vectors
+                import backend.rag as rag
                 rag.delete_vectors_for_pdf(doc['id'])
                 
                 # Delete physical file from uploads folder
-                # Use 'name' field which should contain the filename
-                file_path = os.path.join(os.getcwd(), 'uploads', doc['name'])
+                file_path = os.path.join(os.getcwd(), 'uploads', doc['file_path'])
                 if os.path.exists(file_path):
                     os.remove(file_path)
                     logging.info(f"Deleted file: {file_path}")
@@ -958,7 +958,7 @@ def delete_class(class_id):
         # Delete class-course relationships
         cursor.execute("DELETE FROM class_courses WHERE class_id = %s", (class_id,))
         
-        # Finally delete the class itself
+        # Delete the class
         cursor.execute("DELETE FROM classes WHERE id = %s", (class_id,))
         
         connection.commit()
