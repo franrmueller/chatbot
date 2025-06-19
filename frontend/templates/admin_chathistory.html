@@ -41,8 +41,9 @@ Chathistorien – Admin
         <input class="form-check-input" type="checkbox" name="class_id" value="{{ class.id }}" id="class-{{ class.id }}"
           {% if class.id|string in request.query_params.getlist('class_id') %}checked{% endif %}>
         <label class="form-check-label" for="class-{{ class.id }}">
-          {{ class.name }} ({{ class.course_name }})
+          {{ class.name }}
         </label>
+
       </div>
       {% endfor %}
     </div>
