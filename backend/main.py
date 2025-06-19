@@ -144,6 +144,25 @@ async def admin_add_class(
         "success" if success else "error": message
     })
 
+@app.get("/admin/classes", response_class=HTMLResponse)
+async def admin_classes_page(request: Request):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+
+    classes = db.get_all_classes()
+    professors = db.get_all_professors()
+    courses = db.get_all_courses()
+
+    return templates.TemplateResponse("classes.html", {
+        "request": request,
+        "user": user,
+        "classes": classes,
+        "professors": professors,
+        "courses": courses
+    })
+
+
 # # Password Reset
 # SECURITY_QUESTIONS = [
 #     "Was ist der Name deines ersten Haustiers?",
@@ -244,7 +263,7 @@ async def admin_chathistory(request: Request):
     if isinstance(user, RedirectResponse):
         return user
 
-    classes = db.get_all_classes_with_courses()
+    classes = db.get_all_classes()
     courses = db.get_all_courses()
 
     # Sichere Umwandlung der Query-Parameter
