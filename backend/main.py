@@ -49,7 +49,7 @@ async def verify_role(request: Request, allowed_roles: list):
         return user
     
     if user.get("role") not in allowed_roles:
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return RedirectResponse(url="/login/professor", status_code=302)
     return user
 
 # =========================================
@@ -403,7 +403,6 @@ async def admin_delete_professor(request: Request, professor_username: str):
     if target.get("role") == "admin":
         return RedirectResponse(url="/admin/professors", status_code=303)
 
-    
     success, message = db.delete_professor(professor_username)
 
     # Clean redirect without exposing action details

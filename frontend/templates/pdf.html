@@ -72,13 +72,6 @@ PDF-Übersicht – Kurs {{ course.name }}
             {% if success %}
             <div class="alert alert-success">{{ success }}</div>
             {% endif %}
-
-            <form method="GET" class="row g-2 mb-3 mt-2">
-                <div class="col">
-                    <input type="text" name="q" class="form-control" placeholder="PDF suchen..." value="{{ request.query_params.q or '' }}">
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-outline-primary" title="Suchen">
   <i class="fas fa-search"></i>
 </button>
 
