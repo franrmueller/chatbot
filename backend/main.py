@@ -394,19 +394,24 @@ async def admin_delete_professor(request: Request, professor_username: str):
     user = await verify_role(request, ["admin"])
     
     if isinstance(user, RedirectResponse):
-        return user    # Prüfe ob Zielnutzer existiert
+        return user
+    
+    # Prüfe ob Zielnutzer existiert
     target = db.get_user_by_username(professor_username)
     if not target:
-        return RedirectResponse(url="/admin/professors", status_code=303)
+        return RedirectResponse(url="/admin/professors?error=Benutzer nicht gefunden.", status_code=303)
 
     # Admins dürfen keine Admins löschen
     if target.get("role") == "admin":
-        return RedirectResponse(url="/admin/professors", status_code=303)
+        return RedirectResponse(url="/admin/professors?error=Administratoren können nicht gelöscht werden.", status_code=303)
 
+    # Versuche den Professor zu löschen
     success, message = db.delete_professor(professor_username)
-
-    # Clean redirect without exposing action details
-    return RedirectResponse(url="/admin/professors?success=Benutzer erfolgreich gelöscht.", status_code=303)
+    
+    if success:
+        return RedirectResponse(url="/admin/professors?success=Benutzer erfolgreich gelöscht.", status_code=303)
+    else:
+        return RedirectResponse(url="/admin/professors?error=" + message, status_code=303)
 
 
 # Add edit professor functionality

@@ -219,12 +219,124 @@ CREATE TABLE chat_history (
 - **Standardkurs:** `WWI-BE122` - "Wirtschaftsinformatik - Business Engineering"
 - **Standardklasse:** "Datenbanken" (assoziiert mit dem Standardkurs)
 
+### Neo4j Graph-Datenbankstruktur
+
+Das System verwendet Neo4j als Vektordatenbank für die Speicherung und den Abruf von Dokumenteneinbettungen, die für die RAG (Retrieval-Augmented Generation) Funktionalität des Chatbots verwendet werden.
+
+#### Node-Typen
+
+**PdfBotChunk**
+```cypher
+(:PdfBotChunk {
+    text: STRING,           // Der Textinhalt des Dokumentenchunks
+    embedding: VECTOR,      // Vektoreinbettung des Textes (384 Dimensionen)
+    class_id: INTEGER,      // Referenz zur Klassen-ID in MySQL
+    source: STRING          // Dateipfad des ursprünglichen PDF-Dokuments
+})
+```
+
+**Question** (für erweiterte Funktionalität)
+```cypher
+(:Question {
+    id: STRING,             // Eindeutige Fragekennung
+    title: STRING,          // Fragetitel
+    body: STRING,           // Frageinhalt
+    score: INTEGER,         // Bewertung der Frage
+    embedding: VECTOR       // Vektoreinbettung der Frage
+})
+```
+
+**Answer** (für erweiterte Funktionalität)
+```cypher
+(:Answer {
+    id: STRING,             // Eindeutige Antwortkennung
+    body: STRING,           // Antwortinhalt
+    score: INTEGER,         // Bewertung der Antwort
+    embedding: VECTOR       // Vektoreinbettung der Antwort
+})
+```
+
+**User** (für erweiterte Funktionalität)
+```cypher
+(:User {
+    id: STRING,             // Eindeutige Benutzerkennung
+    display_name: STRING    // Anzeigename des Benutzers
+})
+```
+
+**Tag** (für erweiterte Funktionalität)
+```cypher
+(:Tag {
+    name: STRING            // Tag-Name
+})
+```
+
+#### Vektorindizes
+
+Das System erstellt automatisch Vektorindizes für die semantische Suche:
+
+```cypher
+// Hauptindex für PDF-Chunks
+CALL db.index.vector.createNodeIndex(
+    'pdf_bot',              // Index-Name
+    'PdfBotChunk',         // Node-Label
+    'embedding',           // Eigenschaft mit Vektoreinbettungen
+    384,                   // Dimension (abhängig vom Embedding-Modell)
+    'cosine'               // Similarity-Metrik
+)
+
+// Erweiterte Indizes für zukünftige Funktionen
+CALL db.index.vector.createNodeIndex('stackoverflow', 'Question', 'embedding', 384, 'cosine')
+CALL db.index.vector.createNodeIndex('top_answers', 'Answer', 'embedding', 384, 'cosine')
+```
+
+#### Constraints
+
+```cypher
+CREATE CONSTRAINT question_id IF NOT EXISTS FOR (q:Question) REQUIRE (q.id) IS UNIQUE
+CREATE CONSTRAINT answer_id IF NOT EXISTS FOR (a:Answer) REQUIRE (a.id) IS UNIQUE
+CREATE CONSTRAINT user_id IF NOT EXISTS FOR (u:User) REQUIRE (u.id) IS UNIQUE
+CREATE CONSTRAINT tag_name IF NOT EXISTS FOR (t:Tag) REQUIRE (t.name) IS UNIQUE
+```
+
+#### Datenfluss und Verarbeitung
+
+1. **PDF-Upload**: Wenn ein PDF hochgeladen wird, wird es in Textchunks von ~1000 Zeichen mit 200 Zeichen Überlappung aufgeteilt
+2. **Einbettungsgenerierung**: Jeder Chunk wird mit dem konfigurierten Embedding-Modell (Standard: SentenceTransformer "all-MiniLM-L6-v2") in einen 384-dimensionalen Vektor umgewandelt
+3. **Speicherung**: Die Chunks werden als `PdfBotChunk`-Nodes mit ihren Metadaten gespeichert
+4. **Abfrage**: Bei Chatbot-Anfragen wird eine Vektorähnlichkeitssuche durchgeführt, um relevante Chunks zu finden
+5. **Filterung**: Die Suche wird nach `class_id` gefiltert, um nur relevante Dokumente für die jeweilige Klasse zurückzugeben
+
+#### Embedding-Modell-Konfiguration
+
+Das System unterstützt verschiedene Embedding-Modelle:
+
+- **SentenceTransformer** (Standard): 384 Dimensionen
+- **Ollama**: 768 Dimensionen  
+- **Bedrock**: 1536 Dimensionen
+
+Die Dimensionalität der Vektorindizes wird automatisch basierend auf dem gewählten Modell konfiguriert.
+
+#### RAG-Workflow
+
+1. **Benutzeranfrage** wird als Vektor eingebettet
+2. **Cosinus-Ähnlichkeitssuche** findet die relevantesten Dokumentenchunks
+3. **Kontext-Aufbau** aus den gefundenen Chunks
+4. **LLM-Antwortgenerierung** mit dem bereitgestellten Kontext
+5. **Quellenangaben** werden aus den Metadaten der gefundenen Chunks extrahiert
+
+#### Standarddaten
+- **Admin-Benutzer:** Benutzername: `kirchberg`, Passwort: `aperol77`
+- **Standardkurs:** `WWI-BE122` - "Wirtschaftsinformatik - Business Engineering"
+- **Standardklasse:** "Datenbanken" (assoziiert mit dem Standardkurs)
+
 #### Wichtige Beziehungen
 - Professoren können mehrere Klassen unterrichten
 - Klassen können mit mehreren Kursen verknüpft sein (viele-zu-viele über `class_courses`)
 - Studenten sind in einen Kurs eingeschrieben, können aber auf mehrere Klassen innerhalb dieses Kurses zugreifen
 - Dokumente werden bestimmten Klassen zugeordnet
 - Der Chatverlauf ist anonymisiert und mit Klassen verknüpft, um die Datenschutzbestimmungen einzuhalten
+- **Neo4j PdfBotChunks** sind über `class_id` mit MySQL-Klassen verknüpft und ermöglichen klassenspezifische Dokumentenabfragen
 
 ## Verzeichnisstruktur
 
@@ -789,12 +901,124 @@ CREATE TABLE chat_history (
 - **Default Course:** `WWI-BE122` - "Wirtschaftsinformatik - Business Engineering"
 - **Default Class:** "Datenbanken" (associated with the default course)
 
+### Neo4j Graph Database Structure
+
+The system uses Neo4j as a vector database for storing and retrieving document embeddings used for the chatbot's RAG (Retrieval-Augmented Generation) functionality.
+
+#### Node Types
+
+**PdfBotChunk**
+```cypher
+(:PdfBotChunk {
+    text: STRING,           // The text content of the document chunk
+    embedding: VECTOR,      // Vector embedding of the text (384 dimensions)
+    class_id: INTEGER,      // Reference to class ID in MySQL
+    source: STRING          // File path of the original PDF document
+})
+```
+
+**Question** (for extended functionality)
+```cypher
+(:Question {
+    id: STRING,             // Unique question identifier
+    title: STRING,          // Question title
+    body: STRING,           // Question content
+    score: INTEGER,         // Question rating
+    embedding: VECTOR       // Vector embedding of the question
+})
+```
+
+**Answer** (for extended functionality)
+```cypher
+(:Answer {
+    id: STRING,             // Unique answer identifier
+    body: STRING,           // Answer content
+    score: INTEGER,         // Answer rating
+    embedding: VECTOR       // Vector embedding of the answer
+})
+```
+
+**User** (for extended functionality)
+```cypher
+(:User {
+    id: STRING,             // Unique user identifier
+    display_name: STRING    // User display name
+})
+```
+
+**Tag** (for extended functionality)
+```cypher
+(:Tag {
+    name: STRING            // Tag name
+})
+```
+
+#### Vector Indexes
+
+The system automatically creates vector indexes for semantic search:
+
+```cypher
+// Main index for PDF chunks
+CALL db.index.vector.createNodeIndex(
+    'pdf_bot',              // Index name
+    'PdfBotChunk',         // Node label
+    'embedding',           // Property with vector embeddings
+    384,                   // Dimension (depends on embedding model)
+    'cosine'               // Similarity metric
+)
+
+// Extended indexes for future features
+CALL db.index.vector.createNodeIndex('stackoverflow', 'Question', 'embedding', 384, 'cosine')
+CALL db.index.vector.createNodeIndex('top_answers', 'Answer', 'embedding', 384, 'cosine')
+```
+
+#### Constraints
+
+```cypher
+CREATE CONSTRAINT question_id IF NOT EXISTS FOR (q:Question) REQUIRE (q.id) IS UNIQUE
+CREATE CONSTRAINT answer_id IF NOT EXISTS FOR (a:Answer) REQUIRE (a.id) IS UNIQUE
+CREATE CONSTRAINT user_id IF NOT EXISTS FOR (u:User) REQUIRE (u.id) IS UNIQUE
+CREATE CONSTRAINT tag_name IF NOT EXISTS FOR (t:Tag) REQUIRE (t.name) IS UNIQUE
+```
+
+#### Data Flow and Processing
+
+1. **PDF Upload**: When a PDF is uploaded, it is split into text chunks of ~1000 characters with 200 character overlap
+2. **Embedding Generation**: Each chunk is converted into a 384-dimensional vector using the configured embedding model (default: SentenceTransformer "all-MiniLM-L6-v2")
+3. **Storage**: The chunks are stored as `PdfBotChunk` nodes with their metadata
+4. **Query**: During chatbot requests, a vector similarity search is performed to find relevant chunks
+5. **Filtering**: The search is filtered by `class_id` to return only relevant documents for the respective class
+
+#### Embedding Model Configuration
+
+The system supports various embedding models:
+
+- **SentenceTransformer** (default): 384 dimensions
+- **Ollama**: 768 dimensions  
+- **Bedrock**: 1536 dimensions
+
+The dimensionality of vector indexes is automatically configured based on the chosen model.
+
+#### RAG Workflow
+
+1. **User query** is embedded as a vector
+2. **Cosine similarity search** finds the most relevant document chunks
+3. **Context building** from the found chunks
+4. **LLM response generation** with the provided context
+5. **Source citations** are extracted from the metadata of found chunks
+
+#### Default Data
+- **Admin User:** username: `kirchberg`, password: `aperol77`
+- **Default Course:** `WWI-BE122` - "Wirtschaftsinformatik - Business Engineering"
+- **Default Class:** "Datenbanken" (associated with the default course)
+
 #### Key Relationships
 - Professors can teach multiple classes
 - Classes can be associated with multiple courses (many-to-many via `class_courses`)
 - Students are enrolled in one course but can access multiple classes within that course
 - Documents are uploaded to specific classes
 - Chat history is anonymized and linked to classes for privacy compliance
+- **Neo4j PdfBotChunks** are linked to MySQL classes via `class_id` enabling class-specific document queries
 
 ## Directory Structure
 

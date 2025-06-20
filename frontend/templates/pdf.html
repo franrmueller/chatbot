@@ -13,7 +13,6 @@ PDF-Übersicht – Kurs {{ course.name }}
   <i class="fas fa-arrow-left"></i>
 </a>
 
-
             <form id="upload-form" method="post" enctype="multipart/form-data">
             <input type="hidden" name="class_id" value="{{ class_id }}">
             <div class="mb-3">
@@ -21,12 +20,9 @@ PDF-Übersicht – Kurs {{ course.name }}
                 <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
             </div>
             <button type="submit" class="btn btn-primary" title="PDF hochladen">
-  <i class="fas fa-upload"></i>
-</button>
-
-            </form>
-        <div id="upload-error" class="alert alert-danger d-none"></div>
-
+                <i class="fas fa-upload"></i>
+            </button>
+            <div id="upload-error" class="alert alert-danger d-none"></div>
         <script>
         const formData = new FormData(document.getElementById('upload-form'));
         formData.append('class_id', document.querySelector('input[name="class_id"]').value);
@@ -72,8 +68,6 @@ PDF-Übersicht – Kurs {{ course.name }}
             {% if success %}
             <div class="alert alert-success">{{ success }}</div>
             {% endif %}
-  <i class="fas fa-search"></i>
-</button>
 
                 </div>
             </form>
@@ -100,7 +94,6 @@ PDF-Übersicht – Kurs {{ course.name }}
                                 <a href="/uploads/{{ pdf.file_path }}" target="_blank" class="btn btn-sm btn-info me-1" title="PDF anzeigen">
   <i class="fas fa-eye"></i>
 </a>
-
 
                                 <a href="/uploads/{{ pdf.file_path }}" download class="btn btn-sm btn-secondary" title="PDF herunterladen">
   <i class="fas fa-download"></i>
