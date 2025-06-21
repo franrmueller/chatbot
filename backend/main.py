@@ -340,9 +340,11 @@ async def admin_chathistory(request: Request):
     selected_course_ids = request.query_params.getlist("course_id")
     start_date = request.query_params.get("from")
     end_date = request.query_params.get("to")
-      # Get filtered and grouped chat history
+    
+    # Get filtered and grouped chat history
     history = {}
     selected_class = None
+    filter_info = None  # Add this to show what's being filtered
     
     if selected_class_ids or selected_course_ids or start_date or end_date:
         history = db.get_chat_history_filtered_grouped(
@@ -355,6 +357,32 @@ async def admin_chathistory(request: Request):
         # Set selected_class if only one class is selected
         if len(selected_class_ids) == 1:
             selected_class = db.get_class_by_id(selected_class_ids[0])
+        
+        # Create filter description
+        filter_parts = []
+        if selected_class_ids:
+            if len(selected_class_ids) == 1:
+                class_name = db.get_class_by_id(selected_class_ids[0])['name']
+                filter_parts.append(f"Vorlesung: {class_name}")
+            else:
+                filter_parts.append(f"{len(selected_class_ids)} Vorlesungen")
+        
+        if selected_course_ids:
+            if len(selected_course_ids) == 1:
+                course_name = db.get_course_by_id(selected_course_ids[0])['name']
+                filter_parts.append(f"Kurs: {course_name}")
+            else:
+                filter_parts.append(f"{len(selected_course_ids)} Kurse")
+        
+        if start_date or end_date:
+            if start_date and end_date:
+                filter_parts.append(f"Zeitraum: {start_date} bis {end_date}")
+            elif start_date:
+                filter_parts.append(f"Ab: {start_date}")
+            elif end_date:
+                filter_parts.append(f"Bis: {end_date}")
+        
+        filter_info = " | ".join(filter_parts) if filter_parts else "Alle Filter"
     
     return templates.TemplateResponse("admin_chathistory.html", {
         "request": request,
@@ -362,7 +390,8 @@ async def admin_chathistory(request: Request):
         "courses": courses,
         "classes": classes,
         "history": history,
-        "selected_class": selected_class
+        "selected_class": selected_class,
+        "filter_info": filter_info  # Add this
     })
 
 @app.get("/classes", response_class=HTMLResponse)

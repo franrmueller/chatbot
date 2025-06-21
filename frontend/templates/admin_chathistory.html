@@ -66,15 +66,16 @@ Chathistorien – Admin
     </button>  </div>
 </form>
 
-  {% if history %}
+<!-- {% if history %}
 <h2>Chat-Historie 
   {% if selected_class %}
     für {{ selected_class.name }}
     {% if selected_class.course_name %}({{ selected_class.course_name }}){% endif %}
-  {% else %}
-    ({{ history|length }} Benutzer)
+  {% elif filter_info %}
+    - {{ filter_info }}
   {% endif %}
-</h2>
+  <small class="text-muted">({{ history|length }} Benutzer)</small>
+</h2> -->
 
 {% if history and (request.query_params.get('class_id') or request.query_params.get('course_id')) %}
 <div class="alert alert-warning">

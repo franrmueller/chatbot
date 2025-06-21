@@ -173,8 +173,10 @@ def reset_database():
             class_id INT NOT NULL,
             question TEXT NOT NULL,
             answer TEXT NOT NULL,
+            student_course VARCHAR(15) NULL,  # Add this field for proper filtering
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+            FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+            FOREIGN KEY (student_course) REFERENCES courses(id) ON DELETE SET NULL
         )
         """)
 
@@ -1240,17 +1242,22 @@ def save_chat_history(user_id, class_id, question, answer):
     cursor = None
     try:
         connection = sql_connect()
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)
+        
+        # Get the student's course
+        cursor.execute("SELECT course FROM students WHERE username = %s", (user_id,))
+        student = cursor.fetchone()
+        student_course = student['course'] if student else None
         
         # Anonymize the user_id for database storage
         user_hash = anonymize_username(user_id)
         timestamp = datetime.now()
         
-        # Save to database
+        # Save to database with student's course
         cursor.execute("""
-        INSERT INTO chat_history (user_hash, class_id, question, answer)
-        VALUES (%s, %s, %s, %s)
-        """, (user_hash, class_id, question, answer))
+        INSERT INTO chat_history (user_hash, class_id, question, answer, student_course)
+        VALUES (%s, %s, %s, %s, %s)
+        """, (user_hash, class_id, question, answer, student_course))
         
         connection.commit()
         
@@ -1274,12 +1281,12 @@ def get_chat_history_filtered_grouped(class_ids=None, course_ids=None, start_dat
         
     cursor = connection.cursor(dictionary=True)
 
+    # Updated query to properly filter by student's course, not class-course association
     query = """
-        SELECT h.*, cls.name AS class_name, c.id AS course_id
+        SELECT h.*, cls.name AS class_name, c.name AS student_course_name
         FROM chat_history h
         JOIN classes cls ON h.class_id = cls.id
-        JOIN class_courses cc ON cls.id = cc.class_id
-        JOIN courses c ON cc.course_id = c.id
+        LEFT JOIN courses c ON h.student_course = c.id
         WHERE 1=1
     """
     params = []
@@ -1289,9 +1296,10 @@ def get_chat_history_filtered_grouped(class_ids=None, course_ids=None, start_dat
         query += f" AND h.class_id IN ({placeholders})"
         params.extend(class_ids)
 
+    # NOW THIS FILTERS CORRECTLY - only chats from students of the selected course
     if course_ids:
         placeholders = ','.join(['%s'] * len(course_ids))
-        query += f" AND c.id IN ({placeholders})"
+        query += f" AND h.student_course IN ({placeholders})"
         params.extend(course_ids)
 
     if start_date:
@@ -1316,6 +1324,7 @@ def get_chat_history_filtered_grouped(class_ids=None, course_ids=None, start_dat
                 grouped_chats[user_hash] = {
                     'user_hash': user_hash,
                     'class_name': chat['class_name'],
+                    'student_course': chat['student_course_name'],  # Show student's actual course
                     'conversations': []
                 }
             grouped_chats[user_hash]['conversations'].append(chat)
@@ -1392,7 +1401,7 @@ def get_chat_history_by_class(class_id):
     return result
 
 def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
-    """Save a chat interaction to a JSON file in the chats folder"""
+    """Save a chat interaction to a JSON file in the chats folder - GDPR compliant"""
     try:
         # Create chats directory if it doesn't exist
         chats_dir = os.path.join(os.getcwd(), 'chats')
@@ -1409,10 +1418,10 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
         if not os.path.exists(class_dir):
             os.makedirs(class_dir)
             
-        # Construct the chat message
+        # Construct the chat message - NO REAL USERNAME STORED
         chat_message = {
             "user_hash": user_hash,
-            "user_id": user_id,  # Store real ID in file for reference
+            # "user_id": user_id,  # REMOVED FOR GDPR COMPLIANCE
             "class_id": class_id,
             "question": question,
             "answer": answer,
