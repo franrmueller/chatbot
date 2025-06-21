@@ -826,41 +826,41 @@ async def admin_delete_course(request: Request, course_id: str):
 
 
 
-# Kurs bearbeiten
-@app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
-async def admin_edit_course_inline(request: Request, course_id: str):
-    user = await verify_role(request, ["admin"])
-    courses = db.get_all_courses()
-    edit_course = db.get_course_by_id(course_id)
-    professors = db.get_all_professors()
-    student_counts = db.count_students_per_course()
-    return templates.TemplateResponse("admin_courses.html", {
-        "request": request,
-        "user": user,
-        "courses": courses,
-        "edit_course": edit_course,
-        "professors": professors,
-        "student_counts": student_counts
-    })
+# # Kurs bearbeiten
+# @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
+# async def admin_edit_course_inline(request: Request, course_id: str):
+#     user = await verify_role(request, ["admin"])
+#     courses = db.get_all_courses()
+#     edit_course = db.get_course_by_id(course_id)
+#     professors = db.get_all_professors()
+#     student_counts = db.count_students_per_course()
+#     return templates.TemplateResponse("admin_courses.html", {
+#         "request": request,
+#         "user": user,
+#         "courses": courses,
+#         "edit_course": edit_course,
+#         "professors": professors,
+#         "student_counts": student_counts
+#     })
 
 
 
-# Kurs bearbeiten
-@app.post("/admin/courses/edit/{course_id}")
-async def admin_edit_course(
-    request: Request,
-    course_id: str,
-    name: str = Form(...)
-):
-    await verify_role(request, ["admin"])    # Prüfung: Gleiche Beschreibung wie bei anderem Kurs?
-    all_courses = db.get_all_courses()
-    for course in all_courses:
-        if course["id"] != course_id and course["name"].lower() == name.lower():
-            return RedirectResponse(url="/admin/courses", status_code=303)
+# # Kurs bearbeiten
+# @app.post("/admin/courses/edit/{course_id}")
+# async def admin_edit_course(
+#     request: Request,
+#     course_id: str,
+#     name: str = Form(...)
+# ):
+#     await verify_role(request, ["admin"])    # Prüfung: Gleiche Beschreibung wie bei anderem Kurs?
+#     all_courses = db.get_all_courses()
+#     for course in all_courses:
+#         if course["id"] != course_id and course["name"].lower() == name.lower():
+#             return RedirectResponse(url="/admin/courses", status_code=303)
 
-    db.update_course(course_id, name)
+#     db.update_course(course_id, name)
 
-    return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich bearbeitet.", status_code=303)
+#     return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich bearbeitet.", status_code=303)
 
 
 
