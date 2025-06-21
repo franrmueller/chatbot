@@ -28,6 +28,12 @@
                     <input type="text" name="name" required class="form-control" placeholder="z. B. WWI-BE122 (Wirtschaftsinformatik – Business Engineering)">
                 </div>
                 <input type="hidden" name="professor" value="{{ user.username }}">
+                <p class="text-danger mt-2 fw-bold">
+                Hinweis: <br>
+                Ein einmal hinzugefügter Kurs kann nachträglich nicht mehr bearbeitet werden. Bitte prüfe die Angaben sorgfältig vor dem Speichern.
+                </p>
+
+
                 <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -35,7 +41,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- Edit Modal
     {% if edit_course %}
     <div class="modal-overlay">
         <div class="modal-content">
@@ -52,7 +58,7 @@
             </form>
         </div>
     </div>
-    {% endif %}
+    {% endif %} -->
 
 
     <!-- Alert Messages -->
@@ -82,11 +88,11 @@
                     <div class="class-submeta"><strong>Studierende:</strong> {{ student_counts.get(course.id, 0) }}</div>
                 </div>
                 <div class="btn-group">
-                    <form method="get" action="/admin/courses/edit/{{ course.id }}">
+                    <!-- <form method="get" action="/admin/courses/edit/{{ course.id }}">
                         <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
                             <i class="fas fa-pen"></i>
                         </button>
-                    </form>
+                    </form> -->
                     <form method="post" action="/admin/courses/delete/{{ course.id }}">
                         <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
                             <i class="fas fa-trash"></i>
