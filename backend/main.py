@@ -173,60 +173,6 @@ async def admin_classes_page(request: Request):
         "error": error
     })
 
-
-# # Password Reset
-# SECURITY_QUESTIONS = [
-#     "Was ist der Name deines ersten Haustiers?",
-#     "In welcher Stadt bist du geboren?",
-#     "Wie lautet der Mädchenname deiner Mutter?"
-# ]
-# Add these routes to your existing FastAPI application
-
-# @app.post("/api/password-reset/verify")
-# async def verify_security_answers(request_data: dict):
-#     """Verify a student's security answers before allowing password reset"""
-#     username = request_data.get("username")
-#     answers = request_data.get("answers", [])
-    
-#     if not username or len(answers) != 3:
-#         raise HTTPException(status_code=400, detail="Missing username or answers")
-    
-#     success, message = db.verify_student_security_answers(username, answers)
-    
-#     if not success:
-#         raise HTTPException(status_code=400, detail=message)
-    
-    # # Create temporary token for password reset
-    # reset_token = secrets.token_hex(32)
-    # return {"message": message, "reset_token": reset_token, "username": username}
-
-# @app.get("/password-reset", response_class=HTMLResponse)
-# async def password_reset_page(request: Request):
-#     """Serve the password reset page"""
-#     return templates.TemplateResponse("password-reset.html", {"request": request})
-
-# @app.post("/api/password-reset")
-# async def reset_password(request_data: dict):
-#     """Reset a student's password after security answers have been verified"""
-#     username = request_data.get("username")
-#     new_password = request_data.get("new_password")
-#     answers = request_data.get("answers", [])
-    
-#     if not username or not new_password or len(answers) != 3:
-#         raise HTTPException(status_code=400, detail="Missing required fields")
-    
-#     # First verify the security answers
-#     success, message = db.verify_student_security_answers(username, answers)
-#     if not success:
-#         raise HTTPException(status_code=400, detail=message)
-    
-#     # If answers are correct, reset the password
-#     success, message = db.reset_student_password(username, new_password)
-#     if not success:
-#         raise HTTPException(status_code=400, detail=message)
-    
-#     return {"message": "Password reset successful"}
-
 # ======<===================================
 # Professor Routes
 # =========================================
@@ -267,63 +213,6 @@ async def admin_dashboard(request: Request):
     if isinstance(user, RedirectResponse):
         return user
     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
-
-# @app.get("/admin/chathistory", response_class=HTMLResponse)
-# async def admin_chathistory(request: Request):
-#     user = await verify_role(request, ["admin"])
-#     if isinstance(user, RedirectResponse):
-#         return user
-
-#     classes = db.get_all_classes()
-#     courses = db.get_all_courses()    # Sichere Umwandlung der Query-Parameter
-#     selected_class_ids = [
-#         int(cid) for cid in request.query_params.getlist("class_id") if cid.isdigit()
-#     ]
-#     selected_course_ids = request.query_params.getlist("course_id")
-#     start_date = request.query_params.get("from")
-#     end_date = request.query_params.get("to")
-
-#     selected_class = None
-#     history = []
-
-#     # Wenn Filter aktiv → Chat-Historie laden
-#     if selected_class_ids or selected_course_ids or start_date or end_date:
-#         try:
-#             history = db.get_chat_history_filtered(
-#                 class_ids=selected_class_ids if selected_class_ids else None,
-#                 course_ids=selected_course_ids if selected_course_ids else None,
-#                 start_date=start_date,
-#                 end_date=end_date
-#             )
-#         except Exception as e:
-#             print(f"[ERROR] Fehler beim Laden der Chat-Historie: {e}")
-#             history = []
-
-#         # Erste ausgewählte Klasse anzeigen (für Reset-Button und Titel)
-#         if selected_class_ids:
-#             try:
-#                 selected_class = db.get_class_by_id(selected_class_ids[0])
-#             except Exception as e:
-#                 print(f"[ERROR] Fehler bei selected_class: {e}")
-#                 selected_class = None
-#         elif history and len(history) > 0:
-#             # Wenn nur Kurse ausgewählt, aber Geschichte vorhanden, zeige erste Klasse aus Ergebnissen
-#             try:
-#                 first_class_id = history[0].get('class_id')
-#                 if first_class_id:
-#                     selected_class = db.get_class_by_id(first_class_id)
-#             except Exception as e:
-#                 print(f"[ERROR] Fehler bei selected_class aus Historie: {e}")
-#                 selected_class = None
-
-#     return templates.TemplateResponse("admin_chathistory.html", {
-#         "request": request,
-#         "user": user,
-#         "classes": classes,
-#         "courses": courses,
-#         "selected_class": selected_class,
-#         "history": history
-#     })
 
 @app.get("/admin/chathistory", response_class=HTMLResponse)
 async def admin_chathistory(request: Request):
@@ -863,26 +752,6 @@ async def admin_courses(request: Request):
         "error": error
     })
 
-
-
-#Fehlermeldung 
-# @app.get("/admin/courses")
-# async def admin_courses(request: Request, success: Optional[str] = None, error: Optional[str] = None):
-#     user = await verify_role(request, ["admin"])
-#     courses = db.get_all_courses()
-#     student_counts = db.get_student_counts_per_course()
-    
-#     return templates.TemplateResponse("admin_courses.html", {
-#         "request": request,
-#         "user": user,
-#         "courses": courses,
-#         "student_counts": student_counts,
-#         "success": "Kurs erfolgreich hinzugefügt." if success else None,
-#         "error": "Fehler beim Hinzufügen des Kurses." if error else None
-#     })
-
-
-
 # Kurs hinzufügen
 @app.post("/admin/courses/add")
 async def admin_add_course(
@@ -910,15 +779,6 @@ async def admin_add_course(
 
     return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich hinzugefügt.", status_code=303)
 
-
-
-
-
-#Fehlermeldung
-# return RedirectResponse(url="/admin/courses?success=1", status_code=303)
-# return RedirectResponse(url="/admin/courses?error=1", status_code=303)
-
-
 # Kurs löschen
 @app.post("/admin/courses/delete/{course_id}")
 async def admin_delete_course(request: Request, course_id: str):
@@ -931,48 +791,6 @@ async def admin_delete_course(request: Request, course_id: str):
     else:
         from urllib.parse import quote
         return RedirectResponse(url=f"/admin/courses?error={quote(message)}", status_code=303)
-
-
-
-
-
-# # Kurs bearbeiten
-# @app.get("/admin/courses/edit/{course_id}", response_class=HTMLResponse)
-# async def admin_edit_course_inline(request: Request, course_id: str):
-#     user = await verify_role(request, ["admin"])
-#     courses = db.get_all_courses()
-#     edit_course = db.get_course_by_id(course_id)
-#     professors = db.get_all_professors()
-#     student_counts = db.count_students_per_course()
-#     return templates.TemplateResponse("admin_courses.html", {
-#         "request": request,
-#         "user": user,
-#         "courses": courses,
-#         "edit_course": edit_course,
-#         "professors": professors,
-#         "student_counts": student_counts
-#     })
-
-
-
-# # Kurs bearbeiten
-# @app.post("/admin/courses/edit/{course_id}")
-# async def admin_edit_course(
-#     request: Request,
-#     course_id: str,
-#     name: str = Form(...)
-# ):
-#     await verify_role(request, ["admin"])    # Prüfung: Gleiche Beschreibung wie bei anderem Kurs?
-#     all_courses = db.get_all_courses()
-#     for course in all_courses:
-#         if course["id"] != course_id and course["name"].lower() == name.lower():
-#             return RedirectResponse(url="/admin/courses", status_code=303)
-
-#     db.update_course(course_id, name)
-
-#     return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich bearbeitet.", status_code=303)
-
-
 
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students_page(request: Request):
