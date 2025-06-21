@@ -1078,37 +1078,46 @@ async def change_password_action(
     })
 
 
-@app.get("/admin/classes/edit/{class_id}", response_class=HTMLResponse)
-async def edit_class_form(request: Request, class_id: int):
-    user = await verify_role(request, ["admin"])
-    if isinstance(user, RedirectResponse):
-        return user
-
-    class_data = db.get_class_by_id(class_id)
-    if not class_data:
-        return RedirectResponse(url="/admin/classes?error=Vorlesung nicht gefunden", status_code=303)
-
-    all_courses = db.get_all_courses()
-
-    return templates.TemplateResponse("edit_class_modal.html", {
-        "request": request,
-        "user": user,
-        "edit_class": class_data,
-        "courses": all_courses
-    })
+@app.get("/admin/classes/edit/{class_id}")
+async def edit_class_form(class_id: int, request: Request, current_user: dict = Depends(get_current_user)):
+    if current_user['role'] != 'admin':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    try:
+        # Get the class to edit
+        edit_class = db.get_class_by_id(class_id)
+        if not edit_class:
+            raise HTTPException(status_code=404, detail="Class not found")
+        
+        # Get all classes for the main list
+        all_classes = db.get_all_classes()  # Changed to use correct function name
+        
+        # Get all courses for the form
+        all_courses = db.get_all_courses()  # Changed to use correct function name
+        
+        return templates.TemplateResponse("classes.html", {
+            "request": request,
+            "user": current_user,
+            "classes": all_classes,
+            "courses": all_courses,
+            "edit_class": edit_class
+        })
+    except Exception as e:
+        logger.error(f"Error loading edit class form: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/admin/classes/edit/{class_id}")
 async def update_class_courses(
     request: Request,
     class_id: int,
-    courses: Optional[List[int]] = Form(None)
+    courses: Optional[List[str]] = Form(None)  # Changed from List[int] to List[str]
 ):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
 
-    # Kurse aktualisieren (z. B. Join-Tabelle neu schreiben)
+    # Kurse aktualisieren (z. B. Join-Tabelle neu schreiben)
     db.update_class_courses(class_id, courses or [])
 
     return RedirectResponse(url="/admin/classes?success=Vorlesung erfolgreich aktualisiert.", status_code=303)

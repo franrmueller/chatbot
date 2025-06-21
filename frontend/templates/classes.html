@@ -85,10 +85,9 @@ Meine Vorlesungen – Vorlesungschatbot
 <div class="class-list ">
     {% for class in classes %}
     
-        <div class="class-card mb-4 p-3 border rounded shadow-sm">
-            <div>
+        <div class="class-card mb-4 p-3 border rounded shadow-sm">            <div>
                 <h5 class="mb-2">{{ class.name }}</h5>
-                <p class-meta mb-1"><strong>Kurse:</strong>
+                <p class="class-meta mb-1"><strong>Kurse:</strong>
                     {% if class.courses %}
                         {% for course in class.courses %}
                             {{ course.course_name }}{% if not loop.last %}, {% endif %}
@@ -97,72 +96,24 @@ Meine Vorlesungen – Vorlesungschatbot
                         {{ class.course_name }}
                     {% endif %}
                 </p>
-                <p class-submeta mb-1"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
+                <p class="class-submeta mb-1"><strong>Vorlesungs-ID:</strong> {{ class.id }}</p>
                 {% if user.role in ['admin', 'professor'] %}
-                <p class-submeta mb-1"><strong>Studierende:</strong> {{ class.student_counts or 0 }}</p>
+                <p class="class-submeta mb-1"><strong>Studierende:</strong> {{ class.student_counts or 0 }}</p>
                 {% endif %}
                 {% if user.role == 'admin' %}
-                <p class-submeta mb-1"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
+                <p class="class-submeta mb-1"><strong>Dozent:</strong> {{ class.professor_name or "Nicht zugewiesen" }}</p>
                 {% endif %}
             </div>
 
             <!-- Action buttons -->
-            <div class="d-flex justify-content-end gap-2 mt-3">
-
-                {% if user.role in ['admin'] %}
-                <!-- Edit lecture modal -->
-                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal-{{ class.id }}">
-                    <i class="fas fa-pen"></i>
+            <div class="d-flex justify-content-end gap-2 mt-3">                {% if user.role in ['admin'] %}
+                <!-- Edit lecture button -->
+                <form method="get" action="/admin/classes/edit/{{ class.id }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-warning" title="Bearbeiten">
+                        <i class="fas fa-pen"></i>
                     </button>
-
-                    <!-- Modal -->
-                    <div class="modal fade" id="editModal-{{ class.id }}" tabindex="-1" aria-labelledby="editModalLabel-{{ class.id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                        <form method="post" action="/admin/classes/edit/{{ class.id }}">
-                            <div class="modal-header">
-                            <h5 class="modal-title" id="editModalLabel-{{ class.id }}">Vorlesung bearbeiten</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
-                            </div>
-                            <div class="modal-body">
-
-                            <!-- lecture name (no edit) -->
-                            <div class="mb-3">
-                                <label class="form-label">Vorlesungsname</label>
-                                <input type="text" class="form-control" value="{{ class.name }}" readonly>
-                            </div>
-
-                            <!-- professor name (no edit) -->
-                            <div class="mb-3">
-                                <label class="form-label">Dozent:in</label>
-                                <input type="text" class="form-control" value="{{ class.professor_name }}" readonly>
-                            </div>
-
-                            <!-- edit courses -->
-                            <div class="mb-3">
-                                <label class="form-label">Zugeordnete Kurse</label>
-                                {% for course in courses %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="courses" value=" {{ course.id }}"
-                                    id="edit-course-{{ class.id }}-{{ course.id }}"
-                                    {% if course.id in class.course_ids %}checked{% endif %}>
-                                    <label class="form-check-label" for="edit-course-{{ class.id }}-{{ course.id }}">
-                                    {{ course.name }}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-
-                            </div>
-                            <div class="modal-footer">
-                            <button type="submit" class="btn btn-success">Speichern</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                            </div>
-                        </form>
-                        </div>
-                    </div>
-                    </div>
-                    {% endif %}
+                </form>
+                {% endif %}
                 <!-- PDF export -->  
                 {% if user.role in ['admin', 'professor'] %}
                 <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary btn-sm" title="PDF-Übersicht">
@@ -184,9 +135,51 @@ Meine Vorlesungen – Vorlesungschatbot
                 {% endif %}
             </div>
         </div>
-    
-    {% endfor %}
+      {% endfor %}
 </div>
+
+<!-- Edit Class Modal -->     
+{% if edit_class %}
+<div class="modal-overlay">
+    <div class="modal-content">
+        <form method="POST" action="/admin/classes/edit/{{ edit_class.id }}">
+            <button type="button" class="modal-close-btn" onclick="window.location.href='/admin/classes'" title="Schließen">
+                <i class="fas fa-xmark"></i>
+            </button>
+            <h3 class="mb-3">Vorlesung "{{ edit_class.name }}" bearbeiten</h3>
+            
+            <p class="text-muted mb-3">Dozent:in: {{ edit_class.professor_name }}</p>
+
+            <!-- edit courses -->
+            <div class="form-group">
+                <label class="form-label">Zugeordnete Kurse</label>
+                <div id="course-checkboxes">
+                    {% for course in courses %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="courses" value="{{ course.id }}"
+                        id="edit-course-{{ course.id }}"
+                        {% if course.id in edit_class.course_ids %}checked{% endif %}>
+                        <label class="form-check-label" for="edit-course-{{ course.id }}">
+                        {{ course.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-3">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='/admin/classes'" title="Abbrechen">
+                    Abbrechen
+                </button>
+                <button type="submit" class="btn btn-success" title="Speichern">
+                    <i class="fas fa-floppy-disk"></i> Speichern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 {% else %}
 <!-- No lectures fallback -->
     {% if user.role == 'student' %}
@@ -222,7 +215,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 checkbox.type = 'checkbox';
                 checkbox.className = 'form-check-input';
                 checkbox.name = 'courses';
-                checkbox.value = course.id;
+                checkbox.value = course.id; // Changed from course.course_id to course.id
                 checkbox.id = 'course-' + course.id;
 
                 const label = document.createElement('label');
@@ -235,6 +228,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                 container.appendChild(wrapper);
             });
         }
+    } catch (error) {
+        console.error('Fehler beim Laden der Kurse:', error);
     } catch (error) {
         console.error('Fehler beim Laden der Kurse:', error);
     }
