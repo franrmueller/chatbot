@@ -5,14 +5,14 @@
 <div class="dashboard-container">
     <h1>Kursverwaltung</h1>
 
-    <!-- Zurück -->
+    <!-- Back Button -->
     <div class="btn-group mb-3">
         <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
             <i class="fas fa-arrow-left"></i>
         </a>
     </div>
 
-    <!-- Neuer Kurs -->
+    <!-- Add New Course -->
     <div class="card mb-4">
         <div class="card-header">
             <h4 class="mb-0">Neuen Kurs hinzufügen</h4> 
@@ -28,6 +28,12 @@
                     <input type="text" name="name" required class="form-control" placeholder="z. B. WWI-BE122 (Wirtschaftsinformatik – Business Engineering)">
                 </div>
                 <input type="hidden" name="professor" value="{{ user.username }}">
+                <p class="text-danger mt-2 fw-bold">
+                Hinweis: <br>
+                Ein einmal hinzugefügter Kurs kann nachträglich nicht mehr bearbeitet werden. Bitte prüfe die Angaben sorgfältig vor dem Speichern.
+                </p>
+
+
                 <button type="submit" class="btn btn-primary mt-2" title="Hinzufügen">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -35,7 +41,7 @@
         </div>
     </div>
 
-    <!-- Bearbeiten Modal (wenn gesetzt) -->
+    <!-- Edit Modal
     {% if edit_course %}
     <div class="modal-overlay">
         <div class="modal-content">
@@ -52,8 +58,10 @@
             </form>
         </div>
     </div>
-    {% endif %}
+    {% endif %} -->
 
+
+    <!-- Alert Messages -->
 {% if error %}
 <div class="alert alert-danger text-center" role="alert">
   {{ error }}
@@ -66,7 +74,7 @@
 {% endif %}
 
 
-    <!-- Vorhandene Kurse -->
+    <!-- Existing Courses -->
     <hr>
     <h2>Vorhandene Kurse</h2>
     <div class="class-list">
@@ -80,11 +88,11 @@
                     <div class="class-submeta"><strong>Studierende:</strong> {{ student_counts.get(course.id, 0) }}</div>
                 </div>
                 <div class="btn-group">
-                    <form method="get" action="/admin/courses/edit/{{ course.id }}">
+                    <!-- <form method="get" action="/admin/courses/edit/{{ course.id }}">
                         <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
                             <i class="fas fa-pen"></i>
                         </button>
-                    </form>
+                    </form> -->
                     <form method="post" action="/admin/courses/delete/{{ course.id }}">
                         <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
                             <i class="fas fa-trash"></i>

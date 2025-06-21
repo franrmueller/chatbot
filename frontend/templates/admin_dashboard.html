@@ -5,17 +5,17 @@ Admin-Dashboard – Vorlesungschatbot
 {% endblock %}
 
 {% block content %}
-<!-- Container für das gesamte Dashboard -->
+<!-- Container for the entire dashboard -->
 <div class="dashboard-container">
     
-    <!-- Überschrift des Dashboards -->
+    <!-- Dashboard title -->
     <h1 class="dashboard-title">Administrator-Dashboard</h1>
     <p class="dashboard-subtitle">Wählen Sie einen Bereich, den Sie verwalten möchten:</p>
 
-    <!-- Grid-Layout für die Verwaltungskarten -->
+    <!-- Grid layout for admin cards -->
     <div class="admin-grid">
     
-    <!-- Karte: Professor:innen -->
+    <!-- Card: Professors -->
     <div class="admin-card">
         <h2>Professor:innen</h2>
         <p>Übersicht aller angelegten Professor:innen. Hinzufügen, bearbeiten oder löschen.</p>
@@ -24,7 +24,7 @@ Admin-Dashboard – Vorlesungschatbot
         </a>
     </div>
 
-    <!-- Karte: Vorlesungen -->
+    <!-- Card: Lectures -->
     <div class="admin-card">
         <h2>Vorlesungen</h2>
         <p>Alle Vorlesungen im System. Erstellen, zuordnen, bearbeiten oder entfernen.</p>
@@ -34,7 +34,7 @@ Admin-Dashboard – Vorlesungschatbot
     </div>
 
 
-    <!-- Karte: Studiengangverwaltung -->
+    <!-- Card: Course Management -->
     <div class="admin-card">
         <h2>Kursverwaltung</h2>
         <p>Alle Kurse im System. Erstellen, zuordnen oder entfernen.</p>
@@ -43,7 +43,7 @@ Admin-Dashboard – Vorlesungschatbot
         </a>
     </div>
 
-    <!-- Karte: Chathistorien -->
+    <!-- Card: Chat History -->
     <div class="admin-card">
         <h2>Chathistorien</h2>
         <p>Alle gestellten Fragen pro Kurs gefiltert und anonymisiert einsehen.</p>
@@ -56,7 +56,7 @@ Admin-Dashboard – Vorlesungschatbot
 
 </div>
 
-<!-- Optionales Skript zur Absicherung des Zurück-Buttons -->
+<!-- Optional script to secure the back button behavior -->
 <script>
 (function() {
     const referrer = document.referrer;

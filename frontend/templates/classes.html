@@ -16,6 +16,7 @@ Meine Vorlesungen – Vorlesungschatbot
 {% if user.role == 'admin' %}
 <h1>Vorlesungen verwalten</h1>
 
+<!-- Back button -->
 <div class="btn-group mb-3">
   <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
     <i class="fas fa-arrow-left"></i>
@@ -23,7 +24,7 @@ Meine Vorlesungen – Vorlesungschatbot
 </div>
 
 
-<!-- neue Vorlesung hinzufügen --> 
+<!-- Add new lecture (admin only) -->
     <div class="card mb-4">
     <div class="card-header">
         <h4 class="mb-0">Neue Vorlesung erstellen</h4>
@@ -35,30 +36,24 @@ Meine Vorlesungen – Vorlesungschatbot
                 <input type="text" name="name" id="name" required class="form-control" placeholder="z. B. Einführung in KI">
             </div>
 
-            <!-- <div class="form-group">
-                <label for="course">Kurs (Studiengang)</label>
-                <select id="course" name="course" class="form-control" required>
-                    <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
-                </select>
-            </div> -->
-
+            <!-- Course checkboxes -->
             <div class="form-group">
                 <label for="courses">Kurse (Studiengänge)</label>
                 <div id="course-checkboxes">
-                {% for course in courses %}
+                <!-- {% for course in courses %}
                     <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="course-{{ course.id }}" name="courses" value="{{ course.id }}">
                     <label class="form-check-label" for="course-{{ course.id }}">
                         {{ course.id }} {{ course.name }}
                     </label>
                     </div>
-                {% endfor %}
+                {% endfor %} -->
                 </div>
 
             </div>
 
 
-
+            <!-- Professor assignment -->
             <div class="form-group">
                 <label for="taught_by">Dozent:in</label>
                 <select id="taught_by" name="taught_by" class="form-control" required>
@@ -73,7 +68,7 @@ Meine Vorlesungen – Vorlesungschatbot
     </div>
 </div>
 
-
+<!-- Feedback messages -->
 {% if success %}
 <div class="alert alert-success">{{ success }}</div>
 {% endif %}
@@ -85,7 +80,7 @@ Meine Vorlesungen – Vorlesungschatbot
 {% else %}
 <h1>Meine Vorlesungen</h1>
 {% endif %}
-
+<!-- Lecture listing -->
 {% if classes %}
 <div class="class-list ">
     {% for class in classes %}
@@ -111,10 +106,11 @@ Meine Vorlesungen – Vorlesungschatbot
                 {% endif %}
             </div>
 
+            <!-- Action buttons -->
             <div class="d-flex justify-content-end gap-2 mt-3">
 
                 {% if user.role in ['admin'] %}
-                <!-- Bearbeiten-Button -->
+                <!-- Edit lecture modal -->
                     <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal-{{ class.id }}">
                     <i class="fas fa-pen"></i>
                     </button>
@@ -130,19 +126,19 @@ Meine Vorlesungen – Vorlesungschatbot
                             </div>
                             <div class="modal-body">
 
-                            <!-- Vorlesungsname (nicht änderbar) -->
+                            <!-- lecture name (no edit) -->
                             <div class="mb-3">
                                 <label class="form-label">Vorlesungsname</label>
                                 <input type="text" class="form-control" value="{{ class.name }}" readonly>
                             </div>
 
-                            <!-- Dozent:in (nicht änderbar) -->
+                            <!-- professor name (no edit) -->
                             <div class="mb-3">
                                 <label class="form-label">Dozent:in</label>
                                 <input type="text" class="form-control" value="{{ class.professor_name }}" readonly>
                             </div>
 
-                            <!-- Kurse bearbeiten -->
+                            <!-- edit courses -->
                             <div class="mb-3">
                                 <label class="form-label">Zugeordnete Kurse</label>
                                 {% for course in courses %}
@@ -167,15 +163,18 @@ Meine Vorlesungen – Vorlesungschatbot
                     </div>
                     </div>
                     {% endif %}
+                <!-- PDF export -->  
                 {% if user.role in ['admin', 'professor'] %}
                 <a href="/pdf?class_id={{ class.id }}" class="btn btn-secondary btn-sm" title="PDF-Übersicht">
                     <i class="fas fa-file-alt"></i>
                 </a>
                 {% endif %}
+                <!-- Open chat -->
                 <a href="/chat/{{ class.id }}" class="btn btn-primary btn-sm" title="Zum Chat">
                     <i class="fas fa-comments"></i>
                 </a>
                 {% if user.role == 'admin' %}
+                <!-- Delete lecture -->
                 <form method="POST" action="/admin/classes/delete/{{ class.id }}" class="d-inline" 
                     onsubmit="return confirm('Diesen Kurs wirklich löschen?');">
                     <button type="submit" class="btn btn-danger btn-sm" title="Löschen">
@@ -189,6 +188,7 @@ Meine Vorlesungen – Vorlesungschatbot
     {% endfor %}
 </div>
 {% else %}
+<!-- No lectures fallback -->
     {% if user.role == 'student' %}
         <p>Du bist aktuell in keiner Vorlesung eingeschrieben.</p>
         <p>Bitte kontaktiere deinen Dozenten oder Administrator.</p>
