@@ -97,6 +97,54 @@ Chat – Vorlesung {{ class.name }}
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
+    // Show typing indicator
+    function showTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typing-indicator';
+        typingDiv.classList.add('chat-message', 'bot');
+        typingDiv.style.margin = "0.5rem 0";
+        typingDiv.style.fontStyle = "italic";
+        typingDiv.style.color = "#666";
+        typingDiv.innerHTML = '<strong>Vorlesungschatbot:</strong> <span class="typing-dots">tippt<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>';
+        
+        chatWindow.appendChild(typingDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        // Add CSS animation for dots
+        const style = document.createElement('style');
+        style.textContent = `
+            .typing-dots .dot {
+                animation: typing 1.5s infinite;
+            }
+            .typing-dots .dot:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+            .typing-dots .dot:nth-child(3) {
+                animation-delay: 0.4s;
+            }
+            @keyframes typing {
+                0%, 60%, 100% {
+                    opacity: 0.3;
+                }
+                30% {
+                    opacity: 1;
+                }
+            }
+        `;
+        if (!document.head.querySelector('#typing-style')) {
+            style.id = 'typing-style';
+            document.head.appendChild(style);
+        }
+    }
+
+    // Remove typing indicator
+    function removeTypingIndicator() {
+        const typingDiv = document.getElementById('typing-indicator');
+        if (typingDiv) {
+            typingDiv.remove();
+        }
+    }
+
     // Save to both session history (permanent until logout) and visible chat
     function saveToSession(sender, text) {
         // Save to permanent session history
@@ -170,6 +218,9 @@ Chat – Vorlesung {{ class.name }}
         appendMessage('user', question);
         saveToSession('user', question);
         userInput.value = '';
+        
+        // Show typing indicator
+        showTypingIndicator();
  
         try {
             const response = await fetch('/chat/{{ class.id }}', {
@@ -179,10 +230,17 @@ Chat – Vorlesung {{ class.name }}
             });
  
             const data = await response.json();
+            
+            // Remove typing indicator before showing response
+            removeTypingIndicator();
+            
             appendMessage('bot', data.answer);
             saveToSession('bot', data.answer);
 
         } catch (error) {
+            // Remove typing indicator on error too
+            removeTypingIndicator();
+            
             const errorMsg = 'Fehler beim Abrufen der Antwort.';
             appendMessage('bot', errorMsg);
             saveToSession('bot', errorMsg);
