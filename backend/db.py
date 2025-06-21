@@ -274,79 +274,6 @@ def register_student(student_data):
             cursor.close()
         if connection:
             connection.close()
-
-# def verify_student_security_answers(username, answers):
-#     """Verify a student's security answers"""
-#     connection = None
-#     cursor = None
-#     try:
-#         connection = sql_connect()
-#         cursor = connection.cursor(dictionary=True)
-        
-#         # Get the student's stored security answers
-#         cursor.execute("SELECT security_answer1, security_answer2, security_answer3 FROM students WHERE username = %s", 
-#                       (username,))
-#         student = cursor.fetchone()
-        
-#         if not student:
-#             return False, "Student not found"
-        
-#         # Check if any answers are missing
-#         if not all([student['security_answer1'], student['security_answer2'], student['security_answer3']]):
-#             return False, "Security answers not set up for this student"
-        
-#         # Verify each answer
-#         is_valid = (
-#             pwd_context.verify(answers[0], student['security_answer1']) and
-#             pwd_context.verify(answers[1], student['security_answer2']) and
-#             pwd_context.verify(answers[2], student['security_answer3'])
-#         )
-        
-#         if is_valid:
-#             return True, "Security answers verified"
-#         else:
-#             return False, "Incorrect security answers"
-            
-#     except Exception as e:
-#         logging.error(f"Error verifying security answers: {str(e)}")
-#         return False, f"Error: {str(e)}"
-#     finally:
-#         if cursor:
-#             cursor.close()
-#         if connection:
-#             connection.close()
-
-# def reset_student_password(username, new_password):
-#     """Reset a student's password after security verification"""
-#     connection = None
-#     cursor = None
-#     try:
-#         connection = sql_connect()
-#         cursor = connection.cursor()
-        
-#         # Hash the new password
-#         password_hash = pwd_context.hash(new_password)
-        
-#         # Update the student's password
-#         cursor.execute("UPDATE students SET password = %s WHERE username = %s", 
-#                       (password_hash, username))
-        
-#         connection.commit()
-        
-#         if cursor.rowcount > 0:
-#             return True, "Password reset successfully"
-#         else:
-#             return False, "Student not found"
-            
-#     except Exception as e:
-#         logging.error(f"Error resetting password: {str(e)}")
-#         return False, f"Error: {str(e)}"
-#     finally:
-#         if cursor:
-#             cursor.close()
-#         if connection:
-#             connection.close()
-
             
 # Authentication function to get user by session token
 def get_user_by_session(session_token):
@@ -1488,50 +1415,6 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
         return False
     
 
-# def get_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
-#     connection = sql_connect()
-#     cursor = connection.cursor(dictionary=True)
-
-#     query = """
-#         SELECT h.*, cls.name AS class_name, c.id AS course_id
-#         FROM chat_history h
-#         JOIN classes cls ON h.class_id = cls.id
-#         JOIN class_courses cc ON cls.id = cc.class_id
-#         JOIN courses c ON cc.course_id = c.id
-#         WHERE 1=1    """
-#     params = []
-
-#     if class_ids:
-#         placeholders = ','.join(['%s'] * len(class_ids))
-#         query += f" AND h.class_id IN ({placeholders})"
-#         params.extend(class_ids)
-
-#     if course_ids:
-#         placeholders = ','.join(['%s'] * len(course_ids))
-#         query += f" AND c.id IN ({placeholders})"
-#         params.extend(course_ids)
-
-#     if start_date:
-#         query += " AND DATE(h.timestamp) >= %s"
-#         params.append(start_date)
-
-#     if end_date:
-#         query += " AND DATE(h.timestamp) <= %s"
-#         params.append(end_date)
-
-#     query += " ORDER BY h.timestamp DESC"
-
-#     try:
-#         cursor.execute(query, params)
-#         result = cursor.fetchall()
-#     except Exception as e:
-#         print(f"[DB ERROR] Chat-History Filter Error: {e}")
-#         result = []
-
-#     cursor.close()
-#     connection.close()
-#     return result
-
 def delete_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
     """Delete chat history based on filters - only deletes matching records"""
     connection = sql_connect()
@@ -1780,3 +1663,4 @@ def get_classes_by_course_id(course_id):
             cursor.close()
         if connection:
             connection.close()
+            
