@@ -66,17 +66,6 @@ Chathistorien – Admin
     </button>  </div>
 </form>
 
-<!-- {% if history %}
-<h2>Chat-Historie 
-  {% if selected_class %}
-    für {{ selected_class.name }}
-    {% if selected_class.course_name %}({{ selected_class.course_name }}){% endif %}
-  {% elif filter_info %}
-    - {{ filter_info }}
-  {% endif %}
-  <small class="text-muted">({{ history|length }} Benutzer)</small>
-</h2> -->
-
 {% if history and (request.query_params.get('class_id') or request.query_params.get('course_id')) %}
 <div class="alert alert-warning">
   <form method="post" action="/admin/chathistory/reset_filtered" onsubmit="return confirm('Soll der gesamte Chatverlauf für die ausgewählten Filter wirklich gelöscht werden?');" style="display: inline;">
@@ -99,12 +88,15 @@ Chathistorien – Admin
 </form>
 {% endif %}
 
+{% if history %}
+
 <div class="chat-history-list">
   {% for user_hash, user_data in history.items() %}
     <div class="chat-history-card" style="border:2px solid #007bff; border-radius:12px; padding:1.5em; margin-bottom:2em; background-color:#f8f9fa;">
       <div style="border-bottom:1px solid #dee2e6; padding-bottom:0.5em; margin-bottom:1em;">
-        <strong style="color:#007bff;">User (anonym):</strong> {{ user_data.user_hash }}
+        <strong style="color:#007bff;">User (anonymisiert):</strong> {{ user_data.user_hash }}
         {% if user_data.class_name %}<br><strong>Vorlesung:</strong> {{ user_data.class_name }}{% endif %}
+        {% if user_data.student_course %}<br><strong>Student Kurs:</strong> {{ user_data.student_course }}{% endif %}
       </div>
       
       <div class="conversation-flow">
@@ -125,10 +117,18 @@ Chathistorien – Admin
     </div>
   {% endfor %}
 </div>
-  {% elif request.query_params.get('class_id') or request.query_params.get('course_id') or request.query_params.get('from') or request.query_params.get('to') %}
-    <p>Keine Chat-Historie für die ausgewählten Filter gefunden.</p>
-  {% else %}
-    <p>Bitte wählen Sie Filter aus, um die Chathistorie anzuzeigen.</p>
-  {% endif %}
+
+{% elif request.query_params.get('class_id') or request.query_params.get('course_id') or request.query_params.get('from') or request.query_params.get('to') %}
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    Keine Chat-Historie für die ausgewählten Filter gefunden.
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    Bitte wählen Sie Filter aus, um die Chathistorie anzuzeigen.
+  </div>
+{% endif %}
+
 </div>
 {% endblock %}

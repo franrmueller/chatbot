@@ -1498,6 +1498,136 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
 #     connection.close()
 #     return result
 
+def delete_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
+    """Delete chat history based on filters - only deletes matching records"""
+    connection = sql_connect()
+    if not connection:
+        return False
+        
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        # First, get the chat records that match the filters
+        query = """
+            SELECT h.id, h.user_hash, h.class_id
+            FROM chat_history h
+            WHERE 1=1
+        """
+        params = []
+
+        if class_ids:
+            placeholders = ','.join(['%s'] * len(class_ids))
+            query += f" AND h.class_id IN ({placeholders})"
+            params.extend(class_ids)
+
+        # Filter by student's actual course, not class association
+        if course_ids:
+            placeholders = ','.join(['%s'] * len(course_ids))
+            query += f" AND h.student_course IN ({placeholders})"
+            params.extend(course_ids)
+
+        if start_date:
+            query += " AND DATE(h.timestamp) >= %s"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND DATE(h.timestamp) <= %s"
+            params.append(end_date)
+
+        # Get the matching records
+        cursor.execute(query, params)
+        chat_records = cursor.fetchall()
+        
+        if not chat_records:
+            return True  # Nothing to delete
+        
+        # Delete the matching chat history records
+        chat_ids = [str(record['id']) for record in chat_records]
+        delete_query = f"DELETE FROM chat_history WHERE id IN ({','.join(['%s'] * len(chat_ids))})"
+        cursor.execute(delete_query, chat_ids)
+        
+        connection.commit()
+        
+        # Also clean up JSON files for affected users/classes
+        user_class_combinations = set()
+        for record in chat_records:
+            user_class_combinations.add((record['user_hash'], record['class_id']))
+        
+        # Clean JSON files (remove only matching entries, not entire files)
+        for user_hash, class_id in user_class_combinations:
+            clean_json_file_filtered(user_hash, class_id, class_ids, course_ids, start_date, end_date)
+        
+        logging.info(f"Deleted {len(chat_records)} filtered chat history records")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error deleting filtered chat history: {str(e)}")
+        connection.rollback()
+        return False
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def clean_json_file_filtered(user_hash, class_id, class_ids=None, course_ids=None, start_date=None, end_date=None):
+    """Clean specific entries from JSON files based on filters"""
+    try:
+        chats_dir = os.path.join(os.getcwd(), 'chats')
+        class_dir = os.path.join(chats_dir, f"class_{class_id}")
+        json_file = os.path.join(class_dir, f"{user_hash}.json")
+        
+        if not os.path.exists(json_file):
+            return
+        
+        # Read the existing file
+        with open(json_file, 'r') as f:
+            try:
+                chat_data = json.load(f)
+            except json.JSONDecodeError:
+                return
+        
+        if 'messages' not in chat_data:
+            return
+        
+        # Filter out messages that match the deletion criteria
+        original_count = len(chat_data['messages'])
+        filtered_messages = []
+        
+        for message in chat_data['messages']:
+            should_delete = True
+            
+            # Check class filter
+            if class_ids and message.get('class_id') not in class_ids:
+                should_delete = False
+            
+            # Check date filters
+            if start_date or end_date:
+                msg_date = message.get('timestamp', '')[:10]  # Get date part
+                if start_date and msg_date < start_date:
+                    should_delete = False
+                if end_date and msg_date > end_date:
+                    should_delete = False
+            
+            # Note: course_ids filtering is handled at DB level since JSON doesn't store course info
+            
+            if not should_delete:
+                filtered_messages.append(message)
+        
+        # Update the file
+        if len(filtered_messages) > 0:
+            chat_data['messages'] = filtered_messages
+            with open(json_file, 'w') as f:
+                json.dump(chat_data, f, indent=2)
+        else:
+            # If no messages left, remove the file
+            os.remove(json_file)
+        
+        logging.info(f"Cleaned JSON file: removed {original_count - len(filtered_messages)} messages")
+        
+    except Exception as e:
+        logging.error(f"Error cleaning JSON file {json_file}: {str(e)}")
+
 def delete_chat_history_for_class(class_id):
     # Delete from SQL
     connection = sql_connect()

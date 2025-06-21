@@ -811,28 +811,29 @@ async def admin_reset_chathistory(request: Request, class_id: int):
 
 @app.post("/admin/chathistory/reset_filtered")
 async def reset_filtered_chat_history(request: Request, class_id: List[str] = Form([]), course_id: List[str] = Form([])):
-    user = await verify_role(request, ["admin"])
-    if isinstance(user, RedirectResponse):
-        return user
+    user = await get_current_user(request)
+    await verify_role(request, ["admin"])
     
     try:
-        # Convert class_ids to integers and reset for specific classes
+        # Convert class_ids to integers
         class_ids = [int(cid) for cid in class_id if cid.isdigit()]
-        for class_id_int in class_ids:
-            db.delete_chat_history_for_class(class_id_int)
         
-        # If course_ids are provided, get all classes for those courses and reset
-        if course_id:
-            for cid in course_id:
-                course_classes = db.get_classes_by_course_id(cid)
-                for class_obj in course_classes:
-                    db.delete_chat_history_for_class(class_obj['id'])
+        # Use the new filtered deletion function instead of deleting entire classes
+        success = db.delete_chat_history_filtered(
+            class_ids=class_ids if class_ids else None,
+            course_ids=course_id if course_id else None,
+            start_date=request.query_params.get("from"),
+            end_date=request.query_params.get("to")
+        )
         
-        return RedirectResponse(url="/admin/chathistory?success=reset", status_code=303)
+        if success:
+            return RedirectResponse(url="/admin/chathistory?success=filtered_reset", status_code=303)
+        else:
+            return RedirectResponse(url="/admin/chathistory?error=filtered_reset_failed", status_code=303)
+            
     except Exception as e:
         logging.error(f"Error resetting filtered chat history: {e}")
-        return RedirectResponse(url="/admin/chathistory?error=reset_failed", status_code=303)
-
+        return RedirectResponse(url="/admin/chathistory?error=filtered_reset_failed", status_code=303)
 
 # =========================================	
 # Admin Course Management
