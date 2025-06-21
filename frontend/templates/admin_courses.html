@@ -5,14 +5,14 @@
 <div class="dashboard-container">
     <h1>Kursverwaltung</h1>
 
-    <!-- Zurück -->
+    <!-- Back Button -->
     <div class="btn-group mb-3">
         <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
             <i class="fas fa-arrow-left"></i>
         </a>
     </div>
 
-    <!-- Neuer Kurs -->
+    <!-- Add New Course -->
     <div class="card mb-4">
         <div class="card-header">
             <h4 class="mb-0">Neuen Kurs hinzufügen</h4> 
@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <!-- Bearbeiten Modal (wenn gesetzt) -->
+    <!-- Edit Modal -->
     {% if edit_course %}
     <div class="modal-overlay">
         <div class="modal-content">
@@ -54,6 +54,8 @@
     </div>
     {% endif %}
 
+
+    <!-- Alert Messages -->
 {% if error %}
 <div class="alert alert-danger text-center" role="alert">
   {{ error }}
@@ -66,7 +68,7 @@
 {% endif %}
 
 
-    <!-- Vorhandene Kurse -->
+    <!-- Existing Courses -->
     <hr>
     <h2>Vorhandene Kurse</h2>
     <div class="class-list">

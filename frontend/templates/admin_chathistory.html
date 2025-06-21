@@ -8,15 +8,16 @@ Chathistorien – Admin
 <div class="dashboard-container">
   <h1>Chathistorien (anonymisiert)</h1>
 
+  <!-- Back to Dashboard Button -->
   <div class="btn-group mb-3">
     <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
       <i class="fas fa-arrow-left"></i>
     </a>
   </div>
-
+<!-- Filter Form -->
   <form method="GET" action="/admin/chathistory" class="form-inline mb-4">
 
-  <!-- Kurse Checkboxen -->
+<!-- Course Checkboxes -->
   <div class="form-group mb-3">
     <label class="form-label d-block">Kurse:</label>
     <div id="course-checkboxes">
@@ -32,7 +33,7 @@ Chathistorien – Admin
     </div>
   </div>
 
-      <!-- Vorlesungen Checkboxen -->
+<!-- Class Checkboxes -->
   <div class="form-group mb-3 mt-2">
     <label class="form-label d-block">Vorlesungen:</label>
     <div id="class-checkboxes">
@@ -51,7 +52,7 @@ Chathistorien – Admin
 
 
 
-  <!-- Datum -->
+ <!-- Date Filters -->
   <div class="form-group mb-2 mt-2">
     <label for="from" class="form-label">Von:</label>
     <input type="date" name="from" class="form-control" value="{{ request.query_params.from or '' }}">
@@ -62,7 +63,7 @@ Chathistorien – Admin
     <input type="date" name="to" class="form-control" value="{{ request.query_params.to or '' }}">
   </div>
 
-  <!-- Filtern Button -->
+  <!-- Filter Button -->
   <div class="form-group mt-3">
     <button type="submit" class="btn btn-primary" title="Filtern">
       <i class="fas fa-filter"></i> Filtern
@@ -72,9 +73,10 @@ Chathistorien – Admin
 
 
 
-
+<!-- Selected Class and Chat History -->
   {% if selected_class %}
   <h2>Fragen & Antworten für {{ selected_class.name }} ({{ selected_class.course_name }})</h2>
+  <!-- Reset Chat History Button -->
   <form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
     <button type="submit" class="btn btn-danger mb-3">
     <i class="fas fa-trash"></i> Chatverlauf zurücksetzen
