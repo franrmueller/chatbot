@@ -1267,6 +1267,69 @@ def save_chat_history(user_id, class_id, question, answer):
         if connection:
             connection.close()
 
+def get_chat_history_filtered_grouped(class_ids=None, course_ids=None, start_date=None, end_date=None):
+    connection = sql_connect()
+    if not connection:
+        return {}
+        
+    cursor = connection.cursor(dictionary=True)
+
+    query = """
+        SELECT h.*, cls.name AS class_name, c.id AS course_id
+        FROM chat_history h
+        JOIN classes cls ON h.class_id = cls.id
+        JOIN class_courses cc ON cls.id = cc.class_id
+        JOIN courses c ON cc.course_id = c.id
+        WHERE 1=1
+    """
+    params = []
+
+    if class_ids:
+        placeholders = ','.join(['%s'] * len(class_ids))
+        query += f" AND h.class_id IN ({placeholders})"
+        params.extend(class_ids)
+
+    if course_ids:
+        placeholders = ','.join(['%s'] * len(course_ids))
+        query += f" AND c.id IN ({placeholders})"
+        params.extend(course_ids)
+
+    if start_date:
+        query += " AND DATE(h.timestamp) >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += " AND DATE(h.timestamp) <= %s"
+        params.append(end_date)
+
+    query += " ORDER BY h.user_hash, h.timestamp ASC"
+
+    try:
+        cursor.execute(query, params)
+        result = cursor.fetchall()
+        
+        # Group by user_hash
+        grouped_chats = {}
+        for chat in result:
+            user_hash = chat['user_hash']
+            if user_hash not in grouped_chats:
+                grouped_chats[user_hash] = {
+                    'user_hash': user_hash,
+                    'class_name': chat['class_name'],
+                    'conversations': []
+                }
+            grouped_chats[user_hash]['conversations'].append(chat)
+        
+        return grouped_chats
+    except Exception as e:
+        logging.error(f"Chat-History Filter Error: {e}")
+        return {}
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 def get_chat_history_by_course(course_id):
     """Get chat history for a specific course, grouped by class"""
     connection = None
@@ -1382,51 +1445,49 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
         return False
     
 
-def get_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
+# def get_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
+#     connection = sql_connect()
+#     cursor = connection.cursor(dictionary=True)
 
-    query = """
-        SELECT h.*, cls.name AS class_name, c.id AS course_id
-        FROM chat_history h
-        JOIN classes cls ON h.class_id = cls.id
-        JOIN class_courses cc ON cls.id = cc.class_id
-        JOIN courses c ON cc.course_id = c.id
-        WHERE 1=1
-    """
-    params = []
+#     query = """
+#         SELECT h.*, cls.name AS class_name, c.id AS course_id
+#         FROM chat_history h
+#         JOIN classes cls ON h.class_id = cls.id
+#         JOIN class_courses cc ON cls.id = cc.class_id
+#         JOIN courses c ON cc.course_id = c.id
+#         WHERE 1=1    """
+#     params = []
 
-    if class_ids:
-        placeholders = ','.join(['%s'] * len(class_ids))
-        query += f" AND h.class_id IN ({placeholders})"
-        params.extend(class_ids)
+#     if class_ids:
+#         placeholders = ','.join(['%s'] * len(class_ids))
+#         query += f" AND h.class_id IN ({placeholders})"
+#         params.extend(class_ids)
 
-    if course_ids:
-        placeholders = ','.join(['%s'] * len(course_ids))
-        query += f" AND c.id IN ({placeholders})"
-        params.extend(course_ids)
+#     if course_ids:
+#         placeholders = ','.join(['%s'] * len(course_ids))
+#         query += f" AND c.id IN ({placeholders})"
+#         params.extend(course_ids)
 
-    if start_date:
-        query += " AND h.timestamp >= %s"
-        params.append(start_date)
+#     if start_date:
+#         query += " AND DATE(h.timestamp) >= %s"
+#         params.append(start_date)
 
-    if end_date:
-        query += " AND h.timestamp <= %s"
-        params.append(end_date)
+#     if end_date:
+#         query += " AND DATE(h.timestamp) <= %s"
+#         params.append(end_date)
 
-    query += " ORDER BY h.timestamp DESC"
+#     query += " ORDER BY h.timestamp DESC"
 
-    try:
-        cursor.execute(query, params)
-        result = cursor.fetchall()
-    except Exception as e:
-        print(f"[DB ERROR] Chat-History Filter Error: {e}")
-        result = []
+#     try:
+#         cursor.execute(query, params)
+#         result = cursor.fetchall()
+#     except Exception as e:
+#         print(f"[DB ERROR] Chat-History Filter Error: {e}")
+#         result = []
 
-    cursor.close()
-    connection.close()
-    return result
-
+#     cursor.close()
+#     connection.close()
+#     return result
 
 def delete_chat_history_for_class(class_id):
     # Delete from SQL
@@ -1435,6 +1496,22 @@ def delete_chat_history_for_class(class_id):
     cursor.execute("DELETE FROM chat_history WHERE class_id = %s", (class_id,))
     connection.commit()
     cursor.close()
+    connection.close()
+
+    # Delete JSON files
+    chats_dir = os.path.join(os.getcwd(), 'chats', f'class_{class_id}')
+    if os.path.exists(chats_dir):
+        for filename in os.listdir(chats_dir):
+            file_path = os.path.join(chats_dir, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logging.error(f"Error deleting chat JSON file: {file_path} - {str(e)}")
+        try:
+            os.rmdir(chats_dir)
+        except Exception as e:
+            logging.error(f"Error removing chat directory: {chats_dir} - {str(e)}")
     connection.close()
 
     # Delete JSON files
@@ -1505,3 +1582,28 @@ def update_class_courses(class_id: int, course_ids: List[int]):
     finally:
         cursor.close()
         connection.close()
+
+def get_classes_by_course_id(course_id):
+    """Get all classes for a specific course"""
+    connection = sql_connect()
+    if not connection:
+        return []
+        
+    cursor = connection.cursor(dictionary=True)
+    try:
+        query = """
+            SELECT cls.* FROM classes cls
+            JOIN class_courses cc ON cls.id = cc.class_id
+            WHERE cc.course_id = %s
+        """
+        cursor.execute(query, (course_id,))
+        result = cursor.fetchall()
+        return result
+    except Exception as e:
+        logging.error(f"Error getting classes by course: {e}")
+        return []
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()

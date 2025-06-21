@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import backend.db as db
 import backend.rag as rag
+import logging
 
 
 app = FastAPI()
@@ -266,54 +267,102 @@ async def admin_dashboard(request: Request):
         return user
     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
 
+# @app.get("/admin/chathistory", response_class=HTMLResponse)
+# async def admin_chathistory(request: Request):
+#     user = await verify_role(request, ["admin"])
+#     if isinstance(user, RedirectResponse):
+#         return user
+
+#     classes = db.get_all_classes()
+#     courses = db.get_all_courses()    # Sichere Umwandlung der Query-Parameter
+#     selected_class_ids = [
+#         int(cid) for cid in request.query_params.getlist("class_id") if cid.isdigit()
+#     ]
+#     selected_course_ids = request.query_params.getlist("course_id")
+#     start_date = request.query_params.get("from")
+#     end_date = request.query_params.get("to")
+
+#     selected_class = None
+#     history = []
+
+#     # Wenn Filter aktiv → Chat-Historie laden
+#     if selected_class_ids or selected_course_ids or start_date or end_date:
+#         try:
+#             history = db.get_chat_history_filtered(
+#                 class_ids=selected_class_ids if selected_class_ids else None,
+#                 course_ids=selected_course_ids if selected_course_ids else None,
+#                 start_date=start_date,
+#                 end_date=end_date
+#             )
+#         except Exception as e:
+#             print(f"[ERROR] Fehler beim Laden der Chat-Historie: {e}")
+#             history = []
+
+#         # Erste ausgewählte Klasse anzeigen (für Reset-Button und Titel)
+#         if selected_class_ids:
+#             try:
+#                 selected_class = db.get_class_by_id(selected_class_ids[0])
+#             except Exception as e:
+#                 print(f"[ERROR] Fehler bei selected_class: {e}")
+#                 selected_class = None
+#         elif history and len(history) > 0:
+#             # Wenn nur Kurse ausgewählt, aber Geschichte vorhanden, zeige erste Klasse aus Ergebnissen
+#             try:
+#                 first_class_id = history[0].get('class_id')
+#                 if first_class_id:
+#                     selected_class = db.get_class_by_id(first_class_id)
+#             except Exception as e:
+#                 print(f"[ERROR] Fehler bei selected_class aus Historie: {e}")
+#                 selected_class = None
+
+#     return templates.TemplateResponse("admin_chathistory.html", {
+#         "request": request,
+#         "user": user,
+#         "classes": classes,
+#         "courses": courses,
+#         "selected_class": selected_class,
+#         "history": history
+#     })
+
 @app.get("/admin/chathistory", response_class=HTMLResponse)
 async def admin_chathistory(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
-
-    classes = db.get_all_classes()
+    
     courses = db.get_all_courses()
-
-    # Sichere Umwandlung der Query-Parameter
+    classes = db.get_all_classes()
+    
+    # Get filter parameters
     selected_class_ids = [
         int(cid) for cid in request.query_params.getlist("class_id") if cid.isdigit()
     ]
     selected_course_ids = request.query_params.getlist("course_id")
     start_date = request.query_params.get("from")
     end_date = request.query_params.get("to")
-
+      # Get filtered and grouped chat history
+    history = {}
     selected_class = None
-    history = []
-
-    # Wenn Filter aktiv → Chat-Historie laden
+    
     if selected_class_ids or selected_course_ids or start_date or end_date:
-        try:
-            history = db.get_chat_history_filtered(
-                class_ids=selected_class_ids if selected_class_ids else None,
-                course_ids=selected_course_ids if selected_course_ids else None,
-                start_date=start_date,
-                end_date=end_date
-            )
-        except Exception as e:
-            print(f"[ERROR] Fehler beim Laden der Chat-Historie: {e}")
-            history = []
-
-        # Erste ausgewählte Klasse anzeigen
-        if selected_class_ids:
-            try:
-                selected_class = db.get_class_by_id(selected_class_ids[0])
-            except Exception as e:
-                print(f"[ERROR] Fehler bei selected_class: {e}")
-                selected_class = None
-
+        history = db.get_chat_history_filtered_grouped(
+            class_ids=selected_class_ids if selected_class_ids else None,
+            course_ids=selected_course_ids if selected_course_ids else None,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # Set selected_class if only one class is selected
+        if len(selected_class_ids) == 1:
+            selected_class = db.get_class_by_id(selected_class_ids[0])
+    
     return templates.TemplateResponse("admin_chathistory.html", {
         "request": request,
         "user": user,
-        "classes": classes,
         "courses": courses,
-        "selected_class": selected_class,
-        "history": history
+        "classes": classes,
+        "history": history,
+        "selected_class": selected_class
     })
 
 @app.get("/classes", response_class=HTMLResponse)
@@ -730,6 +779,30 @@ async def admin_reset_chathistory(request: Request, class_id: int):
 
     # Clean redirect back to chathistory page
     return RedirectResponse(url="/admin/chathistory", status_code=303)
+
+@app.post("/admin/chathistory/reset_filtered")
+async def reset_filtered_chat_history(request: Request, class_id: List[str] = Form([]), course_id: List[str] = Form([])):
+    user = await verify_role(request, ["admin"])
+    if isinstance(user, RedirectResponse):
+        return user
+    
+    try:
+        # Convert class_ids to integers and reset for specific classes
+        class_ids = [int(cid) for cid in class_id if cid.isdigit()]
+        for class_id_int in class_ids:
+            db.delete_chat_history_for_class(class_id_int)
+        
+        # If course_ids are provided, get all classes for those courses and reset
+        if course_id:
+            for cid in course_id:
+                course_classes = db.get_classes_by_course_id(cid)
+                for class_obj in course_classes:
+                    db.delete_chat_history_for_class(class_obj['id'])
+        
+        return RedirectResponse(url="/admin/chathistory?success=reset", status_code=303)
+    except Exception as e:
+        logging.error(f"Error resetting filtered chat history: {e}")
+        return RedirectResponse(url="/admin/chathistory?error=reset_failed", status_code=303)
 
 
 # =========================================	

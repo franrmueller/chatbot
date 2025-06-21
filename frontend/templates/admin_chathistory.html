@@ -15,15 +15,14 @@ Chathistorien – Admin
   </div>
 
   <form method="GET" action="/admin/chathistory" class="form-inline mb-4">
-
   <!-- Kurse Checkboxen -->
   <div class="form-group mb-3">
     <label class="form-label d-block">Kurse:</label>
     <div id="course-checkboxes">
       {% for course in courses %}
       <div class="form-check">
-        <input class="form-check-input" type="checkbox" name="course_id" value="{{ course.id }}"
-        {% if course.id in request.query_params.getlist('course_id') %}checked{% endif %}>
+        <input class="form-check-input" type="checkbox" name="course_id" value="{{ course.id }}" id="course-{{ course.id }}"
+        {% if course.id|string in request.query_params.getlist('course_id') %}checked{% endif %}>
         <label class="form-check-label" for="course-{{ course.id }}">
           {{ course.name }} ({{ course.id }})
         </label>
@@ -49,8 +48,6 @@ Chathistorien – Admin
     </div>
   </div>
 
-
-
   <!-- Datum -->
   <div class="form-group mb-2 mt-2">
     <label for="from" class="form-label">Von:</label>
@@ -66,36 +63,71 @@ Chathistorien – Admin
   <div class="form-group mt-3">
     <button type="submit" class="btn btn-primary" title="Filtern">
       <i class="fas fa-filter"></i> Filtern
-    </button>
-  </div>
+    </button>  </div>
 </form>
 
-
-
-
+  {% if history %}
+<h2>Chat-Historie 
   {% if selected_class %}
-  <h2>Fragen & Antworten für {{ selected_class.name }} ({{ selected_class.course_name }})</h2>
-  <form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
+    für {{ selected_class.name }}
+    {% if selected_class.course_name %}({{ selected_class.course_name }}){% endif %}
+  {% else %}
+    ({{ history|length }} Benutzer)
+  {% endif %}
+</h2>
+
+{% if history and (request.query_params.get('class_id') or request.query_params.get('course_id')) %}
+<div class="alert alert-warning">
+  <form method="post" action="/admin/chathistory/reset_filtered" onsubmit="return confirm('Soll der gesamte Chatverlauf für die ausgewählten Filter wirklich gelöscht werden?');" style="display: inline;">
+    {% for class_id in request.query_params.getlist('class_id') %}
+      <input type="hidden" name="class_id" value="{{ class_id }}">
+    {% endfor %}
+    {% for course_id in request.query_params.getlist('course_id') %}
+      <input type="hidden" name="course_id" value="{{ course_id }}">
+    {% endfor %}
     <button type="submit" class="btn btn-danger mb-3">
-    <i class="fas fa-trash"></i> Chatverlauf zurücksetzen
+      <i class="fas fa-trash"></i> Gefilterte Chatverläufe zurücksetzen
     </button>
   </form>
-  {% if history %}
-  <div class="chat-history-list">
-    {% for chat in history %}
-      <div class="chat-history-card" style="border:1px solid #ccc; border-radius:8px; padding:1em; margin-bottom:1em;">
-        <div><strong>User (anonym):</strong> {{ chat.user_hash }}</div>
-        <div><strong>Frage:</strong> {{ chat.question }}</div>
-        <div><strong>Antwort:</strong> {{ chat.answer }}</div>
-        <div><strong>Datum:</strong> {{ chat.timestamp }}</div>
-      </div>
-    {% endfor %}
-        </div>
-    {% else %}
-        <p>Für diese Vorlesung wurden noch keine Fragen gestellt.</p>
-    {% endif %}
-{% else %}
-  <p>Bitte wählen Sie eine Vorlesung aus, um die Chathistorie anzuzeigen.</p>
+</div>
+{% elif selected_class %}
+<form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
+  <button type="submit" class="btn btn-danger mb-3">
+  <i class="fas fa-trash"></i> Chatverlauf zurücksetzen
+  </button>
+</form>
 {% endif %}
+
+<div class="chat-history-list">
+  {% for user_hash, user_data in history.items() %}
+    <div class="chat-history-card" style="border:2px solid #007bff; border-radius:12px; padding:1.5em; margin-bottom:2em; background-color:#f8f9fa;">
+      <div style="border-bottom:1px solid #dee2e6; padding-bottom:0.5em; margin-bottom:1em;">
+        <strong style="color:#007bff;">User (anonym):</strong> {{ user_data.user_hash }}
+        {% if user_data.class_name %}<br><strong>Vorlesung:</strong> {{ user_data.class_name }}{% endif %}
+      </div>
+      
+      <div class="conversation-flow">
+        {% for chat in user_data.conversations %}
+          <div style="margin-bottom:1em; padding:0.75em; border-left:3px solid #28a745; background-color:#ffffff; border-radius:8px;">
+            <div style="margin-bottom:0.5em;">
+              <strong style="color:#28a745;">Frage:</strong> {{ chat.question }}
+            </div>
+            <div style="margin-bottom:0.5em;">
+              <strong style="color:#6f42c1;">Antwort:</strong> {{ chat.answer }}
+            </div>
+            <div style="font-size:0.9em; color:#6c757d;">
+              <strong>Datum:</strong> {{ chat.timestamp }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+  {% elif request.query_params.get('class_id') or request.query_params.get('course_id') or request.query_params.get('from') or request.query_params.get('to') %}
+    <p>Keine Chat-Historie für die ausgewählten Filter gefunden.</p>
+  {% else %}
+    <p>Bitte wählen Sie Filter aus, um die Chathistorie anzuzeigen.</p>
+  {% endif %}
 </div>
 {% endblock %}
