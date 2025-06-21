@@ -1102,12 +1102,46 @@ def add_course(course_data):
 
 def delete_course(course_id):
     conn = sql_connect()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return True, "Kurs gelöscht"
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Check if there are students enrolled in this course
+        cursor.execute("SELECT COUNT(*) as count FROM students WHERE course = %s", (course_id,))
+        student_count = cursor.fetchone()['count']
+        
+        if student_count > 0:
+            cursor.close()
+            conn.close()
+            return False, f"Kurs kann nicht gelöscht werden. {student_count} Studierende sind in diesem Kurs eingeschrieben."
+        
+        # Check if there are classes associated with this course
+        cursor.execute("SELECT COUNT(*) as count FROM class_courses WHERE course_id = %s", (course_id,))
+        class_count = cursor.fetchone()['count']
+        
+        if class_count > 0:
+            cursor.close()
+            conn.close()
+            return False, f"Kurs kann nicht gelöscht werden. {class_count} Vorlesungen sind mit diesem Kurs verknüpft."
+        
+        # If no dependencies, delete the course
+        cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
+        conn.commit()
+        
+        if cursor.rowcount > 0:
+            cursor.close()
+            conn.close()
+            return True, "Kurs erfolgreich gelöscht."
+        else:
+            cursor.close()
+            conn.close()
+            return False, "Kurs nicht gefunden."
+            
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        logging.error(f"Error deleting course {course_id}: {str(e)}")
+        return False, f"Fehler beim Löschen des Kurses: {str(e)}"
 
 def get_course_by_id(course_id):
     conn = sql_connect()

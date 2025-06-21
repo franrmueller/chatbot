@@ -20,10 +20,14 @@ PDF-Übersicht – Kurs {{ course.name }}
             <div class="mb-3">
                 <label for="pdf-file" class="form-label">PDF Datei:</label>
                 <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
-            </div>
-            <button type="submit" class="btn btn-primary" title="PDF hochladen">
-                <i class="fas fa-upload"></i>
+            </div>            <button type="submit" class="btn btn-primary" id="upload-btn" title="PDF hochladen">
+                <span id="upload-icon" class="fas fa-upload"></span>
+                <span id="upload-text">Hochladen</span>
             </button>
+            <div id="upload-progress" class="alert alert-info d-none mt-2">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>PDF wird hochgeladen...</span>
+            </div>
             <div id="upload-error" class="alert alert-danger d-none"></div>
         <!-- JavaScript for handling hidden field with file name -->
         <script>
@@ -42,17 +46,27 @@ PDF-Übersicht – Kurs {{ course.name }}
             if (fileInput.files.length > 0) {
                 nameInput.value = fileInput.files[0].name;
             }
-        });    
-        // Ensure name field is set before submitting
+        });        // Ensure name field is set before submitting
         document.getElementById('upload-form').addEventListener('submit', async function(e) {
             const fileInput = document.getElementById('pdf-file');
             const file = fileInput.files[0];
             const classId = document.querySelector('input[name="class_id"]').value;
             const errorDiv = document.getElementById('upload-error');
+            const progressDiv = document.getElementById('upload-progress');
+            const uploadBtn = document.getElementById('upload-btn');
+            const uploadIcon = document.getElementById('upload-icon');
+            const uploadText = document.getElementById('upload-text');
+            
             errorDiv.classList.add('d-none');
             errorDiv.textContent = '';
 
             if (!file) return;
+
+            // Show loading state
+            progressDiv.classList.remove('d-none');
+            uploadBtn.disabled = true;
+            uploadIcon.className = 'fas fa-spinner fa-spin';
+            uploadText.textContent = 'Wird hochgeladen...';
 
             // Set the file name as a hidden input for the backend
             let nameInput = document.querySelector('input[name="name"]');
@@ -63,6 +77,8 @@ PDF-Übersicht – Kurs {{ course.name }}
                 this.appendChild(nameInput);
             }
             nameInput.value = file.name;
+            
+            // The form will submit normally, the loading state will be visible until page reload
         });
         </script>
         <!-- Flash messages -->

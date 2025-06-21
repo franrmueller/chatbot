@@ -209,8 +209,10 @@ CREATE TABLE chat_history (
     class_id INT NOT NULL,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
+    student_course VARCHAR(15) NULL,  -- Hinzugefügtes Feld für ordnungsgemäße Filterung
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_course) REFERENCES courses(id) ON DELETE SET NULL
 )
 ```
 
@@ -891,8 +893,10 @@ CREATE TABLE chat_history (
     class_id INT NOT NULL,
     question TEXT NOT NULL,
     answer TEXT NOT NULL,
+    student_course VARCHAR(15) NULL,  -- Added field for proper filtering
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+    FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_course) REFERENCES courses(id) ON DELETE SET NULL
 )
 ```
 

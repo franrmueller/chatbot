@@ -59,17 +59,15 @@
         </div>
     </div>
     {% endif %} -->
-
-
     <!-- Alert Messages -->
 {% if error %}
-<div class="alert alert-danger text-center" role="alert">
-  {{ error }}
+<div class="alert alert-danger" role="alert">
+  <strong>Fehler:</strong> {{ error }}
 </div>
 {% endif %}
 {% if success %}
-<div class="alert alert-success text-center" role="alert">
-  {{ success }}
+<div class="alert alert-success" role="alert">
+  <strong>Erfolg:</strong> {{ success }}
 </div>
 {% endif %}
 
@@ -92,8 +90,7 @@
                         <button type="submit" class="btn btn-warning btn-sm uniform-btn" title="Bearbeiten">
                             <i class="fas fa-pen"></i>
                         </button>
-                    </form> -->
-                    <form method="post" action="/admin/courses/delete/{{ course.id }}">
+                    </form> -->                    <form method="post" action="/admin/courses/delete/{{ course.id }}" onsubmit="return confirm('Sind Sie sicher, dass Sie den Kurs &quot;{{ course.name }}&quot; löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')">
                         <button type="submit" class="btn btn-danger btn-sm uniform-btn" title="Löschen">
                             <i class="fas fa-trash"></i>
                         </button>

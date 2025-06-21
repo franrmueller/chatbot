@@ -1,4 +1,5 @@
 from typing import Optional, List
+import logging
 from fastapi import (
     FastAPI, Request, HTTPException,
     Body, Depends, Cookie, Form,
@@ -741,7 +742,7 @@ async def delete_pdf(request: Request, pdf_id: int):
     class_id = db.get_class_id_by_pdf(pdf_id)
     rag.delete_vectors_for_pdf(pdf_id)
     db.delete_pdf(pdf_id)
-    return RedirectResponse(url="/pdf", status_code=303)
+    return RedirectResponse(url=f"/pdf?class_id={class_id}", status_code=303)
 
 
 # =========================================
@@ -922,8 +923,14 @@ async def admin_add_course(
 @app.post("/admin/courses/delete/{course_id}")
 async def admin_delete_course(request: Request, course_id: str):
     await verify_role(request, ["admin"])
-    db.delete_course(course_id)
-    return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich gelöscht.", status_code=303)
+    success, message = db.delete_course(course_id)
+    
+    if success:
+        from urllib.parse import quote
+        return RedirectResponse(url=f"/admin/courses?success={quote(message)}", status_code=303)
+    else:
+        from urllib.parse import quote
+        return RedirectResponse(url=f"/admin/courses?error={quote(message)}", status_code=303)
 
 
 
@@ -1091,8 +1098,7 @@ async def edit_class_form(class_id: int, request: Request, current_user: dict = 
         
         # Get all classes for the main list
         all_classes = db.get_all_classes()  # Changed to use correct function name
-        
-        # Get all courses for the form
+          # Get all courses for the form
         all_courses = db.get_all_courses()  # Changed to use correct function name
         
         return templates.TemplateResponse("classes.html", {
@@ -1103,7 +1109,7 @@ async def edit_class_form(class_id: int, request: Request, current_user: dict = 
             "edit_class": edit_class
         })
     except Exception as e:
-        logger.error(f"Error loading edit class form: {e}")
+        logging.error(f"Error loading edit class form: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
