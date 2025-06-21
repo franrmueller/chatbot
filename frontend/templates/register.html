@@ -8,10 +8,10 @@ Registrieren - Vorlesungschatbot
 <div class="auth-container">
     <h1>Studierenden-Registrierung</h1>
 
-    <!-- Fehleranzeige -->
+    <!-- Error message display -->
     <div class="error-message" id="error-message" style="display: none;"></div>
 
-    <!-- Registrierungsformular -->
+    <!-- Registration form -->
     <form id="register-form" class="auth-form">
 
         <!-- <div class="form-group">
@@ -24,12 +24,13 @@ Registrieren - Vorlesungschatbot
             <input type="text" id="last-name" name="last-name" required>
         </div> -->
 
+        <!-- Username input -->
         <div class="form-group">
             <label for="username">Benutzername:</label>
             <input type="text" id="username" name="username" required>
         </div>
 
-        <!-- Dynamisch geladene Kursauswahl -->
+        <!-- Course selection (populated via JavaScript) -->
         <div class="form-group">
             <label for="course">Kurs auswählen:</label>
             <select id="course" name="course" required>
@@ -37,41 +38,41 @@ Registrieren - Vorlesungschatbot
                 <!-- Kurse werden per JS geladen -->
             </select>
         </div>
-
+        <!-- Password input -->
         <div class="form-group">
             <label for="password">Passwort:</label>
             <input type="password" id="password" name="password" required minlength="8">
             <small class="form-info">Mindestens 8 Zeichen und ein Symbol erforderlich</small>
         </div>
-
+        <!-- Password confirmation -->
         <div class="form-group">
             <label for="confirm-password">Passwort bestätigen:</label>
             <input type="password" id="confirm-password" name="confirm-password" required minlength="8">
         </div>
 
-        <!-- Sicherheitsfragen für Passwort-Wiederherstellung
-        <h3>Sicherheitsfrage</h3>
-    <p class="form-info">Wähle eine Sicherheitsfrage und gib die Antwort ein. Diese wird verwendet, um dein Passwort zurückzusetzen.</p> -->
+        <!-- security question (optional) -->
+        <!-- <h3>Sicherheitsfrage</h3>
+        <p class="form-info">Wähle eine Sicherheitsfrage und gib die Antwort ein. Diese wird verwendet, um dein Passwort zurückzusetzen.</p> --> -->
 
-    <!-- <div class="form-group">
-        <label for="security-question">Frage auswählen:</label>
-        <select id="security-question" name="security-question" class="form-control" required>
-            <option value="" disabled selected>Bitte wähle eine Frage</option>
-            <option value="first_pet">Was ist der Name deines ersten Haustiers?</option>
-            <option value="birth_city">In welcher Stadt bist du geboren?</option>
-            <option value="mother_maiden">Wie lautet der Mädchenname deiner Mutter?</option>
-        </select>
-    </div>
+        <!-- <div class="form-group">
+            <label for="security-question">Frage auswählen:</label>
+            <select id="security-question" name="security-question" class="form-control" required>
+                <option value="" disabled selected>Bitte wähle eine Frage</option>
+                <option value="first_pet">Was ist der Name deines ersten Haustiers?</option>
+                <option value="birth_city">In welcher Stadt bist du geboren?</option>
+                <option value="mother_maiden">Wie lautet der Mädchenname deiner Mutter?</option>
+            </select>
+        </div>
 
-    <div class="form-group">
-        <label for="security-answer">Deine Antwort:</label>
-        <input type="text" id="security-answer" name="security-answer" class="form-control" required placeholder="Antwort eingeben">
-    </div> -->
+        <div class="form-group">
+            <label for="security-answer">Deine Antwort:</label>
+            <input type="text" id="security-answer" name="security-answer" class="form-control" required placeholder="Antwort eingeben">
+        </div> -->
 
-
+        <!-- Submit button -->
         <button type="submit" class="btn btn-primary">Registrieren</button>
     </form>
-
+<!-- Link to login page -->
     <div class="auth-links">
         <p>Bereits ein Konto? <a href="/login">Anmelden</a></p>
     </div>
@@ -80,7 +81,7 @@ Registrieren - Vorlesungschatbot
 
 {% block extra_js %}
 <script>
-    // Kurse beim Laden der Seite von /api/courses laden
+    // Load course list from backend on page load
     document.addEventListener('DOMContentLoaded', async function () {
         try {
             const response = await fetch('/api/courses');
@@ -97,7 +98,7 @@ Registrieren - Vorlesungschatbot
         }
     });
 
-    // Registrierungsformular absenden
+    // // Handle form submission
     document.getElementById('register-form').addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -105,14 +106,14 @@ Registrieren - Vorlesungschatbot
         const confirmPassword = document.getElementById('confirm-password').value;
         const errorMessage = document.getElementById('error-message');
 
-        // Passwort-Validierung: Mindestens 8 Zeichen
+        // Password must be at least 8 characters
         if (password.length < 8) {
             errorMessage.textContent = 'Das Passwort muss mindestens 8 Zeichen lang sein.';
             errorMessage.style.display = 'block';
             return;
         }
 
-        // Symbol-Validierung (mindestens ein Sonderzeichen)
+        // Password must contain at least one symbol
         const symbolRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
         if (!symbolRegex.test(password)) {
             errorMessage.textContent = 'Das Passwort muss mindestens ein Symbol enthalten (!@#$%^&*()_+-=[]{}|;:,.<>?).';
@@ -120,13 +121,13 @@ Registrieren - Vorlesungschatbot
             return;
         }
 
-        // Passwörter müssen übereinstimmen
+        // Passwords must match
         if (password !== confirmPassword) {
             errorMessage.textContent = 'Passwörter stimmen nicht überein.';
             errorMessage.style.display = 'block';
             return;
         }
-
+        // Gather registration data
         const userData = {
             username: document.getElementById('username').value,
             password: password,
@@ -136,6 +137,7 @@ Registrieren - Vorlesungschatbot
 
         };
 
+        // Send registration data to backend
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
