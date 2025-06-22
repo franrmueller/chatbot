@@ -1,3 +1,4 @@
+# FastAPI imports and utilities for route handling and request parsing
 from typing import Optional, List
 import logging
 from fastapi import (
@@ -9,13 +10,17 @@ from fastapi import (
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+
+# Custom database and RAG module imports
 import backend.db as db
 import backend.rag as rag
-import logging
 
 
+# Create FastAPI instance and set up logging
 app = FastAPI()
 pwd_context = db.pwd_context
+
+# Initialize DB connection
 db.initialize_database()
 
 # Configure frontend templates and static files
@@ -28,6 +33,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # Authentication Functions
 # =========================================
 
+# Get current logged-in user based on session token in cookie
 async def get_current_user(request: Request):
     # Get token from cookie
     session_token = request.cookies.get("session_token")
@@ -43,6 +49,8 @@ async def get_current_user(request: Request):
     
     return user
 
+
+# Validate that a user has one of the allowed roles
 async def verify_role(request: Request, allowed_roles: list):
     """Verify that the user has one of the allowed roles"""
     user = await get_current_user(request)
@@ -58,6 +66,7 @@ async def verify_role(request: Request, allowed_roles: list):
 # Public Routes
 # =========================================
 
+# Homepage
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {
@@ -88,8 +97,6 @@ async def legacy_login_redirect(request: Request):
     if registered:
         url += f"?registered={registered}"
     return RedirectResponse(url=url, status_code=302)
-
-
 
 
 @app.get("/login_professors", response_class=HTMLResponse)
@@ -194,7 +201,7 @@ async def professor_dashboard(request: Request):
             "user": user,
             "classes": classes
         })
-    else:  # Falls Admin versehentlich diesen Pfad aufruft
+    else:  # If Admin calls this path by mistake
         return RedirectResponse("/admin/dashboard")
 
     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
@@ -364,16 +371,16 @@ async def admin_delete_professor(request: Request, professor_username: str):
     if isinstance(user, RedirectResponse):
         return user
     
-    # Prüfe ob Zielnutzer existiert
+    # Check if target user exists
     target = db.get_user_by_username(professor_username)
     if not target:
         return RedirectResponse(url="/admin/professors?error=Benutzer nicht gefunden.", status_code=303)
 
-    # Admins dürfen keine Admins löschen
+    # Admins are not allowed to delete admins
     if target.get("role") == "admin":
         return RedirectResponse(url="/admin/professors?error=Administratoren können nicht gelöscht werden.", status_code=303)
 
-    # Versuche den Professor zu löschen
+    # Try to delete the professor
     success, message = db.delete_professor(professor_username)
     
     if success:
@@ -403,12 +410,12 @@ async def admin_edit_professor_page(request: Request, professor_username: str):
             status_code=303
         )
 
-    # Beispiel: du könntest auf derselben Seite ein Inline-Edit-Formular anzeigen
+    # Example: you could display an inline edit form on the same page
     return templates.TemplateResponse("admin_professors.html", {
         "request": request, 
         "user": user,
         "professors": db.get_all_professors_with_courses(),
-        "edit_professor": professor  # Übergib das zu bearbeitende Objekt
+        "edit_professor": professor  # Transfer the object to be edited
     })
 
 
@@ -424,7 +431,7 @@ async def update_professor(
     if isinstance(user, RedirectResponse):
         return user
 
-    # UPDATE Logik in Datenbank (du kannst sie noch anpassen)
+    # UPDATE logic in database 
     connection = db.sql_connect()
     cursor = connection.cursor()
     cursor.execute("""
@@ -464,7 +471,7 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # RICHTIGE Weiterleitung nach Login
+    # CORRECT forwarding after login
     redirect_url = "/admin/dashboard" if user.get("role") == "admin" else "/classes"
     
     response = JSONResponse({
@@ -739,7 +746,7 @@ async def admin_courses(request: Request):
     courses = db.get_all_courses()
     student_counts = db.count_students_per_course()
 
-    # Neu: Meldungen aus URL-Parametern lesen
+    # New: Read messages from URL parameters
     success = request.query_params.get("success")
     error = request.query_params.get("error")
 
@@ -752,7 +759,7 @@ async def admin_courses(request: Request):
         "error": error
     })
 
-# Kurs hinzufügen
+# add course form
 @app.post("/admin/courses/add")
 async def admin_add_course(
     request: Request,
@@ -762,11 +769,14 @@ async def admin_add_course(
 ):
     user = await verify_role(request, ["admin"])
 
-    all_courses = db.get_all_courses()    # Prüfung: ID schon vergeben?
+   
+    all_courses = db.get_all_courses()   
+
+    # Check: ID already assigned?
     if any(c["id"].lower() == id.lower() for c in all_courses):
         return RedirectResponse(url="/admin/courses", status_code=303)
 
-    # Prüfung: Name schon vergeben?
+    # Check: Name already assigned?
     if any(c["name"].lower() == name.lower() for c in all_courses):
         return RedirectResponse(url="/admin/courses", status_code=303)
 
@@ -779,7 +789,7 @@ async def admin_add_course(
 
     return RedirectResponse(url="/admin/courses?success=Kurs erfolgreich hinzugefügt.", status_code=303)
 
-# Kurs löschen
+# delete course
 @app.post("/admin/courses/delete/{course_id}")
 async def admin_delete_course(request: Request, course_id: str):
     await verify_role(request, ["admin"])
@@ -801,8 +811,8 @@ async def admin_students_page(request: Request):
     raw_students = db.get_all_students()
     students = [
         {
-            "username": s["username"],  # noch für Link nötig
-            "anonymized": s["anonymized"],  # <-- HINZUGEFÜGT
+            "username": s["username"],  
+            "anonymized": s["anonymized"],  
             "course": s.get("course", "")
         }
         for s in raw_students
@@ -818,7 +828,8 @@ async def admin_students_page(request: Request):
 
 @app.post("/auth/delete")
 async def delete_user(request: Request):
-    # Cookie direkt auslesen
+    
+    # Read cookie directly
     session_token = request.cookies.get("session_token")
     user = db.get_user_by_session(session_token)
 
@@ -916,7 +927,7 @@ async def edit_class_form(class_id: int, request: Request, current_user: dict = 
         
         # Get all classes for the main list
         all_classes = db.get_all_classes()  # Changed to use correct function name
-          # Get all courses for the form
+        # Get all courses for the form
         all_courses = db.get_all_courses()  # Changed to use correct function name
         
         return templates.TemplateResponse("classes.html", {
@@ -941,7 +952,7 @@ async def update_class_courses(
     if isinstance(user, RedirectResponse):
         return user
 
-    # Kurse aktualisieren (z. B. Join-Tabelle neu schreiben)
+    # Update courses (e.g. rewrite join table)
     db.update_class_courses(class_id, courses or [])
 
     return RedirectResponse(url="/admin/classes?success=Vorlesung erfolgreich aktualisiert.", status_code=303)
