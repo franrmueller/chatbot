@@ -8,14 +8,17 @@ Chathistorien – Admin
 <div class="dashboard-container">
   <h1>Chathistorien (anonymisiert)</h1>
 
+  <!-- Back to Dashboard Button -->
   <div class="btn-group mb-3">
     <a href="/admin/dashboard" class="btn btn-secondary" title="Zurück zum Dashboard">
       <i class="fas fa-arrow-left"></i>
     </a>
   </div>
 
+  <!-- Filter Form -->
   <form method="GET" action="/admin/chathistory" class="form-inline mb-4">
-  <!-- Kurse Checkboxen -->
+  
+  <!-- Course Checkboxes -->
   <div class="form-group mb-3">
     <label class="form-label d-block">Kurse:</label>
     <div id="course-checkboxes">
@@ -31,7 +34,7 @@ Chathistorien – Admin
     </div>
   </div>
 
-      <!-- Vorlesungen Checkboxen -->
+  <!-- Class Checkboxes -->
   <div class="form-group mb-3 mt-2">
     <label class="form-label d-block">Vorlesungen:</label>
     <div id="class-checkboxes">
@@ -48,7 +51,7 @@ Chathistorien – Admin
     </div>
   </div>
 
-  <!-- Datum -->
+  <!-- Date Filters -->
   <div class="form-group mb-2 mt-2">
     <label for="from" class="form-label">Von:</label>
     <input type="date" name="from" class="form-control" value="{{ request.query_params.from or '' }}">
@@ -59,15 +62,17 @@ Chathistorien – Admin
     <input type="date" name="to" class="form-control" value="{{ request.query_params.to or '' }}">
   </div>
 
-  <!-- Filtern Button -->
+  <!-- Filter Button -->
   <div class="form-group mt-3">
     <button type="submit" class="btn btn-primary" title="Filtern">
       <i class="fas fa-filter"></i> Filtern
     </button>  </div>
 </form>
 
+<!-- Selected Class and Chat History -->
 {% if history and (request.query_params.get('class_id') or request.query_params.get('course_id')) %}
 <div class="alert alert-warning">
+  <!-- Reset Chat History Button -->
   <form method="post" action="/admin/chathistory/reset_filtered" onsubmit="return confirm('Soll der gesamte Chatverlauf für die ausgewählten Filter wirklich gelöscht werden?');" style="display: inline;">
     {% for class_id in request.query_params.getlist('class_id') %}
       <input type="hidden" name="class_id" value="{{ class_id }}">
