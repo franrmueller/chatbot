@@ -12,7 +12,13 @@
 {% block extra_css %}{% endblock %}
 </head>
  
-<body>
+<body data-user='{{ {
+        "id": user.id if user and user.id is defined else None,
+        "username": user.username if user and user.username is defined else "",
+        "role": user.role if user and user.role is defined else "",
+        "email": user.email if user and user.email is defined else "",
+        "authenticated": user is not none
+    } | tojson }}'>
 <header>
 <nav>
 <div class="logo">
@@ -65,6 +71,7 @@
 </footer>
  
 <script src="{{ url_for('static', path='js/main.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
  
 {% block extra_js %}{% endblock %}
 
@@ -112,40 +119,29 @@ function confirmAccountDeletion(event) {
 }
 
 function checkLoginRedirect(event, element) {
-    {% if user %}
-    event.preventDefault();
-    if (confirm("Sie sind bereits angemeldet. Möchten Sie sich abmelden und zur Anmeldeseite zurückkehren?")) {
-        fetch("/auth/logout", {
-            method: "GET",
-            credentials: "same-origin"
-        })
-        .then(() => {
-            window.location.href = element.href;
-        })
-        .catch(() => {
-            window.location.href = element.href;
-        });
+        if (USER && USER.authenticated) {
+            event.preventDefault();
+            if (confirm("Sie sind bereits angemeldet. Möchten Sie sich abmelden und zur Anmeldeseite zurückkehren?")) {
+                fetch("/auth/logout", { method: "GET", credentials: "same-origin" })
+                .finally(() => { window.location.href = element.href; });
+            }
+        }
     }
-    {% endif %}
-}
 
 // Auto-redirect logged-in users from login pages
 document.addEventListener('DOMContentLoaded', function() {
-    {% if user %}
-    const currentPath = window.location.pathname;
-    const loginPaths = ['/login', '/login/student', '/login/professor', '/register', '/register/student'];
-    
-    if (loginPaths.includes(currentPath)) {
-        let redirectUrl = '/classes';
-        {% if user.role == 'admin' %}
-        redirectUrl = '/admin/dashboard';
-        {% elif user.role == 'professor' %}
-        redirectUrl = '/classes';
-        {% endif %}
-        window.location.replace(redirectUrl);
-    }
-    {% endif %}
-});
+        if (USER && USER.authenticated) {
+            const currentPath = window.location.pathname;
+            const loginPaths = ['/login', '/login/student', '/login/professor', '/register', '/register/student'];
+            if (loginPaths.includes(currentPath)) {
+                let redirectUrl = '/classes';
+                if (USER.role === 'admin') {
+                    redirectUrl = '/admin/dashboard';
+                }
+                window.location.replace(redirectUrl);
+            }
+        }
+    });
 </script>
 
 </body>
