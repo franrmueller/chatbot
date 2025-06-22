@@ -45,7 +45,6 @@ Chathistorien – Admin
         <label class="form-check-label" for="class-{{ class.id }}">
           {{ class.name }}
         </label>
-
       </div>
       {% endfor %}
     </div>
@@ -72,7 +71,7 @@ Chathistorien – Admin
 <!-- Selected Class and Chat History -->
 {% if history and (request.query_params.get('class_id') or request.query_params.get('course_id')) %}
 <div class="alert alert-warning">
-  <!-- Reset Chat History Button -->
+  <!-- Reset Button -->
   <form method="post" action="/admin/chathistory/reset_filtered" onsubmit="return confirm('Soll der gesamte Chatverlauf für die ausgewählten Filter wirklich gelöscht werden?');" style="display: inline;">
     {% for class_id in request.query_params.getlist('class_id') %}
       <input type="hidden" name="class_id" value="{{ class_id }}">
@@ -85,6 +84,8 @@ Chathistorien – Admin
     </button>
   </form>
 </div>
+
+<!-- Reset Button selected classes-->
 {% elif selected_class %}
 <form method="post" action="/admin/chathistory/reset/{{ selected_class.id }}" onsubmit="return confirm('Soll der gesamte Chatverlauf für diese Vorlesung wirklich gelöscht werden?');">
   <button type="submit" class="btn btn-danger mb-3">
@@ -93,17 +94,20 @@ Chathistorien – Admin
 </form>
 {% endif %}
 
+<!-- Chathistory -->
 {% if history %}
-
 <div class="chat-history-list">
   {% for user_hash, user_data in history.items() %}
     <div class="chat-history-card" style="border:2px solid #007bff; border-radius:12px; padding:1.5em; margin-bottom:2em; background-color:#f8f9fa;">
+      
+      <!-- Header: User & Meta -->
       <div style="border-bottom:1px solid #dee2e6; padding-bottom:0.5em; margin-bottom:1em;">
         <strong style="color:#007bff;">User (anonymisiert):</strong> {{ user_data.user_hash }}
         {% if user_data.class_name %}<br><strong>Vorlesung:</strong> {{ user_data.class_name }}{% endif %}
         {% if user_data.student_course %}<br><strong>Student Kurs:</strong> {{ user_data.student_course }}{% endif %}
       </div>
       
+      <!-- chats -->
       <div class="conversation-flow">
         {% for chat in user_data.conversations %}
           <div style="margin-bottom:1em; padding:0.75em; border-left:3px solid #28a745; background-color:#ffffff; border-radius:8px;">
@@ -123,6 +127,7 @@ Chathistorien – Admin
   {% endfor %}
 </div>
 
+<!-- no data found -->
 {% elif request.query_params.get('class_id') or request.query_params.get('course_id') or request.query_params.get('from') or request.query_params.get('to') %}
   <div class="alert alert-info">
     <i class="fas fa-info-circle"></i>
