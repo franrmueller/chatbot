@@ -13,27 +13,27 @@ Anmelden - Vorlesungschatbot
 <div class="error-message" id="error-message" style="display: none;"></div>
 <!-- Success message shown after successful registration --> 
 {% if request.query_params.get('registered') == 'true' %}
-<div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
+    <div class="success-message">Registrierung erfolgreich. Sie können sich jetzt anmelden.</div>
 {% endif %}
  
 <!-- Login form -->
 <form id="login-form" class="auth-form">
-<div class="form-group">
-<label for="username">Benutzername:</label>
-<input type="username" id="username" name="username" required>
-</div>
- 
-<div class="form-group">
-<label for="password">Passwort:</label>
-<input type="password" id="password" name="password" required>
-</div>
-<!-- Submit button -->
-<button type="submit" class="btn btn-primary">Anmelden</button>
+    <div class="form-group">
+        <label for="username">Benutzername:</label>
+    <input type="username" id="username" name="username" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Passwort:</label>
+    <input type="password" id="password" name="password" required>
+    </div>
+    <!-- Submit button -->
+    <button type="submit" class="btn btn-primary">Anmelden</button>
 </form>
-<!-- Link to registration page -->
-<div class="auth-links">
-<p>Noch kein Konto? <a href="/register">Registrieren</a></p>
-</div>
+    <!-- Link to registration page -->
+    <div class="auth-links">
+        <p>Noch kein Konto? <a href="/register">Registrieren</a></p>
+    </div>
 </div>
 
 {% endblock %}

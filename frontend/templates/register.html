@@ -14,16 +14,6 @@ Registrieren - Vorlesungschatbot
     <!-- Registration form -->
     <form id="register-form" class="auth-form">
 
-        <!-- <div class="form-group">
-            <label for="first-name">Vorname:</label>
-            <input type="text" id="first-name" name="first-name" required>
-        </div>
-
-        <div class="form-group">
-            <label for="last-name">Nachname:</label>
-            <input type="text" id="last-name" name="last-name" required>
-        </div> -->
-
         <!-- Username input -->
         <div class="form-group">
             <label for="username">Benutzername:</label>
@@ -35,15 +25,16 @@ Registrieren - Vorlesungschatbot
             <label for="course">Kurs auswählen:</label>
             <select id="course" name="course" required>
                 <option value="" disabled selected>Bitte wählen Sie einen Kurs</option>
-                <!-- Kurse werden per JS geladen -->
             </select>
         </div>
+
         <!-- Password input -->
         <div class="form-group">
             <label for="password">Passwort:</label>
             <input type="password" id="password" name="password" required minlength="8">
             <small class="form-info">Mindestens 8 Zeichen und ein Symbol erforderlich</small>
         </div>
+
         <!-- Password confirmation -->
         <div class="form-group">
             <label for="confirm-password">Passwort bestätigen:</label>
@@ -53,7 +44,8 @@ Registrieren - Vorlesungschatbot
         <!-- Submit button -->
         <button type="submit" class="btn btn-primary">Registrieren</button>
     </form>
-<!-- Link to login page -->
+
+    <!-- Link to login page -->
     <div class="auth-links">
         <p>Bereits ein Konto? <a href="/login">Anmelden</a></p>
     </div>

@@ -1,21 +1,3 @@
-<!--
-Requirements for Backend to make this page work (EN):
-1. The backend must pass a 'user' object to the template if a user is logged in.
-2. The 'user' object must contain a 'role' field.
-   - If user.role == 'STUDENT' → Show button to student courses.
-   - If user.role == 'PROFESSOR' → Show button to professor courses.
-   - If user.role == 'ADMIN' → Show button to admin dashboard.
-3. If no user is logged in, display buttons for registration and login.
- 
-Anforderungen an das Backend, damit diese Seite funktioniert (DE):
-1. Das Backend muss ein 'user'-Objekt an das Template übergeben, wenn ein Nutzer eingeloggt ist.
-2. Das 'user'-Objekt muss ein 'role'-Feld enthalten.
-   - Wenn user.role == 'STUDENT' → Button zu den Kursen des Studierenden anzeigen.
-   - Wenn user.role == 'PROFESSOR' → Button zu den Kursen des Professors anzeigen.
-   - Wenn user.role == 'ADMIN' → Button zum Admin-Dashboard anzeigen.
-3. Wenn kein Benutzer eingeloggt ist, sollen die Buttons für Registrierung und Anmeldung angezeigt werden.
--->
- 
 {% extends "base.html" %}
  
 {% block title %}
@@ -26,15 +8,15 @@ Startseite - Vorlesungschatbot
 
 <!-- Display error if user is last admin and tries to delete account -->
 {% if request.query_params.error == "last-admin" %}
-<div class="alert alert-danger text-center mt-4" role="alert">
-    Du bist der letzte Administrator. Mindestens ein Administrator muss erhalten bleiben.
-</div>
+    <div class="alert alert-danger text-center mt-4" role="alert">
+        Du bist der letzte Administrator. Mindestens ein Administrator muss erhalten bleiben.
+    </div>
 {% endif %}
 <!-- Success message after account deletion -->
 {% if deleted %}
-<div class="alert alert-success text-center mt-4" role="alert">
-    Dein Konto wurde erfolgreich gelöscht.
-</div>
+    <div class="alert alert-success text-center mt-4" role="alert">
+        Dein Konto wurde erfolgreich gelöscht.
+    </div>
 {% endif %}
 
 
@@ -45,23 +27,22 @@ Startseite - Vorlesungschatbot
 <p>Lerne, indem du mit deinen Kursdokumenten sprichst. Erreiche deinen persönlichen Dozenten rund um die Uhr :)</p>
  
     {% if not user %}
-<!-- If user is NOT logged in, show registration/login buttons -->
-<div class="cta-buttons">
-<a href="/register" class="btn btn-primary">Jetzt starten</a>
-<!-- Button for students -->
-<a href="/login" class="btn btn-secondary">Anmelden</a> <br> <br>
-<h3> Sie sind ein Dozent? Dann melden Sie sich hier an: </h3> <br>
-<!-- Button for professors -->
-<a href="/login/professor" class="btn btn-secondary">Dozenten anmelden</a>
-
-</div>
-    {% else %}
-<!-- If user IS logged in, show course overview button -->
-<div class="cta-buttons">
-<a href="/classes" class="btn btn-primary">Zur Kursübersicht</a>
-</div>
-    {% endif %}
-</div>
+    <!-- If user is NOT logged in, show registration/login buttons -->
+    <div class="cta-buttons">
+        <a href="/register" class="btn btn-primary">Jetzt starten</a>
+    <!-- Button for students -->
+    <a href="/login" class="btn btn-secondary">Anmelden</a> <br> <br>
+    <h3> Sie sind ein Dozent? Dann melden Sie sich hier an: </h3> <br>
+    <!-- Button for professors -->
+    <a href="/login/professor" class="btn btn-secondary">Dozenten anmelden</a>
+    </div>
+        {% else %}
+    <!-- If user IS logged in, show course overview button -->
+    <div class="cta-buttons">
+        <a href="/classes" class="btn btn-primary">Zur Kursübersicht</a>
+    </div>
+        {% endif %}
+    </div>
  
 <!-- Application benefits -->
 <div class="features">
