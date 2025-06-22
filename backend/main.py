@@ -98,21 +98,28 @@ async def legacy_login_redirect(request: Request):
         url += f"?registered={registered}"
     return RedirectResponse(url=url, status_code=302)
 
-
+# Legacy route for professor login
 @app.get("/login_professors", response_class=HTMLResponse)
 async def legacy_professor_login_redirect(request: Request):
     return RedirectResponse(url="/login/professor", status_code=302)
 
+# Legacy route for student registration
 @app.get("/register", response_class=HTMLResponse)
 async def legacy_register_redirect(request: Request):
     return RedirectResponse(url="/register/student", status_code=302)
 
+# =========================================
+# Authentication Routes
+# =========================================
+
+# logout route
 @app.get("/auth/logout")
 async def logout():
     response = RedirectResponse(url="/logout-page", status_code=302)  # Redirect to a logout page first
     response.delete_cookie(key="session_token", path="/", domain=None, secure=False, httponly=True)
     return response
 
+# Logout page
 @app.get("/logout-page", response_class=HTMLResponse)
 async def logout_page(request: Request):
     return templates.TemplateResponse("logout.html", {"request": request})
@@ -122,13 +129,17 @@ async def logout_page(request: Request):
 # Student Routes
 # =========================================
 
+# Route to render the student dashboard page
+# If the user is not authenticated or does not have the correct role, they are redirected
 @app.get("/student/dashboard", response_class=HTMLResponse)
 async def student_dashboard(request: Request):
-    user = await verify_role(request, ["student"])
+    user = await verify_role(request, ["student"]) # Ensure user has the "student" role
     if isinstance(user, RedirectResponse):
-        return user
+        return user # Redirect if unauthorized
     return templates.TemplateResponse("student_dashboard.html", {"request": request, "user": user})
 
+
+# Route to handle the creation of a new class (Vorlesung) by an admin
 @app.post("/admin/classes", response_class=HTMLResponse)
 async def admin_add_class(
     request: Request,
@@ -136,9 +147,9 @@ async def admin_add_class(
     courses: list[str] = Form(...),  # This will now be a list
     taught_by: str = Form(...)
 ):
-    user = await verify_role(request, ["admin"])
+    user = await verify_role(request, ["admin"]) # Ensure user is an admin
     if isinstance(user, RedirectResponse):
-        return user
+        return user # Redirect unauthorized users
 
     # Insert new class into DB with multiple courses
     success, message = db.add_class({
@@ -158,18 +169,23 @@ async def admin_add_class(
         "success" if success else "error": message
     })
 
+# Route to display the admin view for managing classes (Vorlesungen)
 @app.get("/admin/classes", response_class=HTMLResponse)
 async def admin_classes_page(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
 
+    # Retrieve all classes, professors, and courses from the database
     classes = db.get_all_classes()
     professors = db.get_all_professors()
     courses = db.get_all_courses()
+
+     # Check for optional success or error messages passed as URL query parameters
     success = request.query_params.get("success")
     error = request.query_params.get("error")
 
+    # Render the admin classes management page with the retrieved data
     return templates.TemplateResponse("classes.html", {
         "request": request,
         "user": user,
@@ -178,16 +194,21 @@ async def admin_classes_page(request: Request):
         "courses": courses,
         "success": success,
         "error": error
-    })
+    })  
 
 # ======<===================================
 # Professor Routes
 # =========================================
 
+# Route to return a list of all professors from the database
 @app.get("/all/professors")
 async def test_professors():
     return db.get_all_professors()
 
+# Route for the professor dashboard
+# Verifies that the user is either an admin or a professor
+# - If the user is a professor, their associated classes are retrieved and shown
+# - If an admin accesses this route by mistake, they are redirected to the admin dashboard
 @app.get("/professor/dashboard", response_class=HTMLResponse)
 async def professor_dashboard(request: Request):
     user = await verify_role(request, ["admin", "professor"])
@@ -206,6 +227,8 @@ async def professor_dashboard(request: Request):
 
     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
 
+# API endpoint to retrieve all professors
+# Returns a JSON object with a list of all professors from the database
 @app.get("/api/professors")
 async def api_professors():
     return {"professors": db.get_all_professors()}
@@ -214,6 +237,7 @@ async def api_professors():
 # Admin Routes
 # =========================================
 
+# Route to render the admin dashboard
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
     user = await verify_role(request, ["admin"])
@@ -221,16 +245,19 @@ async def admin_dashboard(request: Request):
         return user
     return templates.TemplateResponse("admin_dashboard.html", {"request": request, "user": user})
 
+# Admin Chat History Page
+# Allows admin users to view chat history, optionally filtered by class, course, or date range
 @app.get("/admin/chathistory", response_class=HTMLResponse)
 async def admin_chathistory(request: Request):
     user = await verify_role(request, ["admin"])
     if isinstance(user, RedirectResponse):
         return user
     
+    # Load all courses and classes for filtering options
     courses = db.get_all_courses()
     classes = db.get_all_classes()
     
-    # Get filter parameters
+    # Read filter parameters from query string
     selected_class_ids = [
         int(cid) for cid in request.query_params.getlist("class_id") if cid.isdigit()
     ]
@@ -281,6 +308,7 @@ async def admin_chathistory(request: Request):
         
         filter_info = " | ".join(filter_parts) if filter_parts else "Alle Filter"
     
+     # Render the chat history template with the filtered results
     return templates.TemplateResponse("admin_chathistory.html", {
         "request": request,
         "user": user,
@@ -288,9 +316,13 @@ async def admin_chathistory(request: Request):
         "classes": classes,
         "history": history,
         "selected_class": selected_class,
-        "filter_info": filter_info  # Add this
+        "filter_info": filter_info 
     })
 
+# Displays the list of classes to the logged-in user based on their role.
+# - Students see only the classes they are enrolled in.
+# - Professors see only the classes they teach.
+# - Admins see all classes.
 @app.get("/classes", response_class=HTMLResponse)
 async def show_classes(request: Request):
     user = await get_current_user(request)
@@ -311,6 +343,11 @@ async def show_classes(request: Request):
     })
     return templates.TemplateResponse("classes.html", {"request": request, "user": user})
     
+# =========================================
+# Admin Professor Management
+# =========================================
+
+# Displays the list of professors and their courses for admin users
 @app.get("/admin/professors", response_class=HTMLResponse)
 async def admin_professors_page(request: Request):
     user = await verify_role(request, ["admin"])
@@ -319,10 +356,12 @@ async def admin_professors_page(request: Request):
 
     professors = db.get_all_professors_with_courses()
 
-    # Hier wird error/success aus der URL gelesen
+    # Read success or error messages from URL parameters
+    # This allows us to show messages after actions like adding or deleting professors
     error = request.query_params.get("error")
     success = request.query_params.get("success")
 
+    # Render the admin professors management page with the retrieved data
     return templates.TemplateResponse("admin_professors.html", {
         "request": request, 
         "user": user,
@@ -331,7 +370,9 @@ async def admin_professors_page(request: Request):
         "success": success
     })
 
-
+# Route to add a new professor
+# This route handles the form submission for adding a new professor
+# It verifies that the user is an admin and processes the form data
 @app.post("/admin/professors", response_class=HTMLResponse)
 async def admin_add_professor(
     request: Request,
@@ -363,6 +404,8 @@ async def admin_add_professor(
         "success" if success else "error": message
     })
 
+# Route to delete a professor
+# This route handles the deletion of a professor by their username
 @app.post("/admin/professors/delete/{professor_username}")
 async def admin_delete_professor(request: Request, professor_username: str):
     """Delete a professor"""
@@ -418,7 +461,8 @@ async def admin_edit_professor_page(request: Request, professor_username: str):
         "edit_professor": professor  # Transfer the object to be edited
     })
 
-
+# Route to update a professor's details
+# This route handles the form submission for editing a professor's information
 @app.post("/admin/professors/edit/{professor_username}")
 async def update_professor(
     request: Request,
@@ -465,6 +509,7 @@ async def api_student_login(username: str = Form(...), password: str = Form(...)
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
 
+# Professor login API endpoint
 @app.post("/api/auth/login/professor")
 async def api_professor_login(username: str = Form(...), password: str = Form(...)):
     user = db.login_professor(username, password)
@@ -483,8 +528,9 @@ async def api_professor_login(username: str = Form(...), password: str = Form(..
     response.set_cookie(key="session_token", value=user.get("session_token"))
     return response
 
-
-
+# API endpoint to verify whether a user is currently authenticated.
+# - If the user is authenticated, return their role.
+# - If not authenticated or an error occurs, return `authenticated: False`.
 @app.get("/api/auth/check")
 async def check_auth(request: Request):
     """Check if the user is authenticated and return their role"""
@@ -504,12 +550,16 @@ async def check_auth(request: Request):
             "authenticated": False
         })
 
+# API endpoint to log out the user
+# - Deletes the session token cookie and returns a success message.
 @app.post("/api/auth/logout")
 async def api_logout():
     response = JSONResponse({"success": True})
     response.delete_cookie(key="session_token", path="/", domain=None, secure=False, httponly=True)
     return response
 
+# API endpoint for student registration
+# - Accepts student data in JSON format and registers a new student.
 @app.post("/api/auth/register")
 async def api_register(student_data: dict = Body(...)):
     try:
@@ -537,14 +587,19 @@ async def api_reset_db(request: Request):
 async def legacy_api_login(username: str = Form(...), password: str = Form(...)):
     return await api_student_login(username, password)
 
+# Legacy API endpoint for professor login.
+# For backward compatibility: simply forwards login requests to the modern `api_professor_login` handler.
 @app.post("/api/login_professors")
 async def legacy_api_professor_login(username: str = Form(...), password: str = Form(...)):
     return await api_professor_login(username, password)
 
+# Legacy API endpoint for logging out.
+# For backward compatibility: delegates to the modern `api_logout` endpoint to clear the session cookie.
 @app.post("/api/logout")
 async def legacy_api_logout():
     return await api_logout()
 
+# Legacy API endpoint for student registration.
 @app.post("/api/register")
 async def legacy_api_register(student_data: dict = Body(...)):
     return await api_register(student_data)
@@ -553,6 +608,9 @@ async def legacy_api_register(student_data: dict = Body(...)):
 # Classes
 # =========================================
 
+# Admin endpoint to delete a specific class by its ID.
+# Verifies the user has admin privileges, then calls the DB deletion function.
+# Redirects back to the admin class management page with a success message.
 @app.post("/admin/classes/delete/{class_id}")
 async def admin_delete_class(request: Request, class_id: int):
     user = await verify_role(request, ["admin"])
@@ -587,7 +645,11 @@ async def pdf_overview(request: Request, class_id: int):
         "course": cls
     })
 
-# PDF Upload
+# Endpoint for professors and admins to upload a PDF file for a specific class.
+# - Validates user role and class existence.
+# - Reads the uploaded PDF content and stores its metadata and content in the database.
+# - Triggers the RAG pipeline to process and embed the PDF content.
+# - Renders the PDF management page with the updated list and a success or error message.
 @app.post("/pdf", response_class=HTMLResponse)
 async def upload_pdf(
     request: Request,
@@ -631,7 +693,12 @@ async def upload_pdf(
         "success": "PDF erfolgreich hochgeladen."
     })
 
-# PDF Delete
+# Endpoint to delete a PDF file by its ID.
+# Accessible only to users with the role 'professor' or 'admin'.
+# - Retrieves the class ID associated with the PDF.
+# - Deletes any vector data linked to the PDF (e.g., embeddings from the RAG system).
+# - Removes the PDF record and file from the database.
+# - Redirects the user back to the PDF overview page for the same class.
 @app.post("/pdf/delete/{pdf_id}", response_class=HTMLResponse)
 async def delete_pdf(request: Request, pdf_id: int):
     user = await verify_role(request, ["professor", "admin"])
@@ -644,6 +711,12 @@ async def delete_pdf(request: Request, pdf_id: int):
 # =========================================
 # Chat
 # =========================================
+
+# Route to display the chat interface for a specific class.
+# - Requires user to be authenticated.
+# - Retrieves the class details from the database using the class_id.
+# - If the class is not found, returns a 404 error.
+# - Renders the 'chat.html' template, passing the user and class information.
 @app.get("/chat/{class_id}", response_class=HTMLResponse)
 async def chat_page(request: Request, class_id: int):
     user = await get_current_user(request)
@@ -661,6 +734,12 @@ async def chat_page(request: Request, class_id: int):
         "class": class_info
     })
 
+# Route to handle user chat input and return chatbot response for a specific class.
+# - Requires the user to be authenticated.
+# - Expects a JSON body with a 'prompt' field.
+# - Uses the RAG system to generate a response based on the class context.
+# - Saves the chat interaction to the chat history for future reference.
+# - Returns the generated result to the frontend.
 @app.post("/chat/{class_id}")
 async def chat_api(class_id: int, body: dict, request: Request):
     user = await get_current_user(request)
@@ -679,10 +758,18 @@ async def chat_api(class_id: int, body: dict, request: Request):
     
     return result
 
+# API endpoint to manually trigger ingestion of all PDFs for a given class.
+# - Accepts a class ID as a path parameter.
+# - Calls the RAG system to (re)process and index all associated PDF documents.
+# - Returns the result of the ingestion process.
 @app.post("/api/ingest_pdfs/{class_id}")
 async def ingest_pdfs(class_id: int):
     return await rag.ingest_pdfs(class_id)
 
+# Lightweight chat API endpoint (no authentication).
+# - Accepts a class ID as a path parameter.
+# - Expects a JSON body with a "prompt" key containing the user's question.
+# - Returns the generated answer from the RAG system for the given class.
 @app.post("/chat/{class_id}")
 async def chat_api(class_id: int, body: dict):
     prompt = body.get("prompt")
@@ -690,11 +777,16 @@ async def chat_api(class_id: int, body: dict):
         return JSONResponse({"error": "No prompt provided"}, status_code=400)
     return await rag.chat_with_class(class_id, prompt)
 
+# API endpoint for administrators to retrieve anonymized chat history for a specific course.
+# - Accepts a course ID as a path parameter.
+# - Calls the database function to fetch anonymized chat records related to that course.
+# - Returns the chat history as a JSON object.
 @app.get("/api/admin/chathistory/{course_id}")
 async def api_admin_chathistory(course_id: str):
     """Return anonymized chat history for a course as JSON"""
     history = db.get_chat_history_by_course(course_id)
     return {"history": history}
+
 
 @app.post("/admin/chathistory/reset/{class_id}")
 async def admin_reset_chathistory(request: Request, class_id: int):
@@ -706,6 +798,11 @@ async def admin_reset_chathistory(request: Request, class_id: int):
     # Clean redirect back to chathistory page
     return RedirectResponse(url="/admin/chathistory", status_code=303)
 
+# Admin endpoint to delete chat history based on selected filters (class, course, date range).
+# - Accepts lists of class_ids and course_ids from the form.
+# - Parses optional "from" and "to" date range from query parameters.
+# - Uses db.delete_chat_history_filtered() to remove only matching chat records.
+# - On success or failure, redirects back to the admin chat history page with appropriate status info.
 @app.post("/admin/chathistory/reset_filtered")
 async def reset_filtered_chat_history(request: Request, class_id: List[str] = Form([]), course_id: List[str] = Form([])):
     user = await get_current_user(request)
@@ -802,6 +899,11 @@ async def admin_delete_course(request: Request, course_id: str):
         from urllib.parse import quote
         return RedirectResponse(url=f"/admin/courses?error={quote(message)}", status_code=303)
 
+# Admin endpoint to display all students in the system.
+# - Only accessible to users with the "admin" role.
+# - Retrieves all student records from the database.
+# - Each student entry includes: username, anonymization status, and course (if available).
+# - Passes the data to the 'admin_students.html' template for rendering in the UI.
 @app.get("/admin/students", response_class=HTMLResponse)
 async def admin_students_page(request: Request):
     user = await verify_role(request, ["admin"])
@@ -825,7 +927,13 @@ async def admin_students_page(request: Request):
     })
 
 
-
+# Endpoint to delete the currently authenticated user's account.
+# - Reads the session token directly from the user's cookies.
+# - Verifies the session token to identify the user.
+# - Prevents deletion if the user is the last remaining admin.
+# - Calls the database function to delete the user account.
+# - On success, returns a JSON response and deletes the session cookie.
+# - On failure or if unauthorized, returns an appropriate error message.
 @app.post("/auth/delete")
 async def delete_user(request: Request):
     
@@ -836,12 +944,14 @@ async def delete_user(request: Request):
     if not user:
         return JSONResponse({"success": False, "message": "Du bist nicht eingeloggt."}, status_code=401)
 
+    # Prevent deletion if user is the last admin
     if user["role"] == "admin" and db.count_admins() <= 1:
         return JSONResponse({
             "success": False,
             "message": "Du bist der letzte Administrator. Mindestens ein Administrator muss erhalten bleiben."
         }, status_code=400)
 
+    # Delete the user account
     success = db.delete_current_user(user["username"], user["role"])
     if success:
         response = JSONResponse({"success": True, "message": "Dein Konto wurde erfolgreich gelöscht."})
@@ -854,6 +964,8 @@ async def delete_user(request: Request):
 # Change Password
 # =========================================
 
+# Endpoint to render the change password page.
+# - Checks if the user is authenticated.
 @app.get("/change/password", response_class=HTMLResponse)
 async def change_password_page(request: Request):
     user = await get_current_user(request)
@@ -861,6 +973,15 @@ async def change_password_page(request: Request):
         return user
     return templates.TemplateResponse("change_password.html", {"request": request, "user": user})
 
+# Endpoint for handling user password change requests.
+# - Accepts the current and new passwords via form data.
+# - Retrieves the currently logged-in user from the session.
+# - Verifies that the provided username exists.
+# - Checks if the current password is correct.
+# - Ensures the new password and confirmation match.
+# - Prevents the user from reusing the old password.
+# - Hashes and updates the password in the database.
+# - Returns an HTML response with either success or error messages.
 @app.post("/change/password", response_class=HTMLResponse)
 async def change_password_action(
     request: Request,
@@ -882,7 +1003,8 @@ async def change_password_action(
             "user": user,
             "error": "Benutzer nicht gefunden."
         })
-
+    
+    # Verify current password
     if not db.pwd_context.verify(old_password, target_user["password"]):
         return templates.TemplateResponse("change_password.html", {
             "request": request,
@@ -890,6 +1012,7 @@ async def change_password_action(
             "error": "Aktuelles Passwort ist falsch."
         })
 
+    # Check if new password and confirmation match
     if new_password != confirm_password:
         return templates.TemplateResponse("change_password.html", {
             "request": request,
@@ -897,6 +1020,7 @@ async def change_password_action(
             "error": "Neue Passwörter stimmen nicht überein."
         })
 
+    # Check if new password is the same as the old password
     if new_password == old_password:
         return templates.TemplateResponse("change_password.html", {
             "request": request,
@@ -913,7 +1037,12 @@ async def change_password_action(
         "success": "Passwort erfolgreich geändert."
     })
 
-
+# Admin-only endpoint to display the class edit form.
+# - Verifies that the user has admin privileges.
+# - Retrieves the class with the given class_id for editing.
+# - Loads all available classes and courses for context (e.g., dropdowns).
+# - Renders the "classes.html" template with the necessary data.
+# - Logs any exceptions and returns a 500 error if something goes wrong.
 @app.get("/admin/classes/edit/{class_id}")
 async def edit_class_form(class_id: int, request: Request, current_user: dict = Depends(get_current_user)):
     if current_user['role'] != 'admin':
@@ -941,7 +1070,8 @@ async def edit_class_form(class_id: int, request: Request, current_user: dict = 
         logging.error(f"Error loading edit class form: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-
+# Admin endpoint to update a class's courses.
+# - Verifies that the user has admin privileges.
 @app.post("/admin/classes/edit/{class_id}")
 async def update_class_courses(
     request: Request,
