@@ -10,13 +10,14 @@
 4. [Verzeichnisstruktur](#verzeichnisstruktur)
 5. [Hauptmerkmale](#hauptmerkmale)
 6. [Backend](#backend)
-7. [Frontend](#frontend)
-8. [Beispielbenutzerflüsse](#beispielbenutzerflüsse)
-9. [Sicherheit](#sicherheit)
-10. [API-Dokumentation](#api-dokumentation)
-11. [FAQ](#faq)
-12. [Fehlerbehebung](#fehlerbehebung)
-13. [Backup](#backup)
+7. [RAG-System](#rag-system)
+8. [Frontend](#frontend)
+9. [Beispielbenutzerflüsse](#beispielbenutzerflüsse)
+10. [Sicherheit](#sicherheit)
+11. [API-Dokumentation](#api-dokumentation)
+12. [FAQ](#faq)
+13. [Fehlerbehebung](#fehlerbehebung)
+14. [Backup](#backup)
 
 ---
 
@@ -403,6 +404,93 @@ Der Chatbot funktioniert am besten mit detaillierten, erklärenden Texten, die K
 - **Neo4j:** Vektorspeicherung für Dokumentenstücke (verwendet von RAG)
 - **Dateisystem:** Hochgeladene PDFs ([`uploads`](uploads)), Chatverläufe ([`chats`](chats))
 
+## RAG-System
+
+> Diese Komponente stellt die Backend-Logik für das **RAG-System** (Retrieval-Augmented Generation) bereit. Sie kombiniert:
+> - Vektorbasierte Informationssuche mit
+> - einem LLM (z. B. GPT, LLaMA),
+> 
+> um Fragen mit Informationen aus PDF-Dokumenten präzise zu beantworten.
+
+### Hauptfunktionen
+
+#### Aktiv verwendete Funktionen
+| **Funktion** | **Beschreibung** |
+|--------------|------------------|
+| `ingest_pdf(pdf_id)` | Extrahiert Text aus einem bestimmten PDF, teilt ihn in Chunks und speichert Vektorrepräsentationen in Neo4j |
+| `ingest_pdfs(class_id)` | Gleiches wie oben, aber für **alle PDFs** einer Vorlesung (Batch-Modus) |
+| `chat_with_class(class_id, prompt)` | Führt ein Retrieval-QA mit vektorbasiertem Kontext und einem LLM durch |
+| `delete_vectors_for_pdf(pdf_id)` | Löscht alle Vektoren zu einem PDF aus der Vektordatenbank (Neo4j) |
+
+#### Interne Hilfsfunktionen
+| **Funktion** | **Beschreibung** |
+|--------------|------------------|
+| `extract_text_from_pdf(file_path)` | Extrahiert Text aus einer PDF-Datei mit PyPDF2 |
+| `split_text_into_chunks(text)` | Teilt Text in verarbeitbare Chunks mit konfigurierbarer Größe und Überlappung |
+| `create_chat_prompt()` | Erstellt das Prompt-Template für das RAG-System mit deutscher DHBW-Assistenten-Rolle |
+| `get_vectorstore()` | Erstellt ein Neo4jVector-Objekt zur Anbindung an den Vektorspeicher |
+| `load_embedding_model()` & `load_llm()` | Initialisieren das Embedding-Modell bzw. das LLM dynamisch nach Konfiguration |
+
+#### Nicht verwendete Setup-Funktionen
+| **Funktion** | **Beschreibung** |
+|--------------|------------------|
+| `create_vector_index()` & `create_constraints()` | Setzen notwendiger Indizes und Constraints in Neo4j (aktuell nicht aufgerufen) |
+
+### Eingesetzte Technologien
+
+| **Kategorie** | **Tool** |
+|---------------|----------|
+| LLM | ChatOpenAI, ChatOllama, BedrockChat |
+| Embedding-Modelle | SentenceTransformers, Ollama, Bedrock |
+| Vektorspeicher | Neo4j (Graphdatenbank mit Vektorindex) |
+| Dateiextraktion | PyPDF2 zur PDF-Analyse |
+| Textsplitting | RecursiveCharacterTextSplitter (LangChain) |
+| RAG Chain | RetrievalQA von LangChain |
+| Prompting | ChatPromptTemplate (LangChain Prompt Layer) |
+
+### Prompt Engineering
+
+> **Info:** Prompt Engineering ist die Kunst, **gezielt strukturierte Eingaben (Prompts)** an ein Sprachmodell zu formulieren, um **erwünschte Antworten** möglichst zuverlässig zu erhalten.
+
+#### Anwendung in rag.py
+
+**chat_with_class()**
+
+```python
+general_system_template = """ 
+    Du bist ein virtueller Assistant an der Dualen Hochschule Baden-Württemberg (DHBW).
+    Deine Aufgabe ist es, Studierende individuell bei ihren Fragen zu unterstützen, indem du ausschließlich auf die vom echten Professor bereitgestellten Dokumente zugreifst.
+    Antworte klar, präzise und fachlich korrekt auf Deutsch (wenn der Student auf Englisch schreibt, du kannst auf Englisch antworten). 
+    Wenn du Informationen aus den Dokumenten verwendest, gib bitte immer an, aus welchem Dokument und ggf. aus welchem Abschnitt oder Seite die Information stammt, damit die Studierenden diese selbst nachschlagen können.
+    Falls du eine Frage nicht beantworten kannst, weil die Information nicht in den Dokumenten enthalten ist, sage ehrlich, dass du dazu keine Auskunft geben kannst.
+    ----
+       {summaries}
+    ----
+    Jede Antwort soll am Ende eine Quellenangabe enthalten, damit die Studierenden nachvollziehen können, woher die Information stammt. Please specify the exact name of the document and the page number if available.
+    """
+general_user_template = "Frage:```{question}```"
+```
+
+**Ziele:**
+- Rolle: virtueller Assistent der DHBW
+- Quelle: ausschließlich bereitgestellte PDF-Dokumente
+- Sprache: Deutsch (mit Englisch-Unterstützung)
+- Stil: fachlich korrekt, ehrlich bei Nichtwissen
+- Transparenz: Quellenangaben für Nachverfolgbarkeit
+
+### Architektur-Überblick
+
+#### Datenfluss
+1. **PDF-Upload** → `ingest_pdf()` → Text-Extraktion → Chunking → Vektorisierung → Neo4j-Speicherung
+2. **Benutzer-Anfrage** → `chat_with_class()` → Vektor-Suche → Kontext-Retrieval → LLM-Antwort
+3. **PDF-Löschung** → `delete_vectors_for_pdf()` → Vektoren-Entfernung aus Neo4j
+
+#### Konfiguration
+Die Anwendung unterstützt verschiedene LLM- und Embedding-Modelle über Umgebungsvariablen:
+- **EMBEDDING_MODEL**: `sentence_transformer` (Standard), `ollama`, `bedrock`
+- **LLM**: `llama2` (Standard), `gpt-*`, `bedrock`
+- **NEO4J_URI**, **NEO4J_USERNAME**, **NEO4J_PASSWORD**: Neo4j-Datenbankverbindung
+
 ## Frontend
 
 - Verwendet Jinja2-Vorlagen für die dynamische HTML-Generierung
@@ -675,6 +763,45 @@ tar -czf backup_files.tar.gz uploads/ chats/
 ### Neo4j-Backup
 Bitte beachten Sie die Dokumentation zu Neo4j AuraDB für Cloud-Backup-Verfahren oder verwenden Sie die Neo4j-Dump-Dienstprogramme für lokale Instanzen.
 
+### Neo4j-Verwaltung (Chunks anzeigen und löschen)
+
+#### Alle PDF-Chunks anzeigen
+```cypher
+// Alle PdfBotChunk-Nodes anzeigen
+MATCH (n:PdfBotChunk) 
+RETURN n.source, n.class_id, substring(n.text, 0, 100) as text_preview, id(n) as node_id
+ORDER BY n.source, n.class_id;
+
+// Anzahl der Chunks pro Klasse
+MATCH (n:PdfBotChunk) 
+RETURN n.class_id, count(n) as chunk_count
+ORDER BY n.class_id;
+
+// Chunks für eine spezifische Klasse anzeigen
+MATCH (n:PdfBotChunk {class_id: 1}) 
+RETURN n.source, substring(n.text, 0, 200) as text_preview, id(n) as node_id;
+```
+
+#### PDF-Chunks löschen
+```cypher
+// Alle Chunks einer bestimmten Klasse löschen
+MATCH (n:PdfBotChunk {class_id: 1}) 
+DETACH DELETE n;
+
+// Chunks eines bestimmten PDF-Dokuments löschen
+MATCH (n:PdfBotChunk) 
+WHERE n.source CONTAINS "document_name.pdf" 
+DETACH DELETE n;
+
+// Alle PdfBotChunk-Nodes löschen (Vorsicht!)
+MATCH (n:PdfBotChunk) 
+DETACH DELETE n;
+
+// Statistiken nach dem Löschen anzeigen
+MATCH (n:PdfBotChunk) 
+RETURN count(n) as remaining_chunks;
+```
+
 ---
 
 # Technical Documentation – Vorlesungschatbot EN
@@ -687,13 +814,14 @@ Bitte beachten Sie die Dokumentation zu Neo4j AuraDB für Cloud-Backup-Verfahren
 4. [Directory Structure](#directory-structure-1)
 5. [Key Features](#key-features-1)
 6. [Backend](#backend-1)
-7. [Frontend](#frontend-1)
-8. [Example User Flows](#example-user-flows-1)
-9. [Security](#security-1)
-10. [API Documentation](#api-documentation-1)
-11. [FAQ](#faq-1)
-12. [Troubleshooting](#troubleshooting-1)
-13. [Backup](#backup-1)
+7. [RAG-System](#rag-system-1)
+8. [Frontend](#frontend-1)
+9. [Example User Flows](#example-user-flows-1)
+10. [Security](#security-1)
+11. [API Documentation](#api-documentation-1)
+12. [FAQ](#faq-1)
+13. [Troubleshooting](#troubleshooting-1)
+14. [Backup](#backup-1)
 
 ---
 
@@ -1087,6 +1215,93 @@ The chatbot works best with detailed, explanatory texts that fully describe conc
 - **Neo4j:** Vector storage for document chunks (used by RAG)
 - **Filesystem:** Uploaded PDFs ([`uploads`](uploads)), chat histories ([`chats`](chats))
 
+## RAG-System
+
+> This component provides the backend logic for the **RAG-System** (Retrieval-Augmented Generation). It combines:
+> - Vector-based information retrieval with
+> - an LLM (e.g., GPT, LLaMA),
+> 
+> to precisely answer questions with information from PDF documents.
+
+### Main Functions
+
+#### Actively Used Functions
+| **Function** | **Description** |
+|--------------|------------------|
+| `ingest_pdf(pdf_id)` | Extracts text from a specific PDF, splits it into chunks and stores vector representations in Neo4j |
+| `ingest_pdfs(class_id)` | Same as above, but for **all PDFs** of a lecture (batch mode) |
+| `chat_with_class(class_id, prompt)` | Performs Retrieval-QA with vector-based context and an LLM |
+| `delete_vectors_for_pdf(pdf_id)` | Deletes all vectors for a PDF from the vector database (Neo4j) |
+
+#### Internal Helper Functions
+| **Function** | **Description** |
+|--------------|------------------|
+| `extract_text_from_pdf(file_path)` | Extracts text from a PDF file using PyPDF2 |
+| `split_text_into_chunks(text)` | Splits text into processable chunks with configurable size and overlap |
+| `create_chat_prompt()` | Creates the prompt template for the RAG system with German DHBW assistant role |
+| `get_vectorstore()` | Creates a Neo4jVector object for connecting to the vector store |
+| `load_embedding_model()` & `load_llm()` | Initialize the embedding model and LLM dynamically based on configuration |
+
+#### Unused Setup Functions
+| **Function** | **Description** |
+|--------------|------------------|
+| `create_vector_index()` & `create_constraints()` | Set necessary indexes and constraints in Neo4j (currently not called) |
+
+### Technologies Used
+
+| **Category** | **Tool** |
+|---------------|----------|
+| LLM | ChatOpenAI, ChatOllama, BedrockChat |
+| Embedding Models | SentenceTransformers, Ollama, Bedrock |
+| Vector Store | Neo4j (Graph database with vector index) |
+| File Extraction | PyPDF2 for PDF analysis |
+| Text Splitting | RecursiveCharacterTextSplitter (LangChain) |
+| RAG Chain | RetrievalQA from LangChain |
+| Prompting | ChatPromptTemplate (LangChain Prompt Layer) |
+
+### Prompt Engineering
+
+> **Info:** Prompt Engineering is the art of **formulating targeted structured inputs (prompts)** to a language model to obtain **desired answers** as reliably as possible.
+
+#### Application in rag.py
+
+**chat_with_class()**
+
+```python
+general_system_template = """ 
+    Du bist ein virtueller Assistant an der Dualen Hochschule Baden-Württemberg (DHBW).
+    Deine Aufgabe ist es, Studierende individuell bei ihren Fragen zu unterstützen, indem du ausschließlich auf die vom echten Professor bereitgestellten Dokumente zugreifst.
+    Antworte klar, präzise und fachlich korrekt auf Deutsch (wenn der Student auf Englisch schreibt, du kannst auf Englisch antworten). 
+    Wenn du Informationen aus den Dokumenten verwendest, gib bitte immer an, aus welchem Dokument und ggf. aus welchem Abschnitt oder Seite die Information stammt, damit die Studierenden diese selbst nachschlagen können.
+    Falls du eine Frage nicht beantworten kannst, weil die Information nicht in den Dokumenten enthalten ist, sage ehrlich, dass du dazu keine Auskunft geben kannst.
+    ----
+       {summaries}
+    ----
+    Jede Antwort soll am Ende eine Quellenangabe enthalten, damit die Studierenden nachvollziehen können, woher die Information stammt. Please specify the exact name of the document and the page number if available.
+    """
+general_user_template = "Frage:```{question}```"
+```
+
+**Goals:**
+- Role: virtual assistant of DHBW
+- Source: exclusively provided PDF documents
+- Language: German (with English support)
+- Style: technically correct, honest about lack of knowledge
+- Transparency: source citations for traceability
+
+### Architecture Overview
+
+#### Data Flow
+1. **PDF Upload** → `ingest_pdf()` → Text Extraction → Chunking → Vectorization → Neo4j Storage
+2. **User Query** → `chat_with_class()` → Vector Search → Context Retrieval → LLM Response
+3. **PDF Deletion** → `delete_vectors_for_pdf()` → Vector Removal from Neo4j
+
+#### Configuration
+The application supports various LLM and embedding models via environment variables:
+- **EMBEDDING_MODEL**: `sentence_transformer` (default), `ollama`, `bedrock`
+- **LLM**: `llama2` (default), `gpt-*`, `bedrock`
+- **NEO4J_URI**, **NEO4J_USERNAME**, **NEO4J_PASSWORD**: Neo4j database connection
+
 ## Frontend
 
 - Uses Jinja2 templates for dynamic HTML rendering
@@ -1358,3 +1573,42 @@ tar -czf backup_files.tar.gz uploads/ chats/
 
 ### Neo4j Backup
 Refer to Neo4j AuraDB documentation for cloud backup procedures, or use Neo4j dump utilities for local instances.
+
+### Neo4j Management (Show and Delete Chunks)
+
+#### Show All PDF Chunks
+```cypher
+// Display all PdfBotChunk nodes
+MATCH (n:PdfBotChunk) 
+RETURN n.source, n.class_id, substring(n.text, 0, 100) as text_preview, id(n) as node_id
+ORDER BY n.source, n.class_id;
+
+// Count chunks per class
+MATCH (n:PdfBotChunk) 
+RETURN n.class_id, count(n) as chunk_count
+ORDER BY n.class_id;
+
+// Show chunks for a specific class
+MATCH (n:PdfBotChunk {class_id: 1}) 
+RETURN n.source, substring(n.text, 0, 200) as text_preview, id(n) as node_id;
+```
+
+#### Delete PDF Chunks
+```cypher
+// Delete all chunks of a specific class
+MATCH (n:PdfBotChunk {class_id: 1}) 
+DETACH DELETE n;
+
+// Delete chunks of a specific PDF document
+MATCH (n:PdfBotChunk) 
+WHERE n.source CONTAINS "document_name.pdf" 
+DETACH DELETE n;
+
+// Delete all PdfBotChunk nodes (Warning!)
+MATCH (n:PdfBotChunk) 
+DETACH DELETE n;
+
+// Show statistics after deletion
+MATCH (n:PdfBotChunk) 
+RETURN count(n) as remaining_chunks;
+```

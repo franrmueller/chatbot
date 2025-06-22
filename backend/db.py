@@ -10,11 +10,11 @@ import hashlib
 import secrets
 import json
 
-# Configure logging
+# ========== CONFIGURATION ==========
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# ========== DATABASE CONNECTION ==========
 def sql_connect():
     try:
         connection = mysql.connector.connect(
@@ -34,8 +34,7 @@ def sql_connect():
         logging.error(f"Database connection error: {e}")
         return None
 
-
-# Initialize database on first startup
+# ========== DATABASE INITIALIZATION ==========
 def initialize_database():
     logging.info("Checking database initialization status...")
     try:
@@ -64,7 +63,6 @@ def initialize_database():
         if connection:
             connection.close()
 
-# Database setup function
 def reset_database():
     try:
         connection = sql_connect()
@@ -79,7 +77,7 @@ def reset_database():
         cursor.execute("DROP TABLE IF EXISTS courses")
         cursor.execute("DROP TABLE IF EXISTS professors")
         
-        # Create proffessors table - unchanged
+        # Create professors table - unchanged
         cursor.execute("""
         CREATE TABLE professors (
             username VARCHAR(50) PRIMARY KEY,
@@ -169,11 +167,11 @@ def reset_database():
         cursor.execute("""
         CREATE TABLE chat_history (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            user_hash VARCHAR(40) NOT NULL,  # Anonymized user identifier
+            user_hash VARCHAR(40) NOT NULL,
             class_id INT NOT NULL,
             question TEXT NOT NULL,
             answer TEXT NOT NULL,
-            student_course VARCHAR(15) NULL,  # Add this field for proper filtering
+            student_course VARCHAR(15) NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
             FOREIGN KEY (student_course) REFERENCES courses(id) ON DELETE SET NULL
@@ -209,7 +207,7 @@ def reset_database():
         if connection:
             connection.close()
 
-# Function to login a professor
+# ========== AUTHENTICATION FUNCTIONS ==========
 def login_professor(username, password):
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
@@ -229,53 +227,26 @@ def login_professor(username, password):
     connection.close()
     return None
 
-# Register a new student
+def login_student(username, password):
+    """Login a student with username and password"""
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
 
-def register_student(student_data):
-    try:
-        required_fields = ["username", "password"]
-        for field in required_fields:
-            if field not in student_data or not student_data[field]:
-                raise HTTPException(status_code=400, detail=f"Pflichtfeld fehlt: {field}")
-        
-        username = student_data["username"]
-        password = pwd_context.hash(student_data["password"])
-        course_id = student_data["course_id"]
-        created_at = datetime.now()
-        
-    
+    cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
+    user = cursor.fetchone()
 
-        connection = sql_connect()
-        cursor = connection.cursor(dictionary=True)
-
-        # Check for duplicate username
-        cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-        if cursor.fetchone():
-            raise HTTPException(status_code=400, detail="Benutzername bereits vergeben.")
-
-        # Insert new student with security answers
-        query = """
-            INSERT INTO students (username, password, course, created_at)
-            VALUES (%s, %s, %s, %s)
-        """
-        cursor.execute(query, (username, password, course_id, created_at))
+    if user and pwd_context.verify(password, user["password"]):
+        session_token = secrets.token_hex(32)
+        cursor.execute("UPDATE students SET session_token = %s WHERE username = %s", (session_token, username))
         connection.commit()
+        user["session_token"] = session_token
+        user["role"] = "student"  # Add role since it's not in students table
+        return user
 
-        return {
-            "id": cursor.lastrowid,
-            "username": username,
-            "role": "student"
-        }
+    cursor.close()
+    connection.close()
+    return None
 
-    except mysql.connector.Error as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-            
-# Authentication function to get user by session token
 def get_user_by_session(session_token):
     """Get user by session token"""
     if not session_token:
@@ -310,76 +281,49 @@ def get_user_by_session(session_token):
         if connection:
             connection.close()
 
-def login_student(username, password):
-    """Login a student with username and password"""
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
+def register_student(student_data):
+    try:
+        required_fields = ["username", "password"]
+        for field in required_fields:
+            if field not in student_data or not student_data[field]:
+                raise HTTPException(status_code=400, detail=f"Pflichtfeld fehlt: {field}")
+        
+        username = student_data["username"]
+        password = pwd_context.hash(student_data["password"])
+        course_id = student_data["course_id"]
+        created_at = datetime.now()
 
-    cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
-    user = cursor.fetchone()
+        connection = sql_connect()
+        cursor = connection.cursor(dictionary=True)
 
-    if user and pwd_context.verify(password, user["password"]):
-        session_token = secrets.token_hex(32)
-        cursor.execute("UPDATE students SET session_token = %s WHERE username = %s", (session_token, username))
+        # Check for duplicate username
+        cursor.execute("SELECT * FROM students WHERE username = %s", (username,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Benutzername bereits vergeben.")
+
+        # Insert new student with security answers
+        query = """
+            INSERT INTO students (username, password, course, created_at)
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (username, password, course_id, created_at))
         connection.commit()
-        user["session_token"] = session_token
-        user["role"] = "student"  # Add role since it's not in students table
-        return user
 
-    cursor.close()
-    connection.close()
-    return None
+        return {
+            "id": cursor.lastrowid,
+            "username": username,
+            "role": "student"
+        }
 
-# Function to check if a professor is assigned to a course
-def is_professor_for_course(professor_username, course_id):
-    """Check if a user is a professor for a specific course"""
-    try:
-        connection = sql_connect()
-        if not connection:
-            return False
-        
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("""
-            SELECT 1 FROM classes 
-            WHERE course_id = %s AND taught_by = %s
-        """, (course_id, professor_username))
-        
-        result = cursor.fetchone() is not None
-        
-        cursor.close()
-        connection.close()
-        
-        return result
-    
-    except Exception as e:
-        logging.error(f"Error checking professor course assignment: {str(e)}")
-        return False
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
-# Get all courses
-def get_courses():
-    try:
-        connection = sql_connect()
-        if not connection:
-            return {"courses": []}
-        
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT id, name FROM courses")
-        courses = cursor.fetchall()
-        
-        cursor.close()
-        connection.close()
-        
-        return {"courses": courses}
-    
-    except Exception as e:
-        logging.error(f"Error fetching courses: {str(e)}")
-        return {"courses": []}
-    
-
-# ================================
-# Professors
-# ================================
-
+# ========== PROFESSOR MANAGEMENT ==========
 def get_all_professors():
     connection = sql_connect()
     cursor = connection.cursor(dictionary=True)
@@ -522,10 +466,34 @@ def delete_professor(professor_username):
         if connection:
             connection.close()
 
+# ========== COURSE MANAGEMENT ==========
+def get_courses():
+    try:
+        connection = sql_connect()
+        if not connection:
+            return {"courses": []}
+        
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT id, name FROM courses")
+        courses = cursor.fetchall()
+        
+        cursor.close()
+        connection.close()
+        
+        return {"courses": courses}
+    
+    except Exception as e:
+        logging.error(f"Error fetching courses: {str(e)}")
+        return {"courses": []}
 
-# ===============================
-# Courses
-# ===============================
+def get_all_courses():
+    conn = sql_connect()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM courses")
+    courses = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return courses
 
 def get_course_by_id(course_id):
     connection = sql_connect()
@@ -536,17 +504,70 @@ def get_course_by_id(course_id):
     connection.close()
     return course
 
-def get_class_by_course_and_professor(course_id, professor_username):
-    connection = sql_connect()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute(
-        "SELECT id FROM classes WHERE course_id = %s AND taught_by = %s",
-        (course_id, professor_username)
-    )
-    cls = cursor.fetchone()
+def add_course(course_data):
+    conn = sql_connect()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO courses (id, name, created_by) VALUES (%s, %s, %s)", 
+                       (course_data["id"], course_data["name"], course_data["created_by"]))
+        conn.commit()
+        return True, "Kurs hinzugefügt"
+    except Exception as e:
+        return False, str(e)
+    finally:
+        cursor.close()
+        conn.close()
+
+def delete_course(course_id):
+    conn = sql_connect()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Check if there are students enrolled in this course
+        cursor.execute("SELECT COUNT(*) as count FROM students WHERE course = %s", (course_id,))
+        student_count = cursor.fetchone()['count']
+        
+        if student_count > 0:
+            cursor.close()
+            conn.close()
+            return False, f"Kurs kann nicht gelöscht werden. {student_count} Studierende sind in diesem Kurs eingeschrieben."
+        
+        # Check if there are classes associated with this course
+        cursor.execute("SELECT COUNT(*) as count FROM class_courses WHERE course_id = %s", (course_id,))
+        class_count = cursor.fetchone()['count']
+        
+        if class_count > 0:
+            cursor.close()
+            conn.close()
+            return False, f"Kurs kann nicht gelöscht werden. {class_count} Vorlesungen sind mit diesem Kurs verknüpft."
+        
+        # If no dependencies, delete the course
+        cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
+        conn.commit()
+        
+        if cursor.rowcount > 0:
+            cursor.close()
+            conn.close()
+            return True, "Kurs erfolgreich gelöscht."
+        else:
+            cursor.close()
+            conn.close()
+            return False, "Kurs nicht gefunden."
+            
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        logging.error(f"Error deleting course {course_id}: {str(e)}")
+        return False, f"Fehler beim Löschen des Kurses: {str(e)}"
+
+def update_course(course_id, name):
+    conn = sql_connect()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE courses SET name = %s WHERE id = %s", (name, course_id))
+    conn.commit()
     cursor.close()
-    connection.close()
-    return cls
+    conn.close()
 
 def get_courses_for_user(user):
     """Return a list of courses/classes for the given user based on their role."""
@@ -560,7 +581,8 @@ def get_courses_for_user(user):
                 SELECT c.id, c.name, c.id as code,
                     CONCAT(p.first_name, ' ', p.last_name) as professor_name
                 FROM courses c
-                LEFT JOIN classes cls ON c.id = cls.course_id
+                LEFT JOIN class_courses cc ON c.id = cc.course_id
+                LEFT JOIN classes cls ON cc.class_id = cls.id
                 LEFT JOIN professors p ON cls.taught_by = p.username
                 GROUP BY c.id, c.name, p.first_name, p.last_name
             """)
@@ -569,7 +591,8 @@ def get_courses_for_user(user):
             cursor.execute("""
                 SELECT c.id, c.name, c.id as code
                 FROM courses c
-                JOIN classes cls ON c.id = cls.course_id
+                JOIN class_courses cc ON c.id = cc.course_id
+                JOIN classes cls ON cc.class_id = cls.id
                 WHERE cls.taught_by = %s
                 GROUP BY c.id, c.name
             """, (user["username"],))
@@ -587,12 +610,71 @@ def get_courses_for_user(user):
         connection.close()
     return courses
 
+def is_professor_for_course(professor_username, course_id):
+    """Check if a user is a professor for a specific course"""
+    try:
+        connection = sql_connect()
+        if not connection:
+            return False
+        
+        cursor = connection.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT 1 FROM classes cls
+            JOIN class_courses cc ON cls.id = cc.class_id
+            WHERE cc.course_id = %s AND cls.taught_by = %s
+        """, (course_id, professor_username))
+        
+        result = cursor.fetchone() is not None
+        
+        cursor.close()
+        connection.close()
+        
+        return result
+    
+    except Exception as e:
+        logging.error(f"Error checking professor course assignment: {str(e)}")
+        return False
 
-# ===============================
-# Classes
-# ===============================
+def get_class_by_course_and_professor(course_id, professor_username):
+    connection = sql_connect()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT cls.id FROM classes cls
+        JOIN class_courses cc ON cls.id = cc.class_id
+        WHERE cc.course_id = %s AND cls.taught_by = %s
+    """, (course_id, professor_username))
+    cls = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    return cls
 
-# Class retrieval function
+def get_classes_by_course_id(course_id):
+    """Get all classes for a specific course"""
+    connection = sql_connect()
+    if not connection:
+        return []
+        
+    cursor = connection.cursor(dictionary=True)
+    try:
+        query = """
+            SELECT cls.* FROM classes cls
+            JOIN class_courses cc ON cls.id = cc.class_id
+            WHERE cc.course_id = %s
+        """
+        cursor.execute(query, (course_id,))
+        result = cursor.fetchall()
+        return result
+    except Exception as e:
+        logging.error(f"Error getting classes by course: {e}")
+        return []
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+# ========== CLASS MANAGEMENT ==========
 def get_all_classes():
     """Return all classes with course and professor info."""
     connection = sql_connect()
@@ -624,8 +706,6 @@ def get_all_classes():
             # Add the courses to the class
             cls['courses'] = courses
 
-            
-
             total_students = 0
             cursor.execute("""
                 SELECT c.id 
@@ -641,8 +721,6 @@ def get_all_classes():
                 total_students += result['count']
 
             cls['student_counts'] = total_students
-
-
             
             # Add first course name for backward compatibility
             if courses:
@@ -900,11 +978,23 @@ def delete_class(class_id):
         cursor.close()
         connection.close()
 
+def update_class_courses(class_id: int, course_ids: List[int]):
+    connection = sql_connect()
+    cursor = connection.cursor()
+    try:
+        # Zuerst alte Verknüpfungen löschen
+        cursor.execute("DELETE FROM class_courses WHERE class_id = %s", (class_id,))
+        
+        # Neue Verknüpfungen einfügen
+        for course_id in course_ids:
+            cursor.execute("INSERT INTO class_courses (class_id, course_id) VALUES (%s, %s)", (class_id, course_id))
+        
+        connection.commit()
+    finally:
+        cursor.close()
+        connection.close()
 
-# ===============================
-# PDFs
-# ===============================
-
+# ========== DOCUMENT/PDF MANAGEMENT ==========
 def get_pdfs_for_class(class_id):
     """Get all PDFs for a given class."""
     connection = sql_connect()
@@ -970,7 +1060,6 @@ def get_document_by_id(pdf_id):
     connection.close()
     return doc
 
-
 def delete_pdf(pdf_id):
     """Delete a PDF document and its file."""
     connection = sql_connect()
@@ -1003,97 +1092,10 @@ def get_class_id_by_pdf(pdf_id):
     connection.close()
     return doc["class_id"] if doc else None
 
-
-def get_all_courses():
-    conn = sql_connect()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM courses")
-    courses = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return courses
-
-def add_course(course_data):
-    conn = sql_connect()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("INSERT INTO courses (id, name, created_by) VALUES (%s, %s, %s)", 
-                       (course_data["id"], course_data["name"], course_data["created_by"]))
-        conn.commit()
-        return True, "Kurs hinzugefügt"
-    except Exception as e:
-        return False, str(e)
-    finally:
-        cursor.close()
-        conn.close()
-
-def delete_course(course_id):
-    conn = sql_connect()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        # Check if there are students enrolled in this course
-        cursor.execute("SELECT COUNT(*) as count FROM students WHERE course = %s", (course_id,))
-        student_count = cursor.fetchone()['count']
-        
-        if student_count > 0:
-            cursor.close()
-            conn.close()
-            return False, f"Kurs kann nicht gelöscht werden. {student_count} Studierende sind in diesem Kurs eingeschrieben."
-        
-        # Check if there are classes associated with this course
-        cursor.execute("SELECT COUNT(*) as count FROM class_courses WHERE course_id = %s", (course_id,))
-        class_count = cursor.fetchone()['count']
-        
-        if class_count > 0:
-            cursor.close()
-            conn.close()
-            return False, f"Kurs kann nicht gelöscht werden. {class_count} Vorlesungen sind mit diesem Kurs verknüpft."
-        
-        # If no dependencies, delete the course
-        cursor.execute("DELETE FROM courses WHERE id = %s", (course_id,))
-        conn.commit()
-        
-        if cursor.rowcount > 0:
-            cursor.close()
-            conn.close()
-            return True, "Kurs erfolgreich gelöscht."
-        else:
-            cursor.close()
-            conn.close()
-            return False, "Kurs nicht gefunden."
-            
-    except Exception as e:
-        conn.rollback()
-        cursor.close()
-        conn.close()
-        logging.error(f"Error deleting course {course_id}: {str(e)}")
-        return False, f"Fehler beim Löschen des Kurses: {str(e)}"
-
-def get_course_by_id(course_id):
-    conn = sql_connect()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM courses WHERE id = %s", (course_id,))
-    course = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return course
-
-def update_course(course_id, name):
-    conn = sql_connect()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE courses SET name = %s WHERE id = %s", (name, course_id))
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-
-
-# STUDENT
-
+# ========== STUDENT MANAGEMENT ==========
 def anonymize_username(username):
     # Nutzt SHA1-Hash (alternativ SHA256)
-    return hashlib.sha1(username.encode()).hexdigest()[:10] 
+    return hashlib.sha1(username.encode()).hexdigest()[:10]
 
 def get_all_students():
     connection = sql_connect()
@@ -1108,9 +1110,6 @@ def get_all_students():
         student["anonymized"] = anonymize_username(student["username"])
     return students
 
-
-
-
 def count_prompts_by_user(username):
     connection = sql_connect()
     cursor = connection.cursor()
@@ -1119,7 +1118,6 @@ def count_prompts_by_user(username):
     cursor.close()
     connection.close()
     return count
-
 
 def delete_current_user(username, role):
     connection = sql_connect()
@@ -1150,7 +1148,6 @@ def count_admins():
     cursor.close()
     connection.close()
     return result
-
 
 def count_students_per_course():
     connection = sql_connect()
@@ -1195,8 +1192,41 @@ def get_user_by_username(username):
         if connection:
             connection.close()
 
+def update_user_password(username, hashed_password):
+    """
+    Reset a user's password. Takes already hashed password.
+    """
+    try:
+        connection = sql_connect()
+        cursor = connection.cursor()
 
-# Chat History
+        # Update password in students
+        cursor.execute("UPDATE students SET password = %s WHERE username = %s", (hashed_password, username))
+        updated = cursor.rowcount
+
+        # Falls kein Treffer: versuche professors
+        if updated == 0:
+            cursor.execute("UPDATE professors SET password = %s WHERE username = %s", (hashed_password, username))
+            updated = cursor.rowcount
+
+        connection.commit()
+
+        if updated > 0:
+            return True, "Passwort erfolgreich geändert."
+        else:
+            return False, "Benutzer nicht gefunden."
+
+    except Exception as e:
+        logging.error(f"Fehler beim Zurücksetzen des Passworts: {str(e)}")
+        return False, f"Fehler: {str(e)}"
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+# ========== CHAT HISTORY MANAGEMENT ==========
 def save_chat_history(user_id, class_id, question, answer):
     """Save a chat interaction to the history and to JSON file"""
     connection = None
@@ -1413,7 +1443,6 @@ def save_chat_to_json(user_id, class_id, question, answer, timestamp=None):
     except Exception as e:
         logging.error(f"Error saving chat to JSON: {str(e)}")
         return False
-    
 
 def delete_chat_history_filtered(class_ids=None, course_ids=None, start_date=None, end_date=None):
     """Delete chat history based on filters - only deletes matching records"""
@@ -1546,6 +1575,7 @@ def clean_json_file_filtered(user_hash, class_id, class_ids=None, course_ids=Non
         logging.error(f"Error cleaning JSON file {json_file}: {str(e)}")
 
 def delete_chat_history_for_class(class_id):
+    """Delete all chat history for a specific class"""
     # Delete from SQL
     connection = sql_connect()
     cursor = connection.cursor()
@@ -1568,99 +1598,5 @@ def delete_chat_history_for_class(class_id):
             os.rmdir(chats_dir)
         except Exception as e:
             logging.error(f"Error removing chat directory: {chats_dir} - {str(e)}")
-    connection.close()
-
-    # Delete JSON files
-    chats_dir = os.path.join(os.getcwd(), 'chats', f'class_{class_id}')
-    if os.path.exists(chats_dir):
-        for filename in os.listdir(chats_dir):
-            file_path = os.path.join(chats_dir, filename)
-            try:
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                logging.error(f"Error deleting chat JSON file: {file_path} - {str(e)}")
-        try:
-            os.rmdir(chats_dir)
-        except Exception as e:
-            logging.error(f"Error removing chat directory: {chats_dir} - {str(e)}")
-
-
-
-def update_user_password(username, hashed_password):
-    """
-    Reset a user's password. Takes already hashed password.
-    """
-    try:
-        connection = sql_connect()
-        cursor = connection.cursor()
-
-        # Update password in students
-        cursor.execute("UPDATE students SET password = %s WHERE username = %s", (hashed_password, username))
-        updated = cursor.rowcount
-
-        # Falls kein Treffer: versuche professors
-        if updated == 0:
-            cursor.execute("UPDATE professors SET password = %s WHERE username = %s", (hashed_password, username))
-            updated = cursor.rowcount
-
-        connection.commit()
-
-        if updated > 0:
-            return True, "Passwort erfolgreich geändert."
-        else:
-            return False, "Benutzer nicht gefunden."
-
-    except Exception as e:
-        logging.error(f"Fehler beim Zurücksetzen des Passworts: {str(e)}")
-        return False, f"Fehler: {str(e)}"
-
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-
-def update_class_courses(class_id: int, course_ids: List[int]):
-    connection = sql_connect()
-    cursor = connection.cursor()
-    try:
-        # Zuerst alte Verknüpfungen löschen
-        cursor.execute("DELETE FROM class_courses WHERE class_id = %s", (class_id,))
-        
-        # Neue Verknüpfungen einfügen
-        for course_id in course_ids:
-            cursor.execute("INSERT INTO class_courses (class_id, course_id) VALUES (%s, %s)", (class_id, course_id))
-        
-        connection.commit()
-    finally:
-        cursor.close()
-        connection.close()
-
-def get_classes_by_course_id(course_id):
-    """Get all classes for a specific course"""
-    connection = sql_connect()
-    if not connection:
-        return []
-        
-    cursor = connection.cursor(dictionary=True)
-    try:
-        query = """
-            SELECT cls.* FROM classes cls
-            JOIN class_courses cc ON cls.id = cc.class_id
-            WHERE cc.course_id = %s
-        """
-        cursor.execute(query, (course_id,))
-        result = cursor.fetchall()
-        return result
-    except Exception as e:
-        logging.error(f"Error getting classes by course: {e}")
-        return []
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-            
+    
+    return True
