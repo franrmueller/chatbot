@@ -1,10 +1,20 @@
+# Standard library imports
 import os
 import logging
 import PyPDF2
 from typing import List, Any
+
+# Load environment variables from .env file
 from dotenv import load_dotenv
+
+# Neo4j database client
 from neo4j import GraphDatabase
+
+
+# Custom backend DB interface
 from backend import db
+
+# Langchain imports
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA, RetrievalQAWithSourcesChain
 from langchain.prompts import (
@@ -19,6 +29,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Load model and connection config from environment
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence_transformer")
 LLM = os.getenv("LLM", "llama2")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
@@ -28,6 +39,7 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 # ========== UTILS ==========
 
+# Extracts title and question from a text blob in a specific prompt format
 def extract_title_and_question(input_string):
     lines = input_string.strip().split("\n")
     title = ""
@@ -43,6 +55,7 @@ def extract_title_and_question(input_string):
             question += "\n" + line.strip()
     return title, question
 
+# Creates vector indices in Neo4j for similarity search (if not already present)
 def create_vector_index(driver, dimension: int) -> None:
     index_query = "CALL db.index.vector.createNodeIndex('stackoverflow', 'Question', 'embedding', $dimension, 'cosine')"
     try:
@@ -55,6 +68,7 @@ def create_vector_index(driver, dimension: int) -> None:
     except:
         pass
 
+# Adds uniqueness constraints for specific Neo4j node labels
 def create_constraints(driver):
     driver.query(
         "CREATE CONSTRAINT question_id IF NOT EXISTS FOR (q:Question) REQUIRE (q.id) IS UNIQUE"
@@ -71,6 +85,7 @@ def create_constraints(driver):
 
 # ========== EMBEDDINGS & LLM LOADING ==========
 
+# Loads the embedding model based on ENV settings (Ollama, Bedrock, or SentenceTransformer)
 def load_embedding_model():
     from langchain.embeddings import (
         OllamaEmbeddings,
@@ -86,6 +101,7 @@ def load_embedding_model():
 
 embeddings, _ = load_embedding_model()
 
+# Loads the LLM (ChatOpenAI, Ollama, Bedrock) based on ENV
 def load_llm():
     from langchain.chat_models import ChatOpenAI, ChatOllama, BedrockChat
     if LLM.lower().startswith("gpt"):
@@ -101,6 +117,7 @@ llm = load_llm()
 
 # ========== VECTORSTORE HELPERS ==========
 
+# Connects to the Neo4j vector store using Langchain’s Neo4jVector wrapper
 def get_vectorstore():
     logger.info(f"Connecting to Neo4j at {NEO4J_URI} with user {NEO4J_USERNAME}")
     return Neo4jVector(
@@ -114,6 +131,7 @@ def get_vectorstore():
 
 # ========== PDF INGESTION ==========
 
+# Extracts and stores vector representations for one PDF
 async def ingest_pdf(pdf_id: int):
     doc = db.get_document_by_id(pdf_id)
     if not doc:
@@ -161,6 +179,7 @@ async def ingest_pdf(pdf_id: int):
 
 # Optionally, keep the old ingest_pdfs for batch/class ingestion if needed.
 
+# Processes all PDFs related to a class and uploads them as vector chunks
 async def ingest_pdfs(class_id: int):
     pdfs = db.get_pdfs_for_class(class_id)
     all_texts = []
@@ -205,6 +224,9 @@ async def ingest_pdfs(class_id: int):
         logger.warning("No chunks to upload.")
     return {"success": True}
 
+# ========== CHAT WITH CLASS ==========
+
+# Uses Langchain's RetrievalQA to answer a question for a given class_id based on embedded PDF chunks
 async def chat_with_class(class_id: int, prompt: str):
     vectorstore = get_vectorstore()
     retriever = vectorstore.as_retriever(search_kwargs={"filter": {"class_id": class_id}})
@@ -240,6 +262,7 @@ async def chat_with_class(class_id: int, prompt: str):
         "sources": result.get("sources")
     }
 
+# Deletes all vector entries in Neo4j that belong to a specific uploaded PDF
 def delete_vectors_for_pdf(pdf_id: int):
     """Delete all vectors/embeddings for a specific PDF from Neo4j"""
     try:
@@ -278,6 +301,7 @@ def delete_vectors_for_pdf(pdf_id: int):
 
 # ========== GENERATE TICKET ==========
 
+# Generates a refined question+title using a pre-trained LLM and structured examples (prompt engineering)
 def generate_ticket(neo4j_graph, llm_chain, input_question):
     records = neo4j_graph.query(
         "MATCH (q:Question) RETURN q.title AS title, q.body AS body ORDER BY q.score DESC LIMIT 3"

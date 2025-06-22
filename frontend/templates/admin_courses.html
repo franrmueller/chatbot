@@ -41,25 +41,8 @@
         </div>
     </div>
 
-    <!-- Edit Modal
-    {% if edit_course %}
-    <div class="modal-overlay">
-        <div class="modal-content">
-            <form method="POST" action="/admin/courses/edit/{{ edit_course.id }}">
-                <button type="button" class="modal-close-btn" onclick="window.location.href='/admin/courses'">&times;</button>
-                <h3>Kurs bearbeiten</h3>
-                <div class="form-group">
-                    <label for="name">Kursbeschreibung</label>
-                    <input type="text" name="name" value="{{ edit_course.name }}" required class="form-control" />
-                </div>
-                <button type="submit" class="btn btn-primary mt-2" title="Speichern">
-                    <i class="fas fa-floppy-disk"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-    {% endif %} -->
-    <!-- Alert Messages -->
+    
+<!-- Alert Messages -->
 {% if error %}
 <div class="alert alert-danger" role="alert">
   <strong>Fehler:</strong> {{ error }}
