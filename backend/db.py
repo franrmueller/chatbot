@@ -178,6 +178,26 @@ def reset_database():
         )
         """)
 
+        # Create procedure to delete old students
+        cursor.execute("""
+        DELIMITER //
+        CREATE PROCEDURE delete_old_students()
+            BEGIN
+                DELETE FROM students
+                WHERE created_at < NOW() - INTERVAL 3 YEAR;
+            END;
+        // DELIMITER ;
+        """)
+        
+        # Create Event Scheduler to run the procedure delete_old_students() daily
+        cursor.execute("""
+        CREATE EVENT IF NOT EXISTS delete_old_students_event
+        ON SCHEDULE EVERY 1 DAY
+        STARTS CURRENT_TIMESTAMP 
+        DO
+            CALL delete_old_students();
+        """)
+        
         # Insert default class without course_id
         cursor.execute("""
         INSERT INTO classes (name, taught_by)
