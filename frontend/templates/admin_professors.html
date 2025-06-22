@@ -148,8 +148,8 @@ Professor:innen verwalten – Admin
                     <!-- Delete form (POST) -->
                     <form method="post" action="/admin/professors/delete/{{ professor.username }}" style="display:inline;" onsubmit="return confirm('Wirklich löschen?');">
                         <button type="submit" class="btn btn-sm btn-danger" title="Löschen">
-  <i class="fas fa-trash"></i>
-</button>
+                        <i class="fas fa-trash"></i>
+                        </button>
 
                     </form>
                 </td>
@@ -158,6 +158,7 @@ Professor:innen verwalten – Admin
         </tbody>
     </table>
     {% else %}
+    <!-- No professor found-->
     <p>Keine Professor:innen gefunden.</p>
     {% endif %}
 </div>

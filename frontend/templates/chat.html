@@ -18,13 +18,13 @@ Chat – Vorlesung {{ class.name }}
         <i class="fas fa-arrow-left"></i>
     </a>
     {% elif user.role == 'professor' %}
-<a href="/classes" class="btn btn-secondary" title="Zur Vorlesungsübersicht">
-    <i class="fas fa-arrow-left"></i>
-</a>
-{% elif user.role == 'admin' %}
-<a href="/admin/classes" class="btn btn-secondary" title="Zur Vorlesungsübersicht">
-    <i class="fas fa-arrow-left"></i>
-</a>
+    <a href="/classes" class="btn btn-secondary" title="Zur Vorlesungsübersicht">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    {% elif user.role == 'admin' %}
+    <a href="/admin/classes" class="btn btn-secondary" title="Zur Vorlesungsübersicht">
+        <i class="fas fa-arrow-left"></i>
+    </a>
 
     {% elif user.role == '' %}
     <a href="/admin/classes" class="btn btn-secondary" title="Zur Kursübersicht">
@@ -32,10 +32,11 @@ Chat – Vorlesung {{ class.name }}
     </a>
     {% endif %}
 
+    <!-- Button Reset Chat-->
     <button id="reset-chat" class="btn btn-warning" title="Chat zurücksetzen">
         <i class="fas fa-rotate-left"></i>
     </button>
-
+    <!-- Button Chathistory-->
     <button id="view-history" class="btn btn-light" title="Verlauf anzeigen">
         <i class="fas fa-comments"></i>
     </button>
@@ -59,18 +60,16 @@ Chat – Vorlesung {{ class.name }}
     </div>
 </div>
   
-
 </div>
  
 <!-- Question input form -->
-
 <form id="chat-form" class="chat-form" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
 <input type="text" id="user-input" placeholder="Frage stellen..." required class="form-control" style="flex: 1;">
 <button type="submit" class="btn btn-primary" title="Frage senden">
     <i class="fas fa-paper-plane"></i>
 </button>
-
 </form>
+
 </div>
 {% endblock %}
  

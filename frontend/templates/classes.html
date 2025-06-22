@@ -25,29 +25,29 @@ Meine Vorlesungen – Vorlesungschatbot
 
 
 <!-- Add new lecture (admin only) -->
-    <div class="card mb-4">
-    <div class="card-header">
-        <h4 class="mb-0">Neue Vorlesung erstellen</h4>
-    </div>
-    <div class="card-body">
-        <form id="add-class-form" method="POST" action="/admin/classes">
-            <div class="form-group">
-                <label for="name">Vorlesungsname</label>
-                <input type="text" name="name" id="name" required class="form-control" placeholder="z. B. Einführung in KI">
-            </div>
+<div class="card mb-4">
+<div class="card-header">
+    <h4 class="mb-0">Neue Vorlesung erstellen</h4>
+</div>
+<div class="card-body">
+    <form id="add-class-form" method="POST" action="/admin/classes">
+        <div class="form-group">
+            <label for="name">Vorlesungsname</label>
+            <input type="text" name="name" id="name" required class="form-control" placeholder="z. B. Einführung in KI">
+        </div>
 
             <!-- Course checkboxes -->
             <div class="form-group">
                 <label for="courses">Kurse (Studiengänge)</label>
                 <div id="course-checkboxes">
-                <!-- {% for course in courses %}
+                {% for course in courses %}
                     <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="course-{{ course.id }}" name="courses" value="{{ course.id }}">
                     <label class="form-check-label" for="course-{{ course.id }}">
                         {{ course.id }} {{ course.name }}
                     </label>
                     </div>
-                {% endfor %} -->
+                {% endfor %}
                 </div>
 
             </div>
@@ -61,10 +61,11 @@ Meine Vorlesungen – Vorlesungschatbot
                 </select>
             </div>
 
-    <button type="submit" class="btn btn-primary mt-2" title="Vorlesung hinzufügen">
-        <i class="fas fa-plus"></i>
-    </button>
-</form>
+            <!-- Submit Button -->    
+            <button type="submit" class="btn btn-primary mt-2" title="Vorlesung hinzufügen">
+                <i class="fas fa-plus"></i>
+            </button>
+        </form>
     </div>
 </div>
 
@@ -80,6 +81,7 @@ Meine Vorlesungen – Vorlesungschatbot
 {% else %}
 <h1>Meine Vorlesungen</h1>
 {% endif %}
+
 <!-- Lecture listing -->
 {% if classes %}
 <div class="class-list ">
