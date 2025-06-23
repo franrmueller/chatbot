@@ -63,6 +63,10 @@
 </header>
  
 <main>
+    {% if request.query_params.get('deleted') == '1' %}
+<div class="success-message text-center">Dein Konto wurde erfolgreich gelöscht.</div>
+{% endif %}
+
     {% block content %}{% endblock %}
 </main>
  
