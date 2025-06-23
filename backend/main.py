@@ -699,13 +699,41 @@ async def upload_pdf(
 # - Deletes any vector data linked to the PDF (e.g., embeddings from the RAG system).
 # - Removes the PDF record and file from the database.
 # - Redirects the user back to the PDF overview page for the same class.
-@app.post("/pdf/delete/{pdf_id}", response_class=HTMLResponse)
+@app.post("/pdf/delete/{pdf_id}")
 async def delete_pdf(request: Request, pdf_id: int):
     user = await verify_role(request, ["professor", "admin"])
-    class_id = db.get_class_id_by_pdf(pdf_id)
-    rag.delete_vectors_for_pdf(pdf_id)
-    db.delete_pdf(pdf_id)
-    return RedirectResponse(url=f"/pdf?class_id={class_id}", status_code=303)
+    if isinstance(user, RedirectResponse):
+        # Check if this is an AJAX request
+        if request.headers.get("accept") == "application/json" or "fetch" in str(request.headers.get("user-agent", "")).lower():
+            raise HTTPException(status_code=401, detail="Authentication required")
+        return user
+    
+    try:
+        class_id = db.get_class_id_by_pdf(pdf_id)
+        if not class_id:
+            raise HTTPException(status_code=404, detail="PDF not found")
+        
+        # Delete vectors and PDF
+        rag.delete_vectors_for_pdf(pdf_id)
+        db.delete_pdf(pdf_id)
+        
+        # Check if this is an AJAX request
+        if request.headers.get("accept") == "application/json" or "fetch" in str(request.headers.get("user-agent", "")).lower():
+            return JSONResponse({"success": True, "message": "PDF successfully deleted"})
+        else:
+            # Traditional form submission - redirect
+            return RedirectResponse(url=f"/pdf?class_id={class_id}", status_code=303)
+            
+    except Exception as e:
+        logging.error(f"Error deleting PDF {pdf_id}: {str(e)}")
+        
+        # Check if this is an AJAX request
+        if request.headers.get("accept") == "application/json" or "fetch" in str(request.headers.get("user-agent", "")).lower():
+            return JSONResponse({"success": False, "message": "Error deleting PDF"}, status_code=500)
+        else:
+            # Traditional form submission - redirect with error
+            class_id = db.get_class_id_by_pdf(pdf_id) or 1  # fallback
+            return RedirectResponse(url=f"/pdf?class_id={class_id}&error=Fehler beim Löschen der PDF", status_code=303)
 
 
 # =========================================

@@ -138,7 +138,126 @@ PDF-Übersicht – Kurs {{ course.name }}
         }
         nameInput.value = file.name;
             
-            // The form will submit normally, the loading state will be visible until page reload
+        // The form will submit normally, the loading state will be visible until page reload
+    });
+
+    // PDF Deletion functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners to all delete forms
+        const deleteForms = document.querySelectorAll('form[action*="/pdf/delete/"]');
+        
+        deleteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevent default form submission
+                
+                const deleteButton = form.querySelector('button[type="submit"]');
+                const originalIcon = deleteButton.innerHTML;
+                const pdfName = form.closest('tr').querySelector('strong').textContent;
+                
+                // Show confirmation dialog
+                if (!confirm(`Möchten Sie "${pdfName}" wirklich löschen?`)) {
+                    return;
+                }
+                
+                // Show loading state
+                deleteButton.disabled = true;
+                deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                deleteButton.classList.add('btn-warning');
+                deleteButton.classList.remove('btn-danger');
+                
+                // Create notification for deletion in progress
+                showNotification('PDF wird gelöscht...', 'info');
+                
+                // Submit the form via fetch to handle the response
+                fetch(form.action, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Show success notification
+                        showNotification(`"${pdfName}" wurde erfolgreich gelöscht.`, 'success');
+                        
+                        // Remove the row from the table with animation
+                        const row = form.closest('tr');
+                        row.style.transition = 'opacity 0.3s ease-out';
+                        row.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            row.remove();
+                            
+                            // Check if table is empty
+                            const tbody = document.querySelector('table tbody');
+                            if (tbody && tbody.children.length === 0) {
+                                // Replace table with "no PDFs" message
+                                const tableContainer = document.querySelector('.table-responsive');
+                                if (tableContainer) {
+                                    tableContainer.innerHTML = '<p class="text-muted mt-4">Es wurden noch keine PDFs hochgeladen.</p>';
+                                }
+                            }
+                        }, 300);
+                    } else {
+                        throw new Error('Deletion failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('Fehler beim Löschen der PDF.', 'error');
+                    
+                    // Reset button state
+                    deleteButton.disabled = false;
+                    deleteButton.innerHTML = originalIcon;
+                    deleteButton.classList.remove('btn-warning');
+                    deleteButton.classList.add('btn-danger');
+                });
+            });
         });
+    });
+
+    // Notification function
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.custom-notification');
+        existingNotifications.forEach(notification => notification.remove());
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show custom-notification`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        `;
+        
+        const icon = type === 'success' ? 'fa-check-circle' : 
+                    type === 'error' ? 'fa-exclamation-circle' : 
+                    'fa-info-circle';
+        
+        notification.innerHTML = `
+            <i class="fas ${icon} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Auto-remove after 5 seconds for success/error messages
+        if (type !== 'info') {
+            setTimeout(() => {
+                if (notification && notification.parentNode) {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification && notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 150);
+                }
+            }, 5000);
+        }
+    }
 </script>
-{% endblock %}            
+{% endblock %}           
