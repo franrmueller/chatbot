@@ -10,35 +10,52 @@ PDF-Übersicht – Kurs {{ course.name }}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <h1 class="h4 mb-3">PDF-Übersicht für Kurs: {{ course.name }}</h1>
-                <!-- Back button -->
-                <a href="/classes" class="btn btn-secondary mb-3" title="Zur Vorlesungsübersicht">
+            <!-- Back button -->
+            <a href="/classes" class="btn btn-secondary mb-3" title="Zur Vorlesungsübersicht">
                 <i class="fas fa-arrow-left"></i>
-                </a>
+            </a>
             <!-- PDF upload form -->
             <form id="upload-form" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="class_id" value="{{ class_id }}">
-            <div class="mb-3">
-                <label for="pdf-file" class="form-label">PDF Datei:</label>
-                <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
-            </div>            <button type="submit" class="btn btn-primary" id="upload-btn" title="PDF hochladen">
-                <span id="upload-icon" class="fas fa-upload"></span>
-                <span id="upload-text">Hochladen</span>
-            </button>
-            <div id="upload-progress" class="alert alert-info d-none mt-2">
-                <i class="fas fa-spinner fa-spin"></i>
-                <span>PDF wird hochgeladen...</span>
-            </div>
-            <div id="upload-error" class="alert alert-danger d-none"></div>
+                <input type="hidden" name="class_id" value="{{ class_id }}">
+                <div class="mb-3">
+                    <label for="pdf-file" class="form-label">PDF Datei:</label>
+                    <input type="file" name="pdf" id="pdf-file" accept="application/pdf" class="form-control" required>
+                </div>            
+                <button type="submit" class="btn btn-primary" id="upload-btn" title="PDF hochladen">
+                    <span id="upload-icon" class="fas fa-upload"></span>
+                    <span id="upload-text">Hochladen</span>
+                </button>
+                <div id="upload-progress" class="alert alert-info d-none mt-2">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>PDF wird hochgeladen...</span>
+                </div>
+                <div id="upload-error" class="alert alert-danger d-none"></div>
 
-    <!-- Flash messages -->
-    {% if error %}
-        <div class="alert alert-danger mt-2">{{ error }}</div>
-    {% endif %}
-    {% if success %}
-        <div class="alert alert-success mt-2">{{ success }}</div>
-    {% endif %}
+                <!-- Add deletion notification area -->
+                <div id="delete-progress" class="alert alert-info d-none mt-2">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span id="delete-message">PDF wird gelöscht...</span>
+                </div>
+                <div id="delete-success" class="alert alert-success d-none mt-2">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="success-message"></span>
+                </div>
+                <div id="delete-error" class="alert alert-danger d-none mt-2">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="error-message"></span>
+                </div>
+
+                <!-- Flash messages -->
+                {% if error %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                {% endif %}
+                {% if success %}
+                    <div class="alert alert-success mt-2">{{ success }}</div>
+                {% endif %}
+            </form>
         </div>
-</form>
+    </div>
+
     <!-- Display uploaded PDFs -->
     {% if pdfs %}
         <div class="table-responsive">
@@ -61,16 +78,16 @@ PDF-Übersicht – Kurs {{ course.name }}
                             <div class="d-flex flex-column flex-md-row gap-2">
                                 <!-- View PDF -->
                                 <a href="/uploads/{{ pdf.file_path }}" target="_blank" class="btn btn-sm btn-info me-1" title="PDF anzeigen">
-                                <i class="fas fa-eye"></i>
+                                    <i class="fas fa-eye"></i>
                                 </a>
                                 <!-- Download PDF -->
                                 <a href="/uploads/{{ pdf.file_path }}" download class="btn btn-sm btn-secondary" title="PDF herunterladen">
-                                <i class="fas fa-download"></i>
+                                    <i class="fas fa-download"></i>
                                 </a>
-                                <!-- Delete PDF -->
-                                <form action="/pdf/delete/{{ pdf.id }}" method="POST" onsubmit="return confirm('Wirklich löschen?');" class="d-inline-block">
+                                <!-- Delete PDF - REMOVED onsubmit attribute -->
+                                <form action="/pdf/delete/{{ pdf.id }}" method="POST" class="d-inline-block">
                                     <button class="btn btn-danger btn-sm w-100" type="submit" title="Löschen">
-                                    <i class="fas fa-trash"></i>
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
                             </div>
@@ -84,33 +101,31 @@ PDF-Übersicht – Kurs {{ course.name }}
         <!-- If no PDFs uploaded yet -->
         <p class="text-muted mt-4">Es wurden noch keine PDFs hochgeladen.</p>
     {% endif %}
-    </div>
-</div>
 </div>
 
-<!-- JavaScript for handling hidden field with file name -->
 <script>
-    const formData = new FormData(document.getElementById('upload-form'));
-    formData.append('class_id', document.querySelector('input[name="class_id"]').value);
+document.addEventListener('DOMContentLoaded', function() {
+    // Upload functionality
     const fileInput = document.getElementById('pdf-file');
+    const uploadForm = document.getElementById('upload-form');
+    
     // Set hidden name field when file is selected
     fileInput.addEventListener('change', function() {
         let nameInput = document.querySelector('input[name="name"]');
         if (!nameInput) {
-                nameInput = document.createElement('input');
-                nameInput.type = 'hidden';
-                nameInput.name = 'name';
-                fileInput.form.appendChild(nameInput);
-            }
-        if (fileInput.files.length > 0) {
-                nameInput.value = fileInput.files[0].name;
+            nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'name';
+            uploadForm.appendChild(nameInput);
         }
-        });        
-    // Ensure name field is set before submitting
-    document.getElementById('upload-form').addEventListener('submit', async function(e) {
-        const fileInput = document.getElementById('pdf-file');
+        if (fileInput.files.length > 0) {
+            nameInput.value = fileInput.files[0].name;
+        }
+    });        
+    
+    // Handle upload form submission
+    uploadForm.addEventListener('submit', function(e) {
         const file = fileInput.files[0];
-        const classId = document.querySelector('input[name="class_id"]').value;
         const errorDiv = document.getElementById('upload-error');
         const progressDiv = document.getElementById('upload-progress');
         const uploadBtn = document.getElementById('upload-btn');
@@ -142,122 +157,120 @@ PDF-Übersicht – Kurs {{ course.name }}
     });
 
     // PDF Deletion functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add event listeners to all delete forms
-        const deleteForms = document.querySelectorAll('form[action*="/pdf/delete/"]');
+    const deleteProgressDiv = document.getElementById('delete-progress');
+    const deleteSuccessDiv = document.getElementById('delete-success');
+    const deleteErrorDiv = document.getElementById('delete-error');
+    const deleteMessage = document.getElementById('delete-message');
+    const successMessage = document.getElementById('success-message');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Helper function to hide all delete notifications
+    function hideDeleteNotifications() {
+        deleteProgressDiv.classList.add('d-none');
+        deleteSuccessDiv.classList.add('d-none');
+        deleteErrorDiv.classList.add('d-none');
+    }
+    
+    // Helper function to show delete progress
+    function showDeleteProgress(message = 'PDF wird gelöscht...') {
+        hideDeleteNotifications();
+        deleteMessage.textContent = message;
+        deleteProgressDiv.classList.remove('d-none');
+    }
+    
+    // Helper function to show delete success
+    function showDeleteSuccess(message) {
+        hideDeleteNotifications();
+        successMessage.textContent = message;
+        deleteSuccessDiv.classList.remove('d-none');
         
-        deleteForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault(); // Prevent default form submission
-                
-                const deleteButton = form.querySelector('button[type="submit"]');
-                const originalIcon = deleteButton.innerHTML;
-                const pdfName = form.closest('tr').querySelector('strong').textContent;
-                
-                // Show confirmation dialog
-                if (!confirm(`Möchten Sie "${pdfName}" wirklich löschen?`)) {
-                    return;
-                }
-                
-                // Show loading state
-                deleteButton.disabled = true;
-                deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                deleteButton.classList.add('btn-warning');
-                deleteButton.classList.remove('btn-danger');
-                
-                // Create notification for deletion in progress
-                showNotification('PDF wird gelöscht...', 'info');
-                
-                // Submit the form via fetch to handle the response
-                fetch(form.action, {
-                    method: 'POST',
-                    credentials: 'same-origin'
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // Show success notification
-                        showNotification(`"${pdfName}" wurde erfolgreich gelöscht.`, 'success');
-                        
-                        // Remove the row from the table with animation
-                        const row = form.closest('tr');
-                        row.style.transition = 'opacity 0.3s ease-out';
-                        row.style.opacity = '0';
-                        
-                        setTimeout(() => {
-                            row.remove();
-                            
-                            // Check if table is empty
-                            const tbody = document.querySelector('table tbody');
-                            if (tbody && tbody.children.length === 0) {
-                                // Replace table with "no PDFs" message
-                                const tableContainer = document.querySelector('.table-responsive');
-                                if (tableContainer) {
-                                    tableContainer.innerHTML = '<p class="text-muted mt-4">Es wurden noch keine PDFs hochgeladen.</p>';
-                                }
-                            }
-                        }, 300);
-                    } else {
-                        throw new Error('Deletion failed');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showNotification('Fehler beim Löschen der PDF.', 'error');
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            deleteSuccessDiv.classList.add('d-none');
+        }, 5000);
+    }
+    
+    // Helper function to show delete error
+    function showDeleteError(message = 'Fehler beim Löschen der PDF.') {
+        hideDeleteNotifications();
+        errorMessage.textContent = message;
+        deleteErrorDiv.classList.remove('d-none');
+        
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            deleteErrorDiv.classList.add('d-none');
+        }, 5000);
+    }
+    
+    // Add event listeners to all delete forms
+    const deleteForms = document.querySelectorAll('form[action*="/pdf/delete/"]');
+    
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            
+            const deleteButton = form.querySelector('button[type="submit"]');
+            const originalIcon = deleteButton.innerHTML;
+            const pdfName = form.closest('tr').querySelector('strong').textContent;
+            
+            // Show confirmation dialog
+            if (!confirm(`Möchten Sie "${pdfName}" wirklich löschen?`)) {
+                return;
+            }
+            
+            // Show loading state
+            deleteButton.disabled = true;
+            deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            deleteButton.classList.add('btn-warning');
+            deleteButton.classList.remove('btn-danger');
+            
+            // Show progress notification
+            showDeleteProgress(`"${pdfName}" wird gelöscht...`);
+            
+            // Submit the form via fetch to handle the response
+            fetch(form.action, {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Show success notification
+                    showDeleteSuccess(`"${pdfName}" wurde erfolgreich gelöscht.`);
                     
-                    // Reset button state
-                    deleteButton.disabled = false;
-                    deleteButton.innerHTML = originalIcon;
-                    deleteButton.classList.remove('btn-warning');
-                    deleteButton.classList.add('btn-danger');
-                });
+                    // Remove the row from the table with animation
+                    const row = form.closest('tr');
+                    row.style.transition = 'opacity 0.3s ease-out';
+                    row.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        row.remove();
+                        
+                        // Check if table is empty
+                        const tbody = document.querySelector('table tbody');
+                        if (tbody && tbody.children.length === 0) {
+                            // Replace table with "no PDFs" message
+                            const tableContainer = document.querySelector('.table-responsive');
+                            if (tableContainer) {
+                                tableContainer.innerHTML = '<p class="text-muted mt-4">Es wurden noch keine PDFs hochgeladen.</p>';
+                            }
+                        }
+                    }, 300);
+                } else {
+                    throw new Error('Deletion failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showDeleteError(`Fehler beim Löschen von "${pdfName}".`);
+                
+                // Reset button state
+                deleteButton.disabled = false;
+                deleteButton.innerHTML = originalIcon;
+                deleteButton.classList.remove('btn-warning');
+                deleteButton.classList.add('btn-danger');
             });
         });
     });
-
-    // Notification function
-    function showNotification(message, type = 'info') {
-        // Remove existing notifications
-        const existingNotifications = document.querySelectorAll('.custom-notification');
-        existingNotifications.forEach(notification => notification.remove());
-        
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show custom-notification`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        `;
-        
-        const icon = type === 'success' ? 'fa-check-circle' : 
-                    type === 'error' ? 'fa-exclamation-circle' : 
-                    'fa-info-circle';
-        
-        notification.innerHTML = `
-            <i class="fas ${icon} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Add to page
-        document.body.appendChild(notification);
-        
-        // Auto-remove after 5 seconds for success/error messages
-        if (type !== 'info') {
-            setTimeout(() => {
-                if (notification && notification.parentNode) {
-                    notification.classList.remove('show');
-                    setTimeout(() => {
-                        if (notification && notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 150);
-                }
-            }, 5000);
-        }
-    }
+});
 </script>
-{% endblock %}           
+{% endblock %}
