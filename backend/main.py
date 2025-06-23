@@ -659,6 +659,16 @@ async def upload_pdf(
 ):
     user = await verify_role(request, ["professor", "admin"])
     cls = db.get_class_by_id(class_id)
+    existing_pdfs = db.get_pdfs_for_class(class_id)
+    if any(existing_pdf['name'] == name for existing_pdf in existing_pdfs):
+        return templates.TemplateResponse("pdf.html", {
+            "request": request,
+            "user": user,
+            "pdfs": existing_pdfs,
+            "class_id": class_id,
+            "course": cls,
+            "error": f"Eine PDF mit dem Namen '{name}' existiert bereits."
+        })
     if not cls:
         return templates.TemplateResponse("pdf.html", {
             "request": request,
